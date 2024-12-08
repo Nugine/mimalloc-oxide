@@ -8772,7 +8772,7 @@ pub unsafe extern "C" fn _mi_heap_init(
 ) {
     _mi_memcpy_aligned(
         heap as *mut libc::c_void,
-        &_mi_heap_empty as *const mi_heap_t as *const libc::c_void,
+        (&raw const _mi_heap_empty) as *const mi_heap_t as *const libc::c_void,
         ::core::mem::size_of::<mi_heap_t>() as libc::c_ulong,
     );
     (*heap).tld = tld;
@@ -8875,7 +8875,7 @@ unsafe extern "C" fn mi_heap_reset_pages(mut heap: *mut mi_heap_t) {
     );
     _mi_memcpy_aligned(
         &mut (*heap).pages as *mut [mi_page_queue_t; 75] as *mut libc::c_void,
-        &_mi_heap_empty.pages as *const [mi_page_queue_t; 75] as *const libc::c_void,
+        (&raw const _mi_heap_empty.pages) as *const [mi_page_queue_t; 75] as *const libc::c_void,
         ::core::mem::size_of::<[mi_page_queue_t; 75]>() as libc::c_ulong,
     );
     (*heap).thread_delayed_free = 0 as *mut mi_block_t;

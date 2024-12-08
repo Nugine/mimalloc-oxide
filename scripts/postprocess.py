@@ -15,6 +15,18 @@ REPLACEMENTS = [
         "&_mi_heap_empty as *const mi_heap_t as *mut mi_heap_t",  #
         "&raw mut _mi_heap_empty",
     ),
+    (
+        "&_mi_heap_empty as *const mi_heap_t as *const libc::c_void",  #
+        "(&raw const _mi_heap_empty) as *const mi_heap_t as *const libc::c_void",
+    ),
+    (
+        "&_mi_heap_empty.pages as *const [mi_page_queue_t; 75] as *const libc::c_void",  #
+        "(&raw const _mi_heap_empty.pages) as *const [mi_page_queue_t; 75] as *const libc::c_void",
+    ),
+    (
+        "&mut *options.as_mut_ptr().offset(option as isize) as *mut mi_option_desc_t",  #
+        "(&raw mut options[option as usize]) as *mut mi_option_desc_t",
+    ),
 ]
 
 
@@ -99,7 +111,7 @@ def transform(lines: Iterable[str]):
             yield "#[unsafe(no_mangle)]"
             continue
 
-        if "link_section" in line:
+        if "link_section" in line and "unsafe(link_section" not in line:
             line = re.sub(r"(link_section = \".+\")", r"unsafe(\1)", line)
             yield line
             continue
@@ -122,27 +134,22 @@ def transform_lines(from_path: str, to_path: str, f):
 
 
 def main():
-    stage0 = "transpile/mimalloc.stage0.rs"
-    stage1 = "transpile/mimalloc.stage1.rs"
-    stage2 = "transpile/mimalloc.stage2.rs"
+    to_path = "transpile/mimalloc.stage0.rs"
+    shutil.copyfile(to_path, "crates/mimalloc-oxide/src/lib.rs")
 
-    transform_lines(stage0, stage1, transform)
-    subprocess.run(
-        "cargo build -p mimalloc-oxide --message-format=json 1>temp/oxide.jsonl",
-        shell=True,
-        check=False,
-    )
+    for stage_id in [1, 2, 3]:
+        from_path = "crates/mimalloc-oxide/src/lib.rs"
+        to_path = f"transpile/mimalloc.stage{stage_id}.rs"
+        transform_lines(from_path, to_path, transform)
 
-    transform_lines(stage1, stage2, transform)
-    subprocess.run(
-        "cargo build -p mimalloc-oxide --message-format=json 1>temp/oxide.jsonl",
-        shell=True,
-        check=False,
-    )
+        shutil.copyfile(to_path, "crates/mimalloc-oxide/src/lib.rs")
+        subprocess.run("cargo fmt", shell=True, check=True)
 
-    shutil.copyfile(stage2, "crates/mimalloc-oxide/src/lib.rs")
-
-    subprocess.run("cargo fmt", shell=True, check=True)
+        subprocess.run(
+            "cargo build -p mimalloc-oxide --message-format=json 1>temp/oxide.jsonl",
+            shell=True,
+            check=False,
+        )
 
 
 if __name__ == "__main__":

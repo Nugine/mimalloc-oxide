@@ -1,19 +1,32 @@
-#![allow(dead_code, mutable_transmutes, non_camel_case_types, non_snake_case, non_upper_case_globals, unused_assignments, unused_mut)]
-#![feature( c_variadic, core_intrinsics, extern_types,  thread_local)]
+#![allow(
+    dead_code,
+    mutable_transmutes,
+    non_camel_case_types,
+    non_snake_case,
+    non_upper_case_globals,
+    unused_assignments,
+    unused_mut
+)]
+#![feature(c_variadic, core_intrinsics, extern_types, thread_local)]
 #![allow(internal_features)]
 
 use c2rust_bitfields::BitfieldStruct;
 
-#[cfg(not(all(target_arch = "x86_64", target_os = "linux", target_env = "gnu", target_pointer_width = "64")))]
+#[cfg(not(all(
+    target_arch = "x86_64",
+    target_os = "linux",
+    target_env = "gnu",
+    target_pointer_width = "64"
+)))]
 compile_error!("mimalloc_oxide only supports x86_64-unknown-linux-gnu now");
 
 include!("./extra.rs");
 
+use core::arch::asm;
 #[cfg(target_arch = "x86")]
 pub use core::arch::x86::_mm_pause;
 #[cfg(target_arch = "x86_64")]
 pub use core::arch::x86_64::_mm_pause;
-use core::arch::asm;
 unsafe extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
@@ -29,35 +42,17 @@ unsafe extern "C" {
     fn pthread_mutex_unlock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
     fn pthread_key_create(
         __key: *mut pthread_key_t,
-        __destr_function: Option::<unsafe extern "C" fn(*mut libc::c_void) -> ()>,
+        __destr_function: Option<unsafe extern "C" fn(*mut libc::c_void) -> ()>,
     ) -> libc::c_int;
     fn pthread_key_delete(__key: pthread_key_t) -> libc::c_int;
-    fn pthread_setspecific(
-        __key: pthread_key_t,
-        __pointer: *const libc::c_void,
-    ) -> libc::c_int;
-    fn strtol(
-        _: *const libc::c_char,
-        _: *mut *mut libc::c_char,
-        _: libc::c_int,
-    ) -> libc::c_long;
+    fn pthread_setspecific(__key: pthread_key_t, __pointer: *const libc::c_void) -> libc::c_int;
+    fn strtol(_: *const libc::c_char, _: *mut *mut libc::c_char, _: libc::c_int) -> libc::c_long;
     fn abort() -> !;
     fn getenv(__name: *const libc::c_char) -> *mut libc::c_char;
-    fn realpath(
-        __name: *const libc::c_char,
-        __resolved: *mut libc::c_char,
-    ) -> *mut libc::c_char;
+    fn realpath(__name: *const libc::c_char, __resolved: *mut libc::c_char) -> *mut libc::c_char;
     fn __errno_location() -> *mut libc::c_int;
-    fn memcpy(
-        _: *mut libc::c_void,
-        _: *const libc::c_void,
-        _: libc::c_ulong,
-    ) -> *mut libc::c_void;
-    fn memset(
-        _: *mut libc::c_void,
-        _: libc::c_int,
-        _: libc::c_ulong,
-    ) -> *mut libc::c_void;
+    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
+    fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
     fn strstr(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::c_char;
     static mut stdout: *mut FILE;
     static mut stderr: *mut FILE;
@@ -71,16 +66,8 @@ unsafe extern "C" {
         __offset: __off_t,
     ) -> *mut libc::c_void;
     fn munmap(__addr: *mut libc::c_void, __len: size_t) -> libc::c_int;
-    fn mprotect(
-        __addr: *mut libc::c_void,
-        __len: size_t,
-        __prot: libc::c_int,
-    ) -> libc::c_int;
-    fn madvise(
-        __addr: *mut libc::c_void,
-        __len: size_t,
-        __advice: libc::c_int,
-    ) -> libc::c_int;
+    fn mprotect(__addr: *mut libc::c_void, __len: size_t, __prot: libc::c_int) -> libc::c_int;
+    fn madvise(__addr: *mut libc::c_void, __len: size_t, __advice: libc::c_int) -> libc::c_int;
     fn sysconf(__name: libc::c_int) -> libc::c_long;
     fn syscall(__sysno: libc::c_long, _: ...) -> libc::c_long;
     fn prctl(__option: libc::c_int, _: ...) -> libc::c_int;
@@ -406,10 +393,7 @@ pub struct mi_padding_s {
     pub canary: uint32_t,
     pub delta: uint32_t,
 }
-pub type mi_output_fun = unsafe extern "C" fn(
-    *const libc::c_char,
-    *mut libc::c_void,
-) -> ();
+pub type mi_output_fun = unsafe extern "C" fn(*const libc::c_char, *mut libc::c_void) -> ();
 pub type va_list = __builtin_va_list;
 pub const memory_order_acq_rel: memory_order = 4;
 pub const memory_order_relaxed: memory_order = 0;
@@ -629,17 +613,14 @@ pub type heap_page_visitor_fun = unsafe extern "C" fn(
     *mut libc::c_void,
     *mut libc::c_void,
 ) -> bool;
-pub type mi_deferred_free_fun = unsafe extern "C" fn(
-    bool,
-    libc::c_ulonglong,
-    *mut libc::c_void,
-) -> ();
+pub type mi_deferred_free_fun =
+    unsafe extern "C" fn(bool, libc::c_ulonglong, *mut libc::c_void) -> ();
 pub type mi_atomic_once_t = uintptr_t;
 pub type buffered_t = buffered_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct buffered_s {
-    pub out: Option::<mi_output_fun>,
+    pub out: Option<mi_output_fun>,
     pub arg: *mut libc::c_void,
     pub buf: *mut libc::c_char,
     pub used: size_t,
@@ -795,7 +776,7 @@ pub type mi_visit_blocks_args_t = mi_visit_blocks_args_s;
 #[repr(C)]
 pub struct mi_visit_blocks_args_s {
     pub visit_blocks: bool,
-    pub visitor: Option::<mi_block_visit_fun>,
+    pub visitor: Option<mi_block_visit_fun>,
     pub arg: *mut libc::c_void,
 }
 pub type mi_heap_area_ex_t = mi_heap_area_ex_s;
@@ -805,13 +786,10 @@ pub struct mi_heap_area_ex_s {
     pub area: mi_heap_area_t,
     pub page: *mut mi_page_t,
 }
-pub type mi_heap_area_visit_fun = unsafe extern "C" fn(
-    *const mi_heap_t,
-    *const mi_heap_area_ex_t,
-    *mut libc::c_void,
-) -> bool;
+pub type mi_heap_area_visit_fun =
+    unsafe extern "C" fn(*const mi_heap_t, *const mi_heap_area_ex_t, *mut libc::c_void) -> bool;
 pub type mi_subproc_id_t = *mut libc::c_void;
-pub type std_new_handler_t = Option::<unsafe extern "C" fn() -> ()>;
+pub type std_new_handler_t = Option<unsafe extern "C" fn() -> ()>;
 pub type memory_order = libc::c_uint;
 pub const memory_order_seq_cst: memory_order = 5;
 pub const memory_order_consume: memory_order = 1;
@@ -1034,28 +1012,21 @@ pub const _SC_ARG_MAX: C2RustUnnamed_15 = 0;
 pub type __rusage_who = libc::c_int;
 pub const RUSAGE_CHILDREN: __rusage_who = -1;
 #[inline]
-unsafe extern "C" fn mi_atomic_addi64_relaxed(
-    mut p: *mut int64_t,
-    mut add: int64_t,
-) -> int64_t {
+unsafe extern "C" fn mi_atomic_addi64_relaxed(mut p: *mut int64_t, mut add: int64_t) -> int64_t {
     return ::core::intrinsics::atomic_xadd_relaxed(p as *mut int64_t, add);
 }
 #[inline]
 unsafe extern "C" fn mi_atomic_maxi64_relaxed(mut p: *mut int64_t, mut x: int64_t) {
-    let mut current: int64_t = ::core::intrinsics::atomic_load_relaxed(
-        p as *mut int64_t,
-    );
-    while current < x
-        && {
-            let fresh0 = ::core::intrinsics::atomic_cxchgweak_release_relaxed(
-                p as *mut int64_t,
-                *(&mut current as *mut int64_t),
-                x,
-            );
-            *(&mut current as *mut int64_t) = fresh0.0;
-            !fresh0.1
-        }
-    {}
+    let mut current: int64_t = ::core::intrinsics::atomic_load_relaxed(p as *mut int64_t);
+    while current < x && {
+        let fresh0 = ::core::intrinsics::atomic_cxchgweak_release_relaxed(
+            p as *mut int64_t,
+            *(&mut current as *mut int64_t),
+            x,
+        );
+        *(&mut current as *mut int64_t) = fresh0.0;
+        !fresh0.1
+    } {}
 }
 #[inline]
 unsafe extern "C" fn mi_atomic_once(mut once: *mut mi_atomic_once_t) -> bool {
@@ -1073,7 +1044,7 @@ unsafe extern "C" fn mi_atomic_once(mut once: *mut mi_atomic_once_t) -> bool {
 }
 #[inline]
 unsafe extern "C" fn mi_atomic_yield() {
-_mm_pause();
+    _mm_pause();
 }
 #[inline]
 unsafe extern "C" fn mi_lock_try_acquire(mut lock: *mut pthread_mutex_t) -> bool {
@@ -1102,50 +1073,41 @@ unsafe extern "C" fn mi_memkind_is_os(mut memkind: mi_memkind_t) -> bool {
 }
 #[inline]
 unsafe extern "C" fn _mi_is_power_of_two(mut x: uintptr_t) -> bool {
-    return x & x.wrapping_sub(1 as libc::c_int as uintptr_t)
-        == 0 as libc::c_int as uintptr_t;
+    return x & x.wrapping_sub(1 as libc::c_int as uintptr_t) == 0 as libc::c_int as uintptr_t;
 }
 #[inline]
-unsafe extern "C" fn _mi_is_aligned(
-    mut p: *mut libc::c_void,
-    mut alignment: size_t,
-) -> bool {
-    if alignment != 0 as libc::c_int as size_t {} else {
+unsafe extern "C" fn _mi_is_aligned(mut p: *mut libc::c_void, mut alignment: size_t) -> bool {
+    if alignment != 0 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"alignment != 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             1640 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 15],
-                &[libc::c_char; 15],
-            >(b"_mi_is_aligned\0"))
+            (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"_mi_is_aligned\0"))
                 .as_ptr(),
         );
     };
     return (p as uintptr_t).wrapping_rem(alignment) == 0 as libc::c_int as libc::c_ulong;
 }
 #[inline]
-unsafe extern "C" fn _mi_align_up(
-    mut sz: uintptr_t,
-    mut alignment: size_t,
-) -> uintptr_t {
-    if alignment != 0 as libc::c_int as size_t {} else {
+unsafe extern "C" fn _mi_align_up(mut sz: uintptr_t, mut alignment: size_t) -> uintptr_t {
+    if alignment != 0 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"alignment != 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             1644 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"_mi_align_up\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"_mi_align_up\0")).as_ptr(),
         );
     };
     let mut mask: uintptr_t = alignment.wrapping_sub(1 as libc::c_int as size_t);
     if alignment & mask == 0 as libc::c_int as libc::c_ulong {
-        return sz.wrapping_add(mask) & !mask
+        return sz.wrapping_add(mask) & !mask;
     } else {
-        return sz.wrapping_add(mask).wrapping_div(alignment).wrapping_mul(alignment)
+        return sz
+            .wrapping_add(mask)
+            .wrapping_div(alignment)
+            .wrapping_mul(alignment);
     };
 }
 #[inline]
@@ -1156,19 +1118,14 @@ unsafe extern "C" fn mi_align_up_ptr(
     return _mi_align_up(p as uintptr_t, alignment) as *mut libc::c_void;
 }
 #[inline]
-unsafe extern "C" fn _mi_divide_up(
-    mut size: uintptr_t,
-    mut divider: size_t,
-) -> uintptr_t {
-    if divider != 0 as libc::c_int as size_t {} else {
+unsafe extern "C" fn _mi_divide_up(mut size: uintptr_t, mut divider: size_t) -> uintptr_t {
+    if divider != 0 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"divider != 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             1657 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 14],
-                &[libc::c_char; 14],
-            >(b"_mi_divide_up\0"))
+            (*::core::mem::transmute::<&[u8; 14], &[libc::c_char; 14]>(b"_mi_divide_up\0"))
                 .as_ptr(),
         );
     };
@@ -1181,28 +1138,27 @@ unsafe extern "C" fn _mi_divide_up(
     };
 }
 #[inline]
-unsafe extern "C" fn _mi_clamp(
-    mut sz: size_t,
-    mut min: size_t,
-    mut max: size_t,
-) -> size_t {
-    if sz < min { return min } else if sz > max { return max } else { return sz };
+unsafe extern "C" fn _mi_clamp(mut sz: size_t, mut min: size_t, mut max: size_t) -> size_t {
+    if sz < min {
+        return min;
+    } else if sz > max {
+        return max;
+    } else {
+        return sz;
+    };
 }
 #[inline]
 unsafe extern "C" fn _mi_wsize_from_size(mut size: size_t) -> size_t {
     if size
         <= (18446744073709551615 as libc::c_ulong)
             .wrapping_sub(::core::mem::size_of::<uintptr_t>() as libc::c_ulong)
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
-            b"size <= SIZE_MAX - sizeof(uintptr_t)\0" as *const u8
-                as *const libc::c_char,
+            b"size <= SIZE_MAX - sizeof(uintptr_t)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             1672 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"_mi_wsize_from_size\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"_mi_wsize_from_size\0"))
                 .as_ptr(),
         );
     };
@@ -1241,7 +1197,7 @@ unsafe extern "C" fn mi_count_size_overflow(
         *total = 18446744073709551615 as libc::c_ulong;
         return 1 as libc::c_int != 0;
     } else {
-        return 0 as libc::c_int != 0
+        return 0 as libc::c_int != 0;
     };
 }
 #[inline]
@@ -1250,31 +1206,29 @@ unsafe extern "C" fn mi_heap_is_backing(mut heap: *const mi_heap_t) -> bool {
 }
 #[inline]
 unsafe extern "C" fn mi_heap_is_initialized(mut heap: *mut mi_heap_t) -> bool {
-    if !heap.is_null() {} else {
+    if !heap.is_null() {
+    } else {
         _mi_assert_fail(
             b"heap != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             1715 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 23],
-                &[libc::c_char; 23],
-            >(b"mi_heap_is_initialized\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
+                b"mi_heap_is_initialized\0",
+            ))
+            .as_ptr(),
         );
     };
     return heap != &raw mut _mi_heap_empty;
 }
 #[inline]
 unsafe extern "C" fn _mi_ptr_cookie(mut p: *const libc::c_void) -> uintptr_t {
-    if _mi_heap_main.cookie != 0 as libc::c_int as uintptr_t {} else {
+    if _mi_heap_main.cookie != 0 as libc::c_int as uintptr_t {
+    } else {
         _mi_assert_fail(
             b"_mi_heap_main.cookie != 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             1720 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 15],
-                &[libc::c_char; 15],
-            >(b"_mi_ptr_cookie\0"))
+            (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"_mi_ptr_cookie\0"))
                 .as_ptr(),
         );
     };
@@ -1289,17 +1243,16 @@ unsafe extern "C" fn _mi_heap_get_free_small_page(
         <= (128 as libc::c_int as libc::c_ulong)
             .wrapping_mul(::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong)
             .wrapping_add(::core::mem::size_of::<mi_padding_t>() as libc::c_ulong)
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
-            b"size <= (MI_SMALL_SIZE_MAX + MI_PADDING_SIZE)\0" as *const u8
-                as *const libc::c_char,
+            b"size <= (MI_SMALL_SIZE_MAX + MI_PADDING_SIZE)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             1724 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 29],
-                &[libc::c_char; 29],
-            >(b"_mi_heap_get_free_small_page\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 29], &[libc::c_char; 29]>(
+                b"_mi_heap_get_free_small_page\0",
+            ))
+            .as_ptr(),
         );
     };
     let idx: size_t = _mi_wsize_from_size(size);
@@ -1307,36 +1260,30 @@ unsafe extern "C" fn _mi_heap_get_free_small_page(
         < (128 as libc::c_int as libc::c_ulong)
             .wrapping_add(
                 (::core::mem::size_of::<mi_padding_t>() as libc::c_ulong)
-                    .wrapping_add(
-                        ((1 as libc::c_int) << 3 as libc::c_int) as libc::c_ulong,
-                    )
+                    .wrapping_add(((1 as libc::c_int) << 3 as libc::c_int) as libc::c_ulong)
                     .wrapping_sub(1 as libc::c_int as libc::c_ulong)
-                    .wrapping_div(
-                        ((1 as libc::c_int) << 3 as libc::c_int) as libc::c_ulong,
-                    ),
+                    .wrapping_div(((1 as libc::c_int) << 3 as libc::c_int) as libc::c_ulong),
             )
             .wrapping_add(1 as libc::c_int as libc::c_ulong)
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"idx < MI_PAGES_DIRECT\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             1726 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 29],
-                &[libc::c_char; 29],
-            >(b"_mi_heap_get_free_small_page\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 29], &[libc::c_char; 29]>(
+                b"_mi_heap_get_free_small_page\0",
+            ))
+            .as_ptr(),
         );
     };
     return (*heap).pages_free_direct[idx as usize];
 }
 #[inline]
 unsafe extern "C" fn _mi_ptr_segment(mut p: *const libc::c_void) -> *mut mi_segment_t {
-    let segment: *mut mi_segment_t = ((p as uintptr_t)
-        .wrapping_sub(1 as libc::c_int as uintptr_t)
+    let segment: *mut mi_segment_t = ((p as uintptr_t).wrapping_sub(1 as libc::c_int as uintptr_t)
         & !(((1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
             .wrapping_sub(1 as libc::c_int as libc::c_ulonglong) as uintptr_t))
         as *mut mi_segment_t;
     return if segment as intptr_t <= 0 as libc::c_int as intptr_t {
@@ -1347,33 +1294,31 @@ unsafe extern "C" fn _mi_ptr_segment(mut p: *const libc::c_void) -> *mut mi_segm
 }
 #[inline]
 unsafe extern "C" fn _mi_page_segment(mut page: *const mi_page_t) -> *mut mi_segment_t {
-    if !page.is_null() {} else {
+    if !page.is_null() {
+    } else {
         _mi_assert_fail(
             b"page!=NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             1738 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 17],
-                &[libc::c_char; 17],
-            >(b"_mi_page_segment\0"))
+            (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"_mi_page_segment\0"))
                 .as_ptr(),
         );
     };
     let mut segment: *mut mi_segment_t = _mi_ptr_segment(page as *const libc::c_void);
     if segment.is_null()
         || page
-            == &mut *((*segment).pages).as_mut_ptr().offset((*page).segment_idx as isize)
-                as *mut mi_page_t as *const mi_page_t
-    {} else {
+            == &mut *((*segment).pages)
+                .as_mut_ptr()
+                .offset((*page).segment_idx as isize) as *mut mi_page_t
+                as *const mi_page_t
+    {
+    } else {
         _mi_assert_fail(
-            b"segment == NULL || page == &segment->pages[page->segment_idx]\0"
-                as *const u8 as *const libc::c_char,
+            b"segment == NULL || page == &segment->pages[page->segment_idx]\0" as *const u8
+                as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             1740 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 17],
-                &[libc::c_char; 17],
-            >(b"_mi_page_segment\0"))
+            (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"_mi_page_segment\0"))
                 .as_ptr(),
         );
     };
@@ -1384,53 +1329,50 @@ unsafe extern "C" fn _mi_segment_page_idx_of(
     mut segment: *const mi_segment_t,
     mut p: *const libc::c_void,
 ) -> size_t {
-    let mut diff: ptrdiff_t = (p as *mut uint8_t).offset_from(segment as *mut uint8_t)
-        as libc::c_long;
+    let mut diff: ptrdiff_t =
+        (p as *mut uint8_t).offset_from(segment as *mut uint8_t) as libc::c_long;
     if diff >= 0 as libc::c_int as ptrdiff_t
         && diff as size_t as libc::c_ulonglong
             <= (1 as libc::c_ulonglong)
-                << 3 as libc::c_int
-                    + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
-    {} else {
+                << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
+    {
+    } else {
         _mi_assert_fail(
-            b"diff >= 0 && (size_t)diff <= MI_SEGMENT_SIZE\0" as *const u8
-                as *const libc::c_char,
+            b"diff >= 0 && (size_t)diff <= MI_SEGMENT_SIZE\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             1745 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 24],
-                &[libc::c_char; 24],
-            >(b"_mi_segment_page_idx_of\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 24], &[libc::c_char; 24]>(
+                b"_mi_segment_page_idx_of\0",
+            ))
+            .as_ptr(),
         );
     };
     let mut idx: size_t = diff as size_t >> (*segment).page_shift;
-    if idx < (*segment).capacity {} else {
+    if idx < (*segment).capacity {
+    } else {
         _mi_assert_fail(
             b"idx < segment->capacity\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             1747 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 24],
-                &[libc::c_char; 24],
-            >(b"_mi_segment_page_idx_of\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 24], &[libc::c_char; 24]>(
+                b"_mi_segment_page_idx_of\0",
+            ))
+            .as_ptr(),
         );
     };
-    if (*segment).page_kind as libc::c_uint
-        <= MI_PAGE_MEDIUM as libc::c_int as libc::c_uint
+    if (*segment).page_kind as libc::c_uint <= MI_PAGE_MEDIUM as libc::c_int as libc::c_uint
         || idx == 0 as libc::c_int as size_t
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"segment->page_kind <= MI_PAGE_MEDIUM || idx == 0\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             1748 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 24],
-                &[libc::c_char; 24],
-            >(b"_mi_segment_page_idx_of\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 24], &[libc::c_char; 24]>(
+                b"_mi_segment_page_idx_of\0",
+            ))
+            .as_ptr(),
         );
     };
     return idx;
@@ -1447,15 +1389,13 @@ unsafe extern "C" fn _mi_segment_page_of(
 }
 #[inline]
 unsafe extern "C" fn mi_page_start(mut page: *const mi_page_t) -> *mut uint8_t {
-    if !((*page).page_start).is_null() {} else {
+    if !((*page).page_start).is_null() {
+    } else {
         _mi_assert_fail(
             b"page->page_start != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             1756 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 14],
-                &[libc::c_char; 14],
-            >(b"mi_page_start\0"))
+            (*::core::mem::transmute::<&[u8; 14], &[libc::c_char; 14]>(b"mi_page_start\0"))
                 .as_ptr(),
         );
     };
@@ -1463,31 +1403,26 @@ unsafe extern "C" fn mi_page_start(mut page: *const mi_page_t) -> *mut uint8_t {
 }
 #[inline]
 unsafe extern "C" fn _mi_ptr_page(mut p: *mut libc::c_void) -> *mut mi_page_t {
-    if !p.is_null() {} else {
+    if !p.is_null() {
+    } else {
         _mi_assert_fail(
             b"p!=NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             1761 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"_mi_ptr_page\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"_mi_ptr_page\0")).as_ptr(),
         );
     };
     return _mi_segment_page_of(_mi_ptr_segment(p), p);
 }
 #[inline]
 unsafe extern "C" fn mi_page_block_size(mut page: *const mi_page_t) -> size_t {
-    if (*page).block_size > 0 as libc::c_int as size_t {} else {
+    if (*page).block_size > 0 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"page->block_size > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             1765 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 19],
-                &[libc::c_char; 19],
-            >(b"mi_page_block_size\0"))
+            (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(b"mi_page_block_size\0"))
                 .as_ptr(),
         );
     };
@@ -1501,7 +1436,8 @@ unsafe extern "C" fn mi_page_is_huge(mut page: *const mi_page_t) -> bool {
         || (*page).is_huge() == 0
             && (*_mi_page_segment(page)).page_kind as libc::c_uint
                 != MI_PAGE_HUGE as libc::c_int as libc::c_uint
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"(page->is_huge && _mi_page_segment(page)->page_kind == MI_PAGE_HUGE) || (!page->is_huge && _mi_page_segment(page)->page_kind != MI_PAGE_HUGE)\0"
                 as *const u8 as *const libc::c_char,
@@ -1523,41 +1459,31 @@ unsafe extern "C" fn mi_page_usable_block_size(mut page: *const mi_page_t) -> si
 }
 #[inline]
 unsafe extern "C" fn mi_page_thread_free(mut page: *const mi_page_t) -> *mut mi_block_t {
-    return (::core::intrinsics::atomic_load_relaxed(
-        &mut (*(page as *mut mi_page_t)).xthread_free,
-    ) & !(3 as libc::c_int) as mi_thread_free_t) as *mut mi_block_t;
+    return (::core::intrinsics::atomic_load_relaxed(&mut (*(page as *mut mi_page_t)).xthread_free)
+        & !(3 as libc::c_int) as mi_thread_free_t) as *mut mi_block_t;
 }
 #[inline]
-unsafe extern "C" fn mi_page_thread_free_flag(
-    mut page: *const mi_page_t,
-) -> mi_delayed_t {
-    return (::core::intrinsics::atomic_load_relaxed(
-        &mut (*(page as *mut mi_page_t)).xthread_free,
-    ) & 3 as libc::c_int as mi_thread_free_t) as mi_delayed_t;
+unsafe extern "C" fn mi_page_thread_free_flag(mut page: *const mi_page_t) -> mi_delayed_t {
+    return (::core::intrinsics::atomic_load_relaxed(&mut (*(page as *mut mi_page_t)).xthread_free)
+        & 3 as libc::c_int as mi_thread_free_t) as mi_delayed_t;
 }
 #[inline]
 unsafe extern "C" fn mi_page_heap(mut page: *const mi_page_t) -> *mut mi_heap_t {
-    return ::core::intrinsics::atomic_load_relaxed(
-        &mut (*(page as *mut mi_page_t)).xheap,
-    ) as *mut mi_heap_t;
+    return ::core::intrinsics::atomic_load_relaxed(&mut (*(page as *mut mi_page_t)).xheap)
+        as *mut mi_heap_t;
 }
 #[inline]
-unsafe extern "C" fn mi_page_set_heap(
-    mut page: *mut mi_page_t,
-    mut heap: *mut mi_heap_t,
-) {
+unsafe extern "C" fn mi_page_set_heap(mut page: *mut mi_page_t, mut heap: *mut mi_heap_t) {
     if mi_page_thread_free_flag(page) as libc::c_uint
         != MI_DELAYED_FREEING as libc::c_int as libc::c_uint
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"mi_page_thread_free_flag(page) != MI_DELAYED_FREEING\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             1789 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 17],
-                &[libc::c_char; 17],
-            >(b"mi_page_set_heap\0"))
+            (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"mi_page_set_heap\0"))
                 .as_ptr(),
         );
     };
@@ -1597,15 +1523,13 @@ unsafe extern "C" fn mi_tf_set_block(
 }
 #[inline]
 unsafe extern "C" fn mi_page_all_free(mut page: *const mi_page_t) -> bool {
-    if !page.is_null() {} else {
+    if !page.is_null() {
+    } else {
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             1809 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 17],
-                &[libc::c_char; 17],
-            >(b"mi_page_all_free\0"))
+            (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"mi_page_all_free\0"))
                 .as_ptr(),
         );
     };
@@ -1613,16 +1537,16 @@ unsafe extern "C" fn mi_page_all_free(mut page: *const mi_page_t) -> bool {
 }
 #[inline]
 unsafe extern "C" fn mi_page_has_any_available(mut page: *const mi_page_t) -> bool {
-    if !page.is_null() && (*page).reserved as libc::c_int > 0 as libc::c_int {} else {
+    if !page.is_null() && (*page).reserved as libc::c_int > 0 as libc::c_int {
+    } else {
         _mi_assert_fail(
             b"page != NULL && page->reserved > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             1813 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 26],
-                &[libc::c_char; 26],
-            >(b"mi_page_has_any_available\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 26], &[libc::c_char; 26]>(
+                b"mi_page_has_any_available\0",
+            ))
+            .as_ptr(),
         );
     };
     return ((*page).used as libc::c_int) < (*page).reserved as libc::c_int
@@ -1630,16 +1554,16 @@ unsafe extern "C" fn mi_page_has_any_available(mut page: *const mi_page_t) -> bo
 }
 #[inline]
 unsafe extern "C" fn mi_page_immediate_available(mut page: *const mi_page_t) -> bool {
-    if !page.is_null() {} else {
+    if !page.is_null() {
+    } else {
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             1817 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 28],
-                &[libc::c_char; 28],
-            >(b"mi_page_immediate_available\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 28], &[libc::c_char; 28]>(
+                b"mi_page_immediate_available\0",
+            ))
+            .as_ptr(),
         );
     };
     return !((*page).free).is_null();
@@ -1667,10 +1591,7 @@ unsafe extern "C" fn mi_page_has_aligned(mut page: *const mi_page_t) -> bool {
     return ((*page).flags.x).has_aligned() != 0;
 }
 #[inline]
-unsafe extern "C" fn mi_page_set_has_aligned(
-    mut page: *mut mi_page_t,
-    mut has_aligned: bool,
-) {
+unsafe extern "C" fn mi_page_set_has_aligned(mut page: *mut mi_page_t, mut has_aligned: bool) {
     ((*page).flags.x).set_has_aligned(has_aligned as uint8_t);
 }
 #[inline]
@@ -1689,30 +1610,24 @@ unsafe extern "C" fn mi_is_in_same_page(
 }
 #[inline]
 unsafe extern "C" fn mi_rotl(mut x: uintptr_t, mut shift: uintptr_t) -> uintptr_t {
-    shift = shift
-        % (((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int) as uintptr_t;
+    shift = shift % (((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int) as uintptr_t;
     return if shift == 0 as libc::c_int as uintptr_t {
         x
     } else {
         x << shift
-            | x
-                >> ((((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int)
-                    as uintptr_t)
-                    .wrapping_sub(shift)
+            | x >> ((((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int) as uintptr_t)
+                .wrapping_sub(shift)
     };
 }
 #[inline]
 unsafe extern "C" fn mi_rotr(mut x: uintptr_t, mut shift: uintptr_t) -> uintptr_t {
-    shift = shift
-        % (((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int) as uintptr_t;
+    shift = shift % (((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int) as uintptr_t;
     return if shift == 0 as libc::c_int as uintptr_t {
         x
     } else {
         x >> shift
-            | x
-                << ((((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int)
-                    as uintptr_t)
-                    .wrapping_sub(shift)
+            | x << ((((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int) as uintptr_t)
+                .wrapping_sub(shift)
     };
 }
 #[inline]
@@ -1724,8 +1639,13 @@ unsafe extern "C" fn mi_ptr_decode(
     let mut p: *mut libc::c_void = (mi_rotr(
         x.wrapping_sub(*keys.offset(0 as libc::c_int as isize)),
         *keys.offset(0 as libc::c_int as isize),
-    ) ^ *keys.offset(1 as libc::c_int as isize)) as *mut libc::c_void;
-    return if p == null as *mut libc::c_void { 0 as *mut libc::c_void } else { p };
+    ) ^ *keys.offset(1 as libc::c_int as isize))
+        as *mut libc::c_void;
+    return if p == null as *mut libc::c_void {
+        0 as *mut libc::c_void
+    } else {
+        p
+    };
 }
 #[inline]
 unsafe extern "C" fn mi_ptr_encode(
@@ -1738,7 +1658,7 @@ unsafe extern "C" fn mi_ptr_encode(
         x ^ *keys.offset(1 as libc::c_int as isize),
         *keys.offset(0 as libc::c_int as isize),
     ))
-        .wrapping_add(*keys.offset(0 as libc::c_int as isize));
+    .wrapping_add(*keys.offset(0 as libc::c_int as isize));
 }
 #[inline]
 unsafe extern "C" fn mi_ptr_encode_canary(
@@ -1773,16 +1693,12 @@ unsafe extern "C" fn mi_block_next(
     mut page: *const mi_page_t,
     mut block: *const mi_block_t,
 ) -> *mut mi_block_t {
-    let mut next: *mut mi_block_t = mi_block_nextx(
-        page as *const libc::c_void,
-        block,
-        ((*page).keys).as_ptr(),
-    );
+    let mut next: *mut mi_block_t =
+        mi_block_nextx(page as *const libc::c_void, block, ((*page).keys).as_ptr());
     if (!next.is_null()
-        && !mi_is_in_same_page(
-            block as *const libc::c_void,
-            next as *const libc::c_void,
-        )) as libc::c_int as libc::c_long != 0
+        && !mi_is_in_same_page(block as *const libc::c_void, next as *const libc::c_void))
+        as libc::c_int as libc::c_long
+        != 0
     {
         _mi_error_message(
             14 as libc::c_int,
@@ -1853,33 +1769,32 @@ unsafe extern "C" fn _mi_random_shuffle(mut x: uintptr_t) -> uintptr_t {
         x = 17 as libc::c_int as uintptr_t;
     }
     x ^= x >> 30 as libc::c_int;
-    x = (x as libc::c_ulong).wrapping_mul(0xbf58476d1ce4e5b9 as libc::c_ulong)
-        as uintptr_t as uintptr_t;
+    x = (x as libc::c_ulong).wrapping_mul(0xbf58476d1ce4e5b9 as libc::c_ulong) as uintptr_t
+        as uintptr_t;
     x ^= x >> 27 as libc::c_int;
-    x = (x as libc::c_ulong).wrapping_mul(0x94d049bb133111eb as libc::c_ulong)
-        as uintptr_t as uintptr_t;
+    x = (x as libc::c_ulong).wrapping_mul(0x94d049bb133111eb as libc::c_ulong) as uintptr_t
+        as uintptr_t;
     x ^= x >> 31 as libc::c_int;
     return x;
 }
 #[inline]
 unsafe extern "C" fn _mi_os_numa_node(mut tld: *mut mi_os_tld_t) -> libc::c_int {
-    if (::core::intrinsics::atomic_load_relaxed(&mut _mi_numa_node_count as *mut size_t)
-        == 1 as libc::c_int as size_t) as libc::c_int as libc::c_long != 0
+    if (::core::intrinsics::atomic_load_relaxed(&raw mut _mi_numa_node_count as *mut size_t)
+        == 1 as libc::c_int as size_t) as libc::c_int as libc::c_long
+        != 0
     {
-        return 0 as libc::c_int
+        return 0 as libc::c_int;
     } else {
-        return _mi_os_numa_node_get(tld)
+        return _mi_os_numa_node_get(tld);
     };
 }
 #[inline]
 unsafe extern "C" fn _mi_os_numa_node_count() -> size_t {
-    let count: size_t = ::core::intrinsics::atomic_load_relaxed(
-        &mut _mi_numa_node_count,
-    );
+    let count: size_t = ::core::intrinsics::atomic_load_relaxed(&raw mut _mi_numa_node_count);
     if (count > 0 as libc::c_int as size_t) as libc::c_int as libc::c_long != 0 {
-        return count
+        return count;
     } else {
-        return _mi_os_numa_node_count_get()
+        return _mi_os_numa_node_count_get();
     };
 }
 #[inline]
@@ -1901,8 +1816,7 @@ unsafe extern "C" fn mi_bsr(mut x: uintptr_t) -> size_t {
     return if x == 0 as libc::c_int as uintptr_t {
         (((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int) as size_t
     } else {
-        ((((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int - 1 as libc::c_int)
-            as size_t)
+        ((((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int - 1 as libc::c_int) as size_t)
             .wrapping_sub(mi_clz(x))
     };
 }
@@ -1928,16 +1842,14 @@ unsafe extern "C" fn _mi_memcpy_aligned(
         == 0 as libc::c_int as uintptr_t
         && src as uintptr_t % ((1 as libc::c_int) << 3 as libc::c_int) as uintptr_t
             == 0 as libc::c_int as uintptr_t
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"((uintptr_t)dst % MI_INTPTR_SIZE == 0) && ((uintptr_t)src % MI_INTPTR_SIZE == 0)\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             2087 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 19],
-                &[libc::c_char; 19],
-            >(b"_mi_memcpy_aligned\0"))
+            (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(b"_mi_memcpy_aligned\0"))
                 .as_ptr(),
         );
     };
@@ -1949,16 +1861,13 @@ unsafe extern "C" fn _mi_memcpy_aligned(
 unsafe extern "C" fn _mi_memzero_aligned(mut dst: *mut libc::c_void, mut n: size_t) {
     if dst as uintptr_t % ((1 as libc::c_int) << 3 as libc::c_int) as uintptr_t
         == 0 as libc::c_int as uintptr_t
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
-            b"(uintptr_t)dst % MI_INTPTR_SIZE == 0\0" as *const u8
-                as *const libc::c_char,
+            b"(uintptr_t)dst % MI_INTPTR_SIZE == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             2093 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"_mi_memzero_aligned\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"_mi_memzero_aligned\0"))
                 .as_ptr(),
         );
     };
@@ -1968,8 +1877,8 @@ unsafe extern "C" fn _mi_memzero_aligned(mut dst: *mut libc::c_void, mut n: size
 #[inline]
 unsafe extern "C" fn mi_prim_tls_slot(mut slot: size_t) -> *mut libc::c_void {
     let mut res: *mut libc::c_void = 0 as *mut libc::c_void;
-    let ofs: size_t = slot
-        .wrapping_mul(::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong);
+    let ofs: size_t =
+        slot.wrapping_mul(::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong);
     asm!(
         "movq %fs:[{1}], {0}", lateout(reg) res, in (reg) & * (ofs as * mut * mut
         libc::c_void), options(preserves_flags, pure, readonly, att_syntax)
@@ -1998,17 +1907,19 @@ unsafe extern "C" fn mi_free_block_local(
     if track_stats {
         mi_stat_free(page, block);
     }
-    memset(block as *mut libc::c_void, 0xdf as libc::c_int, mi_page_block_size(page));
+    memset(
+        block as *mut libc::c_void,
+        0xdf as libc::c_int,
+        mi_page_block_size(page),
+    );
     track_stats;
     mi_block_set_next(page, block, (*page).local_free);
     (*page).local_free = block;
     (*page).used = ((*page).used).wrapping_sub(1);
-    if ((*page).used as libc::c_int == 0 as libc::c_int) as libc::c_int as libc::c_long
-        != 0
-    {
+    if ((*page).used as libc::c_int == 0 as libc::c_int) as libc::c_int as libc::c_long != 0 {
         _mi_page_retire(page);
-    } else if (check_full as libc::c_int != 0
-        && mi_page_is_in_full(page) as libc::c_int != 0) as libc::c_int as libc::c_long
+    } else if (check_full as libc::c_int != 0 && mi_page_is_in_full(page) as libc::c_int != 0)
+        as libc::c_int as libc::c_long
         != 0
     {
         _mi_page_unfull(page);
@@ -2019,23 +1930,21 @@ pub unsafe extern "C" fn _mi_page_ptr_unalign(
     mut page: *const mi_page_t,
     mut p: *const libc::c_void,
 ) -> *mut mi_block_t {
-    if !page.is_null() && !p.is_null() {} else {
+    if !page.is_null() && !p.is_null() {
+    } else {
         _mi_assert_fail(
             b"page!=NULL && p!=NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             2392 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 21],
-                &[libc::c_char; 21],
-            >(b"_mi_page_ptr_unalign\0"))
+            (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(b"_mi_page_ptr_unalign\0"))
                 .as_ptr(),
         );
     };
-    let mut diff: size_t = (p as *mut uint8_t).offset_from((*page).page_start)
-        as libc::c_long as size_t;
+    let mut diff: size_t =
+        (p as *mut uint8_t).offset_from((*page).page_start) as libc::c_long as size_t;
     let mut adjust: size_t = 0;
-    if ((*page).block_size_shift as libc::c_int != 0 as libc::c_int) as libc::c_int
-        as libc::c_long != 0
+    if ((*page).block_size_shift as libc::c_int != 0 as libc::c_int) as libc::c_int as libc::c_long
+        != 0
     {
         adjust = diff
             & ((1 as libc::c_int as size_t) << (*page).block_size_shift as libc::c_int)
@@ -2050,7 +1959,8 @@ unsafe extern "C" fn mi_block_check_unguard(
     mut page: *mut mi_page_t,
     mut block: *mut mi_block_t,
     mut p: *mut libc::c_void,
-) {}
+) {
+}
 #[inline(never)]
 unsafe extern "C" fn mi_free_generic_local(
     mut page: *mut mi_page_t,
@@ -2094,16 +2004,14 @@ unsafe extern "C" fn mi_checked_ptr_segment(
     mut p: *const libc::c_void,
     mut msg: *const libc::c_char,
 ) -> *mut mi_segment_t {
-    if (p as uintptr_t
-        & (((1 as libc::c_int) << 3 as libc::c_int) - 1 as libc::c_int) as uintptr_t
+    if (p as uintptr_t & (((1 as libc::c_int) << 3 as libc::c_int) - 1 as libc::c_int) as uintptr_t
         != 0 as libc::c_int as uintptr_t
-        && !mi_option_is_enabled(mi_option_guarded_precise)) as libc::c_int
-        as libc::c_long != 0
+        && !mi_option_is_enabled(mi_option_guarded_precise)) as libc::c_int as libc::c_long
+        != 0
     {
         _mi_error_message(
             22 as libc::c_int,
-            b"%s: invalid (unaligned) pointer: %p\n\0" as *const u8
-                as *const libc::c_char,
+            b"%s: invalid (unaligned) pointer: %p\n\0" as *const u8 as *const libc::c_char,
             msg,
             p,
         );
@@ -2120,8 +2028,9 @@ unsafe extern "C" fn mi_checked_ptr_segment(
             msg,
             p,
         );
-        if (_mi_ptr_cookie(segment as *const libc::c_void) == (*segment).cookie)
-            as libc::c_int as libc::c_long != 0
+        if (_mi_ptr_cookie(segment as *const libc::c_void) == (*segment).cookie) as libc::c_int
+            as libc::c_long
+            != 0
         {
             _mi_warning_message(
                 b"(yes, the previous pointer %p was valid after all)\n\0" as *const u8
@@ -2130,8 +2039,9 @@ unsafe extern "C" fn mi_checked_ptr_segment(
             );
         }
     }
-    if (_mi_ptr_cookie(segment as *const libc::c_void) != (*segment).cookie)
-        as libc::c_int as libc::c_long != 0
+    if (_mi_ptr_cookie(segment as *const libc::c_void) != (*segment).cookie) as libc::c_int
+        as libc::c_long
+        != 0
     {
         _mi_error_message(
             22 as libc::c_int,
@@ -2146,29 +2056,21 @@ unsafe extern "C" fn mi_checked_ptr_segment(
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_free(mut p: *mut libc::c_void) {
-    let segment: *mut mi_segment_t = mi_checked_ptr_segment(
-        p,
-        b"mi_free\0" as *const u8 as *const libc::c_char,
-    );
+    let segment: *mut mi_segment_t =
+        mi_checked_ptr_segment(p, b"mi_free\0" as *const u8 as *const libc::c_char);
     if segment.is_null() as libc::c_int as libc::c_long != 0 {
         return;
     }
     let is_local: bool = _mi_prim_thread_id()
-        == ::core::intrinsics::atomic_load_relaxed(
-            &mut (*segment).thread_id as *mut mi_threadid_t,
-        );
+        == ::core::intrinsics::atomic_load_relaxed(&mut (*segment).thread_id as *mut mi_threadid_t);
     let page: *mut mi_page_t = _mi_segment_page_of(segment, p);
     if is_local as libc::c_int as libc::c_long != 0 {
         if ((*page).flags.full_aligned as libc::c_int == 0 as libc::c_int) as libc::c_int
-            as libc::c_long != 0
+            as libc::c_long
+            != 0
         {
             let block: *mut mi_block_t = p as *mut mi_block_t;
-            mi_free_block_local(
-                page,
-                block,
-                1 as libc::c_int != 0,
-                0 as libc::c_int != 0,
-            );
+            mi_free_block_local(page, block, 1 as libc::c_int != 0, 0 as libc::c_int != 0);
         } else {
             mi_free_generic_local(page, segment, p);
         }
@@ -2178,49 +2080,44 @@ pub unsafe extern "C" fn mi_free(mut p: *mut libc::c_void) {
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_free_delayed_block(mut block: *mut mi_block_t) -> bool {
-    if !block.is_null() {} else {
+    if !block.is_null() {
+    } else {
         _mi_assert_fail(
             b"block!=NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             2476 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 23],
-                &[libc::c_char; 23],
-            >(b"_mi_free_delayed_block\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
+                b"_mi_free_delayed_block\0",
+            ))
+            .as_ptr(),
         );
     };
     let segment: *const mi_segment_t = _mi_ptr_segment(block as *const libc::c_void);
-    if _mi_ptr_cookie(segment as *const libc::c_void) == (*segment).cookie {} else {
+    if _mi_ptr_cookie(segment as *const libc::c_void) == (*segment).cookie {
+    } else {
         _mi_assert_fail(
-            b"_mi_ptr_cookie(segment) == segment->cookie\0" as *const u8
-                as *const libc::c_char,
+            b"_mi_ptr_cookie(segment) == segment->cookie\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             2478 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 23],
-                &[libc::c_char; 23],
-            >(b"_mi_free_delayed_block\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
+                b"_mi_free_delayed_block\0",
+            ))
+            .as_ptr(),
         );
     };
-    if _mi_thread_id() == (*segment).thread_id {} else {
+    if _mi_thread_id() == (*segment).thread_id {
+    } else {
         _mi_assert_fail(
-            b"_mi_thread_id() == segment->thread_id\0" as *const u8
-                as *const libc::c_char,
+            b"_mi_thread_id() == segment->thread_id\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             2479 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 23],
-                &[libc::c_char; 23],
-            >(b"_mi_free_delayed_block\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
+                b"_mi_free_delayed_block\0",
+            ))
+            .as_ptr(),
         );
     };
-    let page: *mut mi_page_t = _mi_segment_page_of(
-        segment,
-        block as *const libc::c_void,
-    );
+    let page: *mut mi_page_t = _mi_segment_page_of(segment, block as *const libc::c_void);
     if !_mi_page_try_use_delayed_free(page, MI_USE_DELAYED_FREE, 0 as libc::c_int != 0) {
         return 0 as libc::c_int != 0;
     }
@@ -2235,9 +2132,8 @@ unsafe extern "C" fn mi_free_block_delayed_mt(
 ) {
     let mut tfreex: mi_thread_free_t = 0;
     let mut use_delayed: bool = false;
-    let mut tfree: mi_thread_free_t = ::core::intrinsics::atomic_load_relaxed(
-        &mut (*page).xthread_free,
-    );
+    let mut tfree: mi_thread_free_t =
+        ::core::intrinsics::atomic_load_relaxed(&mut (*page).xthread_free);
     loop {
         use_delayed = mi_tf_delayed(tfree) as libc::c_uint
             == MI_USE_DELAYED_FREE as libc::c_int as libc::c_uint;
@@ -2258,25 +2154,23 @@ unsafe extern "C" fn mi_free_block_delayed_mt(
         }
     }
     if use_delayed as libc::c_int as libc::c_long != 0 {
-        let heap: *mut mi_heap_t = ::core::intrinsics::atomic_load_acquire(
-            &mut (*page).xheap,
-        ) as *mut mi_heap_t;
-        if !heap.is_null() {} else {
+        let heap: *mut mi_heap_t =
+            ::core::intrinsics::atomic_load_acquire(&mut (*page).xheap) as *mut mi_heap_t;
+        if !heap.is_null() {
+        } else {
             _mi_assert_fail(
                 b"heap != NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 2505 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 25],
-                    &[libc::c_char; 25],
-                >(b"mi_free_block_delayed_mt\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                    b"mi_free_block_delayed_mt\0",
+                ))
+                .as_ptr(),
             );
         };
         if !heap.is_null() {
-            let mut dfree: *mut mi_block_t = ::core::intrinsics::atomic_load_relaxed(
-                &mut (*heap).thread_delayed_free,
-            );
+            let mut dfree: *mut mi_block_t =
+                ::core::intrinsics::atomic_load_relaxed(&mut (*heap).thread_delayed_free);
             loop {
                 mi_block_set_nextx(
                     heap as *const libc::c_void,
@@ -2300,17 +2194,17 @@ unsafe extern "C" fn mi_free_block_delayed_mt(
             tfreex = tfree;
             if mi_tf_delayed(tfree) as libc::c_uint
                 == MI_DELAYED_FREEING as libc::c_int as libc::c_uint
-            {} else {
+            {
+            } else {
                 _mi_assert_fail(
                     b"mi_tf_delayed(tfree) == MI_DELAYED_FREEING\0" as *const u8
                         as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     2515 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 25],
-                        &[libc::c_char; 25],
-                    >(b"mi_free_block_delayed_mt\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                        b"mi_free_block_delayed_mt\0",
+                    ))
+                    .as_ptr(),
                 );
             };
             tfreex = mi_tf_set_delayed(tfree, MI_NO_DELAYED_FREE);
@@ -2332,44 +2226,40 @@ unsafe extern "C" fn mi_free_block_mt(
     mut segment: *mut mi_segment_t,
     mut block: *mut mi_block_t,
 ) {
-    if _mi_option_get_fast(mi_option_abandoned_reclaim_on_free)
-        != 0 as libc::c_int as libc::c_long
-        && ::core::intrinsics::atomic_load_relaxed(
-            &mut (*segment).thread_id as *mut mi_threadid_t,
-        ) == 0 as libc::c_int as mi_threadid_t
-        && mi_prim_get_default_heap()
-            != &raw mut _mi_heap_empty
+    if _mi_option_get_fast(mi_option_abandoned_reclaim_on_free) != 0 as libc::c_int as libc::c_long
+        && ::core::intrinsics::atomic_load_relaxed(&mut (*segment).thread_id as *mut mi_threadid_t)
+            == 0 as libc::c_int as mi_threadid_t
+        && mi_prim_get_default_heap() != &raw mut _mi_heap_empty
     {
         if _mi_segment_attempt_reclaim(mi_heap_get_default(), segment) {
             if _mi_thread_id()
                 == ::core::intrinsics::atomic_load_relaxed(
                     &mut (*segment).thread_id as *mut mi_threadid_t,
                 )
-            {} else {
+            {
+            } else {
                 _mi_assert_fail(
-                    b"_mi_thread_id() == mi_atomic_load_relaxed(&segment->thread_id)\0"
-                        as *const u8 as *const libc::c_char,
+                    b"_mi_thread_id() == mi_atomic_load_relaxed(&segment->thread_id)\0" as *const u8
+                        as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     2530 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 17],
-                        &[libc::c_char; 17],
-                    >(b"mi_free_block_mt\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(
+                        b"mi_free_block_mt\0",
+                    ))
+                    .as_ptr(),
                 );
             };
-            if (*(*mi_heap_get_default()).tld).segments.subproc == (*segment).subproc
-            {} else {
+            if (*(*mi_heap_get_default()).tld).segments.subproc == (*segment).subproc {
+            } else {
                 _mi_assert_fail(
                     b"mi_heap_get_default()->tld->segments.subproc == segment->subproc\0"
                         as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     2531 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 17],
-                        &[libc::c_char; 17],
-                    >(b"mi_free_block_mt\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(
+                        b"mi_free_block_mt\0",
+                    ))
+                    .as_ptr(),
                 );
             };
             mi_free(block as *mut libc::c_void);
@@ -2383,9 +2273,7 @@ unsafe extern "C" fn mi_free_block_mt(
         block,
         ::core::mem::size_of::<mi_block_t>() as libc::c_ulong,
     );
-    if (*segment).page_kind as libc::c_uint
-        == MI_PAGE_HUGE as libc::c_int as libc::c_uint
-    {
+    if (*segment).page_kind as libc::c_uint == MI_PAGE_HUGE as libc::c_int as libc::c_uint {
         _mi_segment_huge_page_reset(segment, page, block);
     } else {
         memset(
@@ -2403,19 +2291,17 @@ unsafe extern "C" fn mi_page_usable_aligned_size_of(
 ) -> size_t {
     let mut block: *const mi_block_t = _mi_page_ptr_unalign(page, p);
     let size: size_t = mi_page_usable_size_of(page, block);
-    let adjust: ptrdiff_t = (p as *mut uint8_t).offset_from(block as *mut uint8_t)
-        as libc::c_long;
-    if adjust >= 0 as libc::c_int as ptrdiff_t && adjust as size_t <= size {} else {
+    let adjust: ptrdiff_t = (p as *mut uint8_t).offset_from(block as *mut uint8_t) as libc::c_long;
+    if adjust >= 0 as libc::c_int as ptrdiff_t && adjust as size_t <= size {
+    } else {
         _mi_assert_fail(
-            b"adjust >= 0 && (size_t)adjust <= size\0" as *const u8
-                as *const libc::c_char,
+            b"adjust >= 0 && (size_t)adjust <= size\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             2559 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 31],
-                &[libc::c_char; 31],
-            >(b"mi_page_usable_aligned_size_of\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 31], &[libc::c_char; 31]>(
+                b"mi_page_usable_aligned_size_of\0",
+            ))
+            .as_ptr(),
         );
     };
     let aligned_size: size_t = size.wrapping_sub(adjust as size_t);
@@ -2435,7 +2321,7 @@ unsafe extern "C" fn _mi_usable_size(
         let mut block: *const mi_block_t = p as *const mi_block_t;
         return mi_page_usable_size_of(page, block);
     } else {
-        return mi_page_usable_aligned_size_of(page, p)
+        return mi_page_usable_aligned_size_of(page, p);
     };
 }
 #[unsafe(no_mangle)]
@@ -2445,19 +2331,15 @@ pub unsafe extern "C" fn mi_usable_size(mut p: *const libc::c_void) -> size_t {
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_free_size(mut p: *mut libc::c_void, mut size: size_t) {
     if p.is_null()
-        || size
-            <= _mi_usable_size(p, b"mi_free_size\0" as *const u8 as *const libc::c_char)
-    {} else {
+        || size <= _mi_usable_size(p, b"mi_free_size\0" as *const u8 as *const libc::c_char)
+    {
+    } else {
         _mi_assert_fail(
             b"p == NULL || size <= _mi_usable_size(p,\"mi_free_size\")\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             2585 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"mi_free_size\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"mi_free_size\0")).as_ptr(),
         );
     };
     mi_free(p);
@@ -2468,36 +2350,27 @@ pub unsafe extern "C" fn mi_free_size_aligned(
     mut size: size_t,
     mut alignment: size_t,
 ) {
-    if (p as uintptr_t).wrapping_rem(alignment) == 0 as libc::c_int as libc::c_ulong
-    {} else {
+    if (p as uintptr_t).wrapping_rem(alignment) == 0 as libc::c_int as libc::c_ulong {
+    } else {
         _mi_assert_fail(
             b"((uintptr_t)p % alignment) == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             2590 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 21],
-                &[libc::c_char; 21],
-            >(b"mi_free_size_aligned\0"))
+            (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(b"mi_free_size_aligned\0"))
                 .as_ptr(),
         );
     };
     mi_free_size(p, size);
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn mi_free_aligned(
-    mut p: *mut libc::c_void,
-    mut alignment: size_t,
-) {
-    if (p as uintptr_t).wrapping_rem(alignment) == 0 as libc::c_int as libc::c_ulong
-    {} else {
+pub unsafe extern "C" fn mi_free_aligned(mut p: *mut libc::c_void, mut alignment: size_t) {
+    if (p as uintptr_t).wrapping_rem(alignment) == 0 as libc::c_int as libc::c_ulong {
+    } else {
         _mi_assert_fail(
             b"((uintptr_t)p % alignment) == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             2595 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 16],
-                &[libc::c_char; 16],
-            >(b"mi_free_aligned\0"))
+            (*::core::mem::transmute::<&[u8; 16], &[libc::c_char; 16]>(b"mi_free_aligned\0"))
                 .as_ptr(),
         );
     };
@@ -2542,17 +2415,14 @@ unsafe extern "C" fn mi_check_is_double_free(
     mut block: *const mi_block_t,
 ) -> bool {
     let mut is_double_free: bool = 0 as libc::c_int != 0;
-    let mut n: *mut mi_block_t = mi_block_nextx(
-        page as *const libc::c_void,
-        block,
-        ((*page).keys).as_ptr(),
-    );
-    if n as uintptr_t
-        & (((1 as libc::c_int) << 3 as libc::c_int) - 1 as libc::c_int) as uintptr_t
+    let mut n: *mut mi_block_t =
+        mi_block_nextx(page as *const libc::c_void, block, ((*page).keys).as_ptr());
+    if n as uintptr_t & (((1 as libc::c_int) << 3 as libc::c_int) - 1 as libc::c_int) as uintptr_t
         == 0 as libc::c_int as uintptr_t
         && (n.is_null()
             || mi_is_in_same_page(block as *const libc::c_void, n as *const libc::c_void)
-                as libc::c_int != 0)
+                as libc::c_int
+                != 0)
     {
         is_double_free = mi_check_is_double_freex(page, block);
     }
@@ -2565,8 +2435,8 @@ unsafe extern "C" fn mi_page_decode_padding(
     mut bsize: *mut size_t,
 ) -> bool {
     *bsize = mi_page_usable_block_size(page);
-    let padding: *const mi_padding_t = (block as *mut uint8_t).offset(*bsize as isize)
-        as *mut mi_padding_t;
+    let padding: *const mi_padding_t =
+        (block as *mut uint8_t).offset(*bsize as isize) as *mut mi_padding_t;
     *delta = (*padding).delta as size_t;
     let mut canary: uint32_t = (*padding).canary;
     let mut keys: [uintptr_t; 2] = [0; 2];
@@ -2576,7 +2446,8 @@ unsafe extern "C" fn mi_page_decode_padding(
         page as *const libc::c_void,
         block as *const libc::c_void,
         keys.as_mut_ptr(),
-    ) == canary && *delta <= *bsize;
+    ) == canary
+        && *delta <= *bsize;
     return ok;
 }
 unsafe extern "C" fn mi_page_usable_size_of(
@@ -2586,28 +2457,28 @@ unsafe extern "C" fn mi_page_usable_size_of(
     let mut bsize: size_t = 0;
     let mut delta: size_t = 0;
     let mut ok: bool = mi_page_decode_padding(page, block, &mut delta, &mut bsize);
-    if ok as libc::c_int != 0 {} else {
+    if ok as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"ok\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             2652 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 23],
-                &[libc::c_char; 23],
-            >(b"mi_page_usable_size_of\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
+                b"mi_page_usable_size_of\0",
+            ))
+            .as_ptr(),
         );
     };
-    if delta <= bsize {} else {
+    if delta <= bsize {
+    } else {
         _mi_assert_fail(
             b"delta <= bsize\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             2652 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 23],
-                &[libc::c_char; 23],
-            >(b"mi_page_usable_size_of\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
+                b"mi_page_usable_size_of\0",
+            ))
+            .as_ptr(),
         );
     };
     return if ok as libc::c_int != 0 {
@@ -2625,30 +2496,26 @@ pub unsafe extern "C" fn _mi_padding_shrink(
     let mut bsize: size_t = 0;
     let mut delta: size_t = 0;
     let mut ok: bool = mi_page_decode_padding(page, block, &mut delta, &mut bsize);
-    if ok as libc::c_int != 0 {} else {
+    if ok as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"ok\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             2659 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 19],
-                &[libc::c_char; 19],
-            >(b"_mi_padding_shrink\0"))
+            (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(b"_mi_padding_shrink\0"))
                 .as_ptr(),
         );
     };
     if !ok || bsize.wrapping_sub(delta) >= min_size {
         return;
     }
-    if bsize >= min_size {} else {
+    if bsize >= min_size {
+    } else {
         _mi_assert_fail(
             b"bsize >= min_size\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             2661 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 19],
-                &[libc::c_char; 19],
-            >(b"_mi_padding_shrink\0"))
+            (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(b"_mi_padding_shrink\0"))
                 .as_ptr(),
         );
     };
@@ -2656,20 +2523,18 @@ pub unsafe extern "C" fn _mi_padding_shrink(
         return;
     }
     let mut new_delta: size_t = bsize.wrapping_sub(min_size);
-    if new_delta < bsize {} else {
+    if new_delta < bsize {
+    } else {
         _mi_assert_fail(
             b"new_delta < bsize\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             2664 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 19],
-                &[libc::c_char; 19],
-            >(b"_mi_padding_shrink\0"))
+            (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(b"_mi_padding_shrink\0"))
                 .as_ptr(),
         );
     };
-    let mut padding: *mut mi_padding_t = (block as *mut uint8_t).offset(bsize as isize)
-        as *mut mi_padding_t;
+    let mut padding: *mut mi_padding_t =
+        (block as *mut uint8_t).offset(bsize as isize) as *mut mi_padding_t;
     (*padding).delta = new_delta as uint32_t;
 }
 unsafe extern "C" fn mi_verify_padding(
@@ -2686,15 +2551,13 @@ unsafe extern "C" fn mi_verify_padding(
     if !ok {
         return 0 as libc::c_int != 0;
     }
-    if bsize >= delta {} else {
+    if bsize >= delta {
+    } else {
         _mi_assert_fail(
             b"bsize >= delta\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             2688 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 18],
-                &[libc::c_char; 18],
-            >(b"mi_verify_padding\0"))
+            (*::core::mem::transmute::<&[u8; 18], &[libc::c_char; 18]>(b"mi_verify_padding\0"))
                 .as_ptr(),
         );
     };
@@ -2722,44 +2585,35 @@ unsafe extern "C" fn mi_verify_padding(
     }
     return ok;
 }
-unsafe extern "C" fn mi_check_padding(
-    mut page: *const mi_page_t,
-    mut block: *const mi_block_t,
-) {
+unsafe extern "C" fn mi_check_padding(mut page: *const mi_page_t, mut block: *const mi_block_t) {
     let mut size: size_t = 0;
     let mut wrong: size_t = 0;
     if !mi_verify_padding(page, block, &mut size, &mut wrong) {
         _mi_error_message(
             14 as libc::c_int,
-            b"buffer overflow in heap block %p of size %zu: write after %zu bytes\n\0"
-                as *const u8 as *const libc::c_char,
+            b"buffer overflow in heap block %p of size %zu: write after %zu bytes\n\0" as *const u8
+                as *const libc::c_char,
             block,
             size,
             wrong,
         );
     }
 }
-unsafe extern "C" fn mi_stat_free(
-    mut page: *const mi_page_t,
-    mut block: *const mi_block_t,
-) {
+unsafe extern "C" fn mi_stat_free(mut page: *const mi_page_t, mut block: *const mi_block_t) {
     let heap: *mut mi_heap_t = mi_heap_get_default();
     let bsize: size_t = mi_page_usable_block_size(page);
     let usize: size_t = mi_page_usable_size_of(page, block);
     _mi_stat_decrease(&mut (*(*heap).tld).stats.malloc, usize);
     if bsize as libc::c_ulonglong
         <= ((1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
             .wrapping_div(2 as libc::c_int as libc::c_ulonglong)
     {
         _mi_stat_decrease(&mut (*(*heap).tld).stats.normal, bsize);
         _mi_stat_decrease(
             &mut *((*(*heap).tld).stats.normal_bins)
                 .as_mut_ptr()
-                .offset(
-                    (_mi_bin as unsafe extern "C" fn(size_t) -> uint8_t)(bsize) as isize,
-                ),
+                .offset((_mi_bin as unsafe extern "C" fn(size_t) -> uint8_t)(bsize) as isize),
             1 as libc::c_int as size_t,
         );
     } else {
@@ -2774,18 +2628,14 @@ unsafe extern "C" fn _mi_page_malloc_zero(
     mut size: size_t,
     mut zero: bool,
 ) -> *mut libc::c_void {
-    if (*page).block_size == 0 as libc::c_int as size_t
-        || mi_page_block_size(page) >= size
-    {} else {
+    if (*page).block_size == 0 as libc::c_int as size_t || mi_page_block_size(page) >= size {
+    } else {
         _mi_assert_fail(
             b"page->block_size == 0 || mi_page_block_size(page) >= size\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             2764 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 21],
-                &[libc::c_char; 21],
-            >(b"_mi_page_malloc_zero\0"))
+            (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(b"_mi_page_malloc_zero\0"))
                 .as_ptr(),
         );
     };
@@ -2793,90 +2643,79 @@ unsafe extern "C" fn _mi_page_malloc_zero(
     if block.is_null() as libc::c_int as libc::c_long != 0 {
         return _mi_malloc_generic(heap, size, zero, 0 as libc::c_int as size_t);
     }
-    if !block.is_null() && _mi_ptr_page(block as *mut libc::c_void) == page {} else {
+    if !block.is_null() && _mi_ptr_page(block as *mut libc::c_void) == page {
+    } else {
         _mi_assert_fail(
-            b"block != NULL && _mi_ptr_page(block) == page\0" as *const u8
-                as *const libc::c_char,
+            b"block != NULL && _mi_ptr_page(block) == page\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             2769 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 21],
-                &[libc::c_char; 21],
-            >(b"_mi_page_malloc_zero\0"))
+            (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(b"_mi_page_malloc_zero\0"))
                 .as_ptr(),
         );
     };
     (*page).free = mi_block_next(page, block);
     (*page).used = ((*page).used).wrapping_add(1);
     (*page).used;
-    if ((*page).free).is_null()
-        || _mi_ptr_page((*page).free as *mut libc::c_void) == page
-    {} else {
+    if ((*page).free).is_null() || _mi_ptr_page((*page).free as *mut libc::c_void) == page {
+    } else {
         _mi_assert_fail(
             b"page->free == NULL || _mi_ptr_page(page->free) == page\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             2772 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 21],
-                &[libc::c_char; 21],
-            >(b"_mi_page_malloc_zero\0"))
+            (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(b"_mi_page_malloc_zero\0"))
                 .as_ptr(),
         );
     };
     if (*page).block_size < 16 as libc::c_int as size_t
-        || _mi_is_aligned(block as *mut libc::c_void, 16 as libc::c_int as size_t)
-            as libc::c_int != 0
-    {} else {
+        || _mi_is_aligned(block as *mut libc::c_void, 16 as libc::c_int as size_t) as libc::c_int
+            != 0
+    {
+    } else {
         _mi_assert_fail(
             b"page->block_size < MI_MAX_ALIGN_SIZE || _mi_is_aligned(block, MI_MAX_ALIGN_SIZE)\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             2773 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 21],
-                &[libc::c_char; 21],
-            >(b"_mi_page_malloc_zero\0"))
+            (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(b"_mi_page_malloc_zero\0"))
                 .as_ptr(),
         );
     };
     if zero as libc::c_int as libc::c_long != 0 {
-        if (*page).block_size != 0 as libc::c_int as size_t {} else {
+        if (*page).block_size != 0 as libc::c_int as size_t {
+        } else {
             _mi_assert_fail(
                 b"page->block_size != 0\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 2781 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 21],
-                    &[libc::c_char; 21],
-                >(b"_mi_page_malloc_zero\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(
+                    b"_mi_page_malloc_zero\0",
+                ))
+                .as_ptr(),
             );
         };
-        if !mi_page_is_huge(page) {} else {
+        if !mi_page_is_huge(page) {
+        } else {
             _mi_assert_fail(
                 b"!mi_page_is_huge(page)\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 2782 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 21],
-                    &[libc::c_char; 21],
-                >(b"_mi_page_malloc_zero\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(
+                    b"_mi_page_malloc_zero\0",
+                ))
+                .as_ptr(),
             );
         };
-        if (*page).block_size >= ::core::mem::size_of::<mi_padding_t>() as libc::c_ulong
-        {} else {
+        if (*page).block_size >= ::core::mem::size_of::<mi_padding_t>() as libc::c_ulong {
+        } else {
             _mi_assert_fail(
-                b"page->block_size >= MI_PADDING_SIZE\0" as *const u8
-                    as *const libc::c_char,
+                b"page->block_size >= MI_PADDING_SIZE\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 2784 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 21],
-                    &[libc::c_char; 21],
-                >(b"_mi_page_malloc_zero\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(
+                    b"_mi_page_malloc_zero\0",
+                ))
+                .as_ptr(),
             );
         };
         if (*page).free_is_zero() != 0 {
@@ -2885,9 +2724,7 @@ unsafe extern "C" fn _mi_page_malloc_zero(
             _mi_memzero_aligned(
                 block as *mut libc::c_void,
                 ((*page).block_size)
-                    .wrapping_sub(
-                        ::core::mem::size_of::<mi_padding_t>() as libc::c_ulong,
-                    ),
+                    .wrapping_sub(::core::mem::size_of::<mi_padding_t>() as libc::c_ulong),
             );
         }
     }
@@ -2901,8 +2738,7 @@ unsafe extern "C" fn _mi_page_malloc_zero(
     let bsize: size_t = mi_page_usable_block_size(page);
     if bsize as libc::c_ulonglong
         <= ((1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
             .wrapping_div(2 as libc::c_int as libc::c_ulonglong)
     {
         _mi_stat_increase(&mut (*(*heap).tld).stats.normal, bsize);
@@ -2912,37 +2748,36 @@ unsafe extern "C" fn _mi_page_malloc_zero(
         );
         let bin: size_t = _mi_bin(bsize) as size_t;
         _mi_stat_increase(
-            &mut *((*(*heap).tld).stats.normal_bins).as_mut_ptr().offset(bin as isize),
+            &mut *((*(*heap).tld).stats.normal_bins)
+                .as_mut_ptr()
+                .offset(bin as isize),
             1 as libc::c_int as size_t,
         );
     }
     let padding: *mut mi_padding_t = (block as *mut uint8_t)
-        .offset(mi_page_usable_block_size(page) as isize) as *mut mi_padding_t;
-    let mut delta: ptrdiff_t = ((padding as *mut uint8_t)
-        .offset_from(block as *mut uint8_t) as libc::c_long as libc::c_ulong)
-        .wrapping_sub(
-            size.wrapping_sub(::core::mem::size_of::<mi_padding_t>() as libc::c_ulong),
-        ) as ptrdiff_t;
+        .offset(mi_page_usable_block_size(page) as isize)
+        as *mut mi_padding_t;
+    let mut delta: ptrdiff_t = ((padding as *mut uint8_t).offset_from(block as *mut uint8_t)
+        as libc::c_long as libc::c_ulong)
+        .wrapping_sub(size.wrapping_sub(::core::mem::size_of::<mi_padding_t>() as libc::c_ulong))
+        as ptrdiff_t;
     if delta >= 0 as libc::c_int as ptrdiff_t
         && mi_page_usable_block_size(page)
             >= size
                 .wrapping_sub(::core::mem::size_of::<mi_padding_t>() as libc::c_ulong)
                 .wrapping_add(delta as libc::c_ulong)
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"delta >= 0 && mi_page_usable_block_size(page) >= (size - MI_PADDING_SIZE + delta)\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             2816 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 21],
-                &[libc::c_char; 21],
-            >(b"_mi_page_malloc_zero\0"))
+            (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(b"_mi_page_malloc_zero\0"))
                 .as_ptr(),
         );
     };
-    (*padding)
-        .canary = mi_ptr_encode_canary(
+    (*padding).canary = mi_ptr_encode_canary(
         page as *const libc::c_void,
         block as *const libc::c_void,
         ((*page).keys).as_mut_ptr(),
@@ -2986,46 +2821,44 @@ unsafe extern "C" fn mi_heap_malloc_small_zero(
     mut size: size_t,
     mut zero: bool,
 ) -> *mut libc::c_void {
-    if !heap.is_null() {} else {
+    if !heap.is_null() {
+    } else {
         _mi_assert_fail(
             b"heap != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             2841 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 26],
-                &[libc::c_char; 26],
-            >(b"mi_heap_malloc_small_zero\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 26], &[libc::c_char; 26]>(
+                b"mi_heap_malloc_small_zero\0",
+            ))
+            .as_ptr(),
         );
     };
     if size
         <= (128 as libc::c_int as libc::c_ulong)
             .wrapping_mul(::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong)
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"size <= MI_SMALL_SIZE_MAX\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             2842 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 26],
-                &[libc::c_char; 26],
-            >(b"mi_heap_malloc_small_zero\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 26], &[libc::c_char; 26]>(
+                b"mi_heap_malloc_small_zero\0",
+            ))
+            .as_ptr(),
         );
     };
     let tid: uintptr_t = _mi_thread_id();
-    if (*heap).thread_id == 0 as libc::c_int as mi_threadid_t || (*heap).thread_id == tid
-    {} else {
+    if (*heap).thread_id == 0 as libc::c_int as mi_threadid_t || (*heap).thread_id == tid {
+    } else {
         _mi_assert_fail(
-            b"heap->thread_id == 0 || heap->thread_id == tid\0" as *const u8
-                as *const libc::c_char,
+            b"heap->thread_id == 0 || heap->thread_id == tid\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             2845 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 26],
-                &[libc::c_char; 26],
-            >(b"mi_heap_malloc_small_zero\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 26], &[libc::c_char; 26]>(
+                b"mi_heap_malloc_small_zero\0",
+            ))
+            .as_ptr(),
         );
     };
     if size == 0 as libc::c_int as size_t {
@@ -3042,16 +2875,16 @@ unsafe extern "C" fn mi_heap_malloc_small_zero(
         zero,
     );
     if !p.is_null() {
-        if mi_usable_size(p) == size {} else {
+        if mi_usable_size(p) == size {
+        } else {
             _mi_assert_fail(
                 b"mi_usable_size(p)==(size)\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 2857 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 26],
-                    &[libc::c_char; 26],
-                >(b"mi_heap_malloc_small_zero\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 26], &[libc::c_char; 26]>(
+                    b"mi_heap_malloc_small_zero\0",
+                ))
+                .as_ptr(),
             );
         };
     }
@@ -3073,47 +2906,48 @@ unsafe extern "C" fn _mi_heap_malloc_zero_ex(
     if (size
         <= (128 as libc::c_int as libc::c_ulong)
             .wrapping_mul(::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong))
-        as libc::c_int as libc::c_long != 0
+        as libc::c_int as libc::c_long
+        != 0
     {
-        if huge_alignment == 0 as libc::c_int as size_t {} else {
+        if huge_alignment == 0 as libc::c_int as size_t {
+        } else {
             _mi_assert_fail(
                 b"huge_alignment == 0\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 2879 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 24],
-                    &[libc::c_char; 24],
-                >(b"_mi_heap_malloc_zero_ex\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 24], &[libc::c_char; 24]>(
+                    b"_mi_heap_malloc_zero_ex\0",
+                ))
+                .as_ptr(),
             );
         };
         return mi_heap_malloc_small_zero(heap, size, zero);
     } else {
-        if !heap.is_null() {} else {
+        if !heap.is_null() {
+        } else {
             _mi_assert_fail(
                 b"heap!=NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 2888 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 24],
-                    &[libc::c_char; 24],
-                >(b"_mi_heap_malloc_zero_ex\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 24], &[libc::c_char; 24]>(
+                    b"_mi_heap_malloc_zero_ex\0",
+                ))
+                .as_ptr(),
             );
         };
         if (*heap).thread_id == 0 as libc::c_int as mi_threadid_t
             || (*heap).thread_id == _mi_thread_id()
-        {} else {
+        {
+        } else {
             _mi_assert_fail(
-                b"heap->thread_id == 0 || heap->thread_id == _mi_thread_id()\0"
-                    as *const u8 as *const libc::c_char,
+                b"heap->thread_id == 0 || heap->thread_id == _mi_thread_id()\0" as *const u8
+                    as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 2889 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 24],
-                    &[libc::c_char; 24],
-                >(b"_mi_heap_malloc_zero_ex\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 24], &[libc::c_char; 24]>(
+                    b"_mi_heap_malloc_zero_ex\0",
+                ))
+                .as_ptr(),
             );
         };
         let p: *mut libc::c_void = _mi_malloc_generic(
@@ -3123,16 +2957,16 @@ unsafe extern "C" fn _mi_heap_malloc_zero_ex(
             huge_alignment,
         );
         if !p.is_null() {
-            if mi_usable_size(p) == size {} else {
+            if mi_usable_size(p) == size {
+            } else {
                 _mi_assert_fail(
                     b"mi_usable_size(p)==(size)\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     2891 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 24],
-                        &[libc::c_char; 24],
-                    >(b"_mi_heap_malloc_zero_ex\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 24], &[libc::c_char; 24]>(
+                        b"_mi_heap_malloc_zero_ex\0",
+                    ))
+                    .as_ptr(),
                 );
             };
         }
@@ -3166,11 +3000,7 @@ unsafe extern "C" fn mi_malloc(mut size: size_t) -> *mut libc::c_void {
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_zalloc_small(mut size: size_t) -> *mut libc::c_void {
-    return mi_heap_malloc_small_zero(
-        mi_prim_get_default_heap(),
-        size,
-        1 as libc::c_int != 0,
-    );
+    return mi_heap_malloc_small_zero(mi_prim_get_default_heap(), size, 1 as libc::c_int != 0);
 }
 #[inline]
 unsafe extern "C" fn mi_heap_zalloc(
@@ -3196,10 +3026,7 @@ unsafe extern "C" fn mi_heap_calloc(
     return mi_heap_zalloc(heap, total);
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn mi_calloc(
-    mut count: size_t,
-    mut size: size_t,
-) -> *mut libc::c_void {
+pub unsafe extern "C" fn mi_calloc(mut count: size_t, mut size: size_t) -> *mut libc::c_void {
     return mi_heap_calloc(mi_prim_get_default_heap(), count, size);
 }
 #[unsafe(no_mangle)]
@@ -3215,10 +3042,7 @@ pub unsafe extern "C" fn mi_heap_mallocn(
     return mi_heap_malloc(heap, total);
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn mi_mallocn(
-    mut count: size_t,
-    mut size: size_t,
-) -> *mut libc::c_void {
+pub unsafe extern "C" fn mi_mallocn(mut count: size_t, mut size: size_t) -> *mut libc::c_void {
     return mi_heap_mallocn(mi_prim_get_default_heap(), count, size);
 }
 #[unsafe(no_mangle)]
@@ -3235,23 +3059,22 @@ pub unsafe extern "C" fn _mi_heap_realloc_zero(
     mut newsize: size_t,
     mut zero: bool,
 ) -> *mut libc::c_void {
-    let size: size_t = _mi_usable_size(
-        p,
-        b"mi_realloc\0" as *const u8 as *const libc::c_char,
-    );
-    if (newsize <= size && newsize >= size / 2 as libc::c_int as size_t
-        && newsize > 0 as libc::c_int as size_t) as libc::c_int as libc::c_long != 0
+    let size: size_t = _mi_usable_size(p, b"mi_realloc\0" as *const u8 as *const libc::c_char);
+    if (newsize <= size
+        && newsize >= size / 2 as libc::c_int as size_t
+        && newsize > 0 as libc::c_int as size_t) as libc::c_int as libc::c_long
+        != 0
     {
-        if !p.is_null() {} else {
+        if !p.is_null() {
+        } else {
             _mi_assert_fail(
                 b"p!=NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 2954 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 22],
-                    &[libc::c_char; 22],
-                >(b"_mi_heap_realloc_zero\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(
+                    b"_mi_heap_realloc_zero\0",
+                ))
+                .as_ptr(),
             );
         };
         return p;
@@ -3259,9 +3082,7 @@ pub unsafe extern "C" fn _mi_heap_realloc_zero(
     let mut newp: *mut libc::c_void = mi_heap_malloc(heap, newsize);
     if !newp.is_null() as libc::c_int as libc::c_long != 0 {
         if zero as libc::c_int != 0 && newsize > size {
-            let start: size_t = if size
-                >= ::core::mem::size_of::<intptr_t>() as libc::c_ulong
-            {
+            let start: size_t = if size >= ::core::mem::size_of::<intptr_t>() as libc::c_ulong {
                 size.wrapping_sub(::core::mem::size_of::<intptr_t>() as libc::c_ulong)
             } else {
                 0 as libc::c_int as libc::c_ulong
@@ -3271,8 +3092,7 @@ pub unsafe extern "C" fn _mi_heap_realloc_zero(
                 newsize.wrapping_sub(start),
             );
         } else if newsize == 0 as libc::c_int as size_t {
-            *(newp as *mut uint8_t)
-                .offset(0 as libc::c_int as isize) = 0 as libc::c_int as uint8_t;
+            *(newp as *mut uint8_t).offset(0 as libc::c_int as isize) = 0 as libc::c_int as uint8_t;
         }
         if !p.is_null() as libc::c_int as libc::c_long != 0 {
             let copysize: size_t = if newsize > size { size } else { newsize };
@@ -3382,10 +3202,8 @@ pub unsafe extern "C" fn mi_heap_strdup(
         return 0 as *mut libc::c_char;
     }
     let mut len: size_t = _mi_strlen(s);
-    let mut t: *mut libc::c_char = mi_heap_malloc(
-        heap,
-        len.wrapping_add(1 as libc::c_int as size_t),
-    ) as *mut libc::c_char;
+    let mut t: *mut libc::c_char =
+        mi_heap_malloc(heap, len.wrapping_add(1 as libc::c_int as size_t)) as *mut libc::c_char;
     if t.is_null() {
         return 0 as *mut libc::c_char;
     }
@@ -3407,10 +3225,8 @@ pub unsafe extern "C" fn mi_heap_strndup(
         return 0 as *mut libc::c_char;
     }
     let len: size_t = _mi_strnlen(s, n);
-    let mut t: *mut libc::c_char = mi_heap_malloc(
-        heap,
-        len.wrapping_add(1 as libc::c_int as size_t),
-    ) as *mut libc::c_char;
+    let mut t: *mut libc::c_char =
+        mi_heap_malloc(heap, len.wrapping_add(1 as libc::c_int as size_t)) as *mut libc::c_char;
     if t.is_null() {
         return 0 as *mut libc::c_char;
     }
@@ -3432,7 +3248,7 @@ pub unsafe extern "C" fn mi_heap_realpath(
     mut resolved_name: *mut libc::c_char,
 ) -> *mut libc::c_char {
     if !resolved_name.is_null() {
-        return realpath(fname, resolved_name)
+        return realpath(fname, resolved_name);
     } else {
         let mut rname: *mut libc::c_char = realpath(fname, 0 as *mut libc::c_char);
         if rname.is_null() {
@@ -3487,10 +3303,7 @@ pub unsafe extern "C" fn mi_heap_try_new(
     return p;
 }
 #[inline(never)]
-unsafe extern "C" fn mi_try_new(
-    mut size: size_t,
-    mut nothrow: bool,
-) -> *mut libc::c_void {
+unsafe extern "C" fn mi_try_new(mut size: size_t, mut nothrow: bool) -> *mut libc::c_void {
     return mi_heap_try_new(mi_prim_get_default_heap(), size, nothrow);
 }
 #[unsafe(no_mangle)]
@@ -3515,20 +3328,15 @@ pub unsafe extern "C" fn mi_heap_alloc_new_n(
     mut size: size_t,
 ) -> *mut libc::c_void {
     let mut total: size_t = 0;
-    if mi_count_size_overflow(count, size, &mut total) as libc::c_int as libc::c_long
-        != 0
-    {
+    if mi_count_size_overflow(count, size, &mut total) as libc::c_int as libc::c_long != 0 {
         mi_try_new_handler(0 as libc::c_int != 0);
         return 0 as *mut libc::c_void;
     } else {
-        return mi_heap_alloc_new(heap, total)
+        return mi_heap_alloc_new(heap, total);
     };
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn mi_new_n(
-    mut count: size_t,
-    mut size: size_t,
-) -> *mut libc::c_void {
+pub unsafe extern "C" fn mi_new_n(mut count: size_t, mut size: size_t) -> *mut libc::c_void {
     return mi_heap_alloc_new_n(mi_prim_get_default_heap(), count, size);
 }
 #[unsafe(no_mangle)]
@@ -3547,9 +3355,7 @@ pub unsafe extern "C" fn mi_new_aligned(
     let mut p: *mut libc::c_void = 0 as *mut libc::c_void;
     loop {
         p = mi_malloc_aligned(size, alignment);
-        if !(p.is_null()
-            && mi_try_new_handler(0 as libc::c_int != 0) as libc::c_int != 0)
-        {
+        if !(p.is_null() && mi_try_new_handler(0 as libc::c_int != 0) as libc::c_int != 0) {
             break;
         }
     }
@@ -3563,9 +3369,7 @@ pub unsafe extern "C" fn mi_new_aligned_nothrow(
     let mut p: *mut libc::c_void = 0 as *mut libc::c_void;
     loop {
         p = mi_malloc_aligned(size, alignment);
-        if !(p.is_null()
-            && mi_try_new_handler(1 as libc::c_int != 0) as libc::c_int != 0)
-        {
+        if !(p.is_null() && mi_try_new_handler(1 as libc::c_int != 0) as libc::c_int != 0) {
             break;
         }
     }
@@ -3579,9 +3383,7 @@ pub unsafe extern "C" fn mi_new_realloc(
     let mut q: *mut libc::c_void = 0 as *mut libc::c_void;
     loop {
         q = mi_realloc(p, newsize);
-        if !(q.is_null()
-            && mi_try_new_handler(0 as libc::c_int != 0) as libc::c_int != 0)
-        {
+        if !(q.is_null() && mi_try_new_handler(0 as libc::c_int != 0) as libc::c_int != 0) {
             break;
         }
     }
@@ -3594,32 +3396,29 @@ pub unsafe extern "C" fn mi_new_reallocn(
     mut size: size_t,
 ) -> *mut libc::c_void {
     let mut total: size_t = 0;
-    if mi_count_size_overflow(newcount, size, &mut total) as libc::c_int as libc::c_long
-        != 0
-    {
+    if mi_count_size_overflow(newcount, size, &mut total) as libc::c_int as libc::c_long != 0 {
         mi_try_new_handler(0 as libc::c_int != 0);
         return 0 as *mut libc::c_void;
     } else {
-        return mi_new_realloc(p, total)
+        return mi_new_realloc(p, total);
     };
 }
 unsafe extern "C" fn mi_malloc_is_naturally_aligned(
     mut size: size_t,
     mut alignment: size_t,
 ) -> bool {
-    if _mi_is_power_of_two(alignment) as libc::c_int != 0
-        && alignment > 0 as libc::c_int as size_t
-    {} else {
+    if _mi_is_power_of_two(alignment) as libc::c_int != 0 && alignment > 0 as libc::c_int as size_t
+    {
+    } else {
         _mi_assert_fail(
             b"_mi_is_power_of_two(alignment) && (alignment > 0)\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3242 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 31],
-                &[libc::c_char; 31],
-            >(b"mi_malloc_is_naturally_aligned\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 31], &[libc::c_char; 31]>(
+                b"mi_malloc_is_naturally_aligned\0",
+            ))
+            .as_ptr(),
         );
     };
     if alignment > size {
@@ -3630,8 +3429,7 @@ unsafe extern "C" fn mi_malloc_is_naturally_aligned(
     }
     let bsize: size_t = mi_good_size(size);
     return bsize as libc::c_ulonglong
-        <= ((1 as libc::c_ulonglong)
-            << 3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
+        <= ((1 as libc::c_ulonglong) << 3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
             .wrapping_div(4 as libc::c_int as libc::c_ulonglong)
         && bsize & alignment.wrapping_sub(1 as libc::c_int as size_t)
             == 0 as libc::c_int as size_t;
@@ -3654,41 +3452,39 @@ unsafe extern "C" fn mi_heap_malloc_zero_aligned_at_overalloc(
     if size
         <= (9223372036854775807 as libc::c_long as libc::c_ulong)
             .wrapping_sub(::core::mem::size_of::<mi_padding_t>() as libc::c_ulong)
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
-            b"size <= (MI_MAX_ALLOC_SIZE - MI_PADDING_SIZE)\0" as *const u8
-                as *const libc::c_char,
+            b"size <= (MI_MAX_ALLOC_SIZE - MI_PADDING_SIZE)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3273 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 41],
-                &[libc::c_char; 41],
-            >(b"mi_heap_malloc_zero_aligned_at_overalloc\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 41], &[libc::c_char; 41]>(
+                b"mi_heap_malloc_zero_aligned_at_overalloc\0",
+            ))
+            .as_ptr(),
         );
     };
-    if alignment != 0 as libc::c_int as size_t
-        && _mi_is_power_of_two(alignment) as libc::c_int != 0
-    {} else {
+    if alignment != 0 as libc::c_int as size_t && _mi_is_power_of_two(alignment) as libc::c_int != 0
+    {
+    } else {
         _mi_assert_fail(
             b"alignment != 0 && _mi_is_power_of_two(alignment)\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3274 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 41],
-                &[libc::c_char; 41],
-            >(b"mi_heap_malloc_zero_aligned_at_overalloc\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 41], &[libc::c_char; 41]>(
+                b"mi_heap_malloc_zero_aligned_at_overalloc\0",
+            ))
+            .as_ptr(),
         );
     };
     let mut p: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut oversize: size_t = 0;
     if (alignment as libc::c_ulonglong
         > (1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
-            >> 1 as libc::c_int) as libc::c_int as libc::c_long != 0
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
+            >> 1 as libc::c_int) as libc::c_int as libc::c_long
+        != 0
     {
         if (offset != 0 as libc::c_int as size_t) as libc::c_int as libc::c_long != 0 {
             _mi_error_message(
@@ -3703,14 +3499,10 @@ unsafe extern "C" fn mi_heap_malloc_zero_aligned_at_overalloc(
         }
         oversize = if size
             <= (128 as libc::c_int as libc::c_ulong)
-                .wrapping_mul(
-                    ::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong,
-                )
+                .wrapping_mul(::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong)
         {
             (128 as libc::c_int as libc::c_ulong)
-                .wrapping_mul(
-                    ::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong,
-                )
+                .wrapping_mul(::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong)
                 .wrapping_add(1 as libc::c_int as libc::c_ulong)
         } else {
             size
@@ -3720,7 +3512,9 @@ unsafe extern "C" fn mi_heap_malloc_zero_aligned_at_overalloc(
             return 0 as *mut libc::c_void;
         }
     } else {
-        oversize = size.wrapping_add(alignment).wrapping_sub(1 as libc::c_int as size_t);
+        oversize = size
+            .wrapping_add(alignment)
+            .wrapping_sub(1 as libc::c_int as size_t);
         p = mi_heap_malloc_zero_no_guarded(heap, oversize, zero);
         if p.is_null() {
             return 0 as *mut libc::c_void;
@@ -3734,96 +3528,97 @@ unsafe extern "C" fn mi_heap_malloc_zero_aligned_at_overalloc(
     } else {
         alignment.wrapping_sub(poffset)
     };
-    if adjust < alignment {} else {
+    if adjust < alignment {
+    } else {
         _mi_assert_fail(
             b"adjust < alignment\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3297 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 41],
-                &[libc::c_char; 41],
-            >(b"mi_heap_malloc_zero_aligned_at_overalloc\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 41], &[libc::c_char; 41]>(
+                b"mi_heap_malloc_zero_aligned_at_overalloc\0",
+            ))
+            .as_ptr(),
         );
     };
-    let mut aligned_p: *mut libc::c_void = (p as uintptr_t).wrapping_add(adjust)
-        as *mut libc::c_void;
+    let mut aligned_p: *mut libc::c_void =
+        (p as uintptr_t).wrapping_add(adjust) as *mut libc::c_void;
     if aligned_p != p {
         mi_page_set_has_aligned(page, 1 as libc::c_int != 0);
         _mi_padding_shrink(page, p as *mut mi_block_t, adjust.wrapping_add(size));
     }
-    if mi_page_usable_block_size(page) >= adjust.wrapping_add(size) {} else {
+    if mi_page_usable_block_size(page) >= adjust.wrapping_add(size) {
+    } else {
         _mi_assert_fail(
             b"mi_page_usable_block_size(page) >= adjust + size\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3309 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 41],
-                &[libc::c_char; 41],
-            >(b"mi_heap_malloc_zero_aligned_at_overalloc\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 41], &[libc::c_char; 41]>(
+                b"mi_heap_malloc_zero_aligned_at_overalloc\0",
+            ))
+            .as_ptr(),
         );
     };
-    if (aligned_p as uintptr_t).wrapping_add(offset).wrapping_rem(alignment)
+    if (aligned_p as uintptr_t)
+        .wrapping_add(offset)
+        .wrapping_rem(alignment)
         == 0 as libc::c_int as libc::c_ulong
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"((uintptr_t)aligned_p + offset) % alignment == 0\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3310 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 41],
-                &[libc::c_char; 41],
-            >(b"mi_heap_malloc_zero_aligned_at_overalloc\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 41], &[libc::c_char; 41]>(
+                b"mi_heap_malloc_zero_aligned_at_overalloc\0",
+            ))
+            .as_ptr(),
         );
     };
-    if mi_usable_size(aligned_p) >= size {} else {
+    if mi_usable_size(aligned_p) >= size {
+    } else {
         _mi_assert_fail(
             b"mi_usable_size(aligned_p)>=size\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3311 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 41],
-                &[libc::c_char; 41],
-            >(b"mi_heap_malloc_zero_aligned_at_overalloc\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 41], &[libc::c_char; 41]>(
+                b"mi_heap_malloc_zero_aligned_at_overalloc\0",
+            ))
+            .as_ptr(),
         );
     };
-    if mi_usable_size(p) == (mi_usable_size(aligned_p)).wrapping_add(adjust) {} else {
+    if mi_usable_size(p) == (mi_usable_size(aligned_p)).wrapping_add(adjust) {
+    } else {
         _mi_assert_fail(
             b"mi_usable_size(p) == mi_usable_size(aligned_p)+adjust\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3312 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 41],
-                &[libc::c_char; 41],
-            >(b"mi_heap_malloc_zero_aligned_at_overalloc\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 41], &[libc::c_char; 41]>(
+                b"mi_heap_malloc_zero_aligned_at_overalloc\0",
+            ))
+            .as_ptr(),
         );
     };
     let apage: *mut mi_page_t = _mi_ptr_page(aligned_p);
-    let mut unalign_p: *mut libc::c_void = _mi_page_ptr_unalign(apage, aligned_p)
-        as *mut libc::c_void;
-    if p == unalign_p {} else {
+    let mut unalign_p: *mut libc::c_void =
+        _mi_page_ptr_unalign(apage, aligned_p) as *mut libc::c_void;
+    if p == unalign_p {
+    } else {
         _mi_assert_fail(
             b"p == unalign_p\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3316 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 41],
-                &[libc::c_char; 41],
-            >(b"mi_heap_malloc_zero_aligned_at_overalloc\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 41], &[libc::c_char; 41]>(
+                b"mi_heap_malloc_zero_aligned_at_overalloc\0",
+            ))
+            .as_ptr(),
         );
     };
     if alignment as libc::c_ulonglong
         > (1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
             >> 1 as libc::c_int
     {
         if zero {
@@ -3841,30 +3636,30 @@ unsafe extern "C" fn mi_heap_malloc_zero_aligned_at_generic(
     offset: size_t,
     zero: bool,
 ) -> *mut libc::c_void {
-    if alignment != 0 as libc::c_int as size_t
-        && _mi_is_power_of_two(alignment) as libc::c_int != 0
-    {} else {
+    if alignment != 0 as libc::c_int as size_t && _mi_is_power_of_two(alignment) as libc::c_int != 0
+    {
+    } else {
         _mi_assert_fail(
             b"alignment != 0 && _mi_is_power_of_two(alignment)\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3334 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 39],
-                &[libc::c_char; 39],
-            >(b"mi_heap_malloc_zero_aligned_at_generic\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 39], &[libc::c_char; 39]>(
+                b"mi_heap_malloc_zero_aligned_at_generic\0",
+            ))
+            .as_ptr(),
         );
     };
     if (size
         > (9223372036854775807 as libc::c_long as libc::c_ulong)
             .wrapping_sub(::core::mem::size_of::<mi_padding_t>() as libc::c_ulong))
-        as libc::c_int as libc::c_long != 0
+        as libc::c_int as libc::c_long
+        != 0
     {
         _mi_error_message(
             75 as libc::c_int,
-            b"aligned allocation request is too large (size %zu, alignment %zu)\n\0"
-                as *const u8 as *const libc::c_char,
+            b"aligned allocation request is too large (size %zu, alignment %zu)\n\0" as *const u8
+                as *const libc::c_char,
             size,
             alignment,
         );
@@ -3875,37 +3670,36 @@ unsafe extern "C" fn mi_heap_malloc_zero_aligned_at_generic(
     {
         let mut p: *mut libc::c_void = mi_heap_malloc_zero_no_guarded(heap, size, zero);
         if p.is_null()
-            || (p as uintptr_t).wrapping_rem(alignment)
-                == 0 as libc::c_int as libc::c_ulong
-        {} else {
+            || (p as uintptr_t).wrapping_rem(alignment) == 0 as libc::c_int as libc::c_ulong
+        {
+        } else {
             _mi_assert_fail(
                 b"p == NULL || ((uintptr_t)p % alignment) == 0\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 3343 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 39],
-                    &[libc::c_char; 39],
-                >(b"mi_heap_malloc_zero_aligned_at_generic\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 39], &[libc::c_char; 39]>(
+                    b"mi_heap_malloc_zero_aligned_at_generic\0",
+                ))
+                .as_ptr(),
             );
         };
         let is_aligned_or_null: bool = p as uintptr_t
             & alignment.wrapping_sub(1 as libc::c_int as size_t)
             == 0 as libc::c_int as libc::c_ulong;
         if is_aligned_or_null as libc::c_int as libc::c_long != 0 {
-            return p
+            return p;
         } else {
-            if 0 as libc::c_int != 0 {} else {
+            if 0 as libc::c_int != 0 {
+            } else {
                 _mi_assert_fail(
                     b"false\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     3349 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 39],
-                        &[libc::c_char; 39],
-                    >(b"mi_heap_malloc_zero_aligned_at_generic\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 39], &[libc::c_char; 39]>(
+                        b"mi_heap_malloc_zero_aligned_at_generic\0",
+                    ))
+                    .as_ptr(),
                 );
             };
             mi_free(p);
@@ -3920,8 +3714,9 @@ unsafe extern "C" fn mi_heap_malloc_zero_aligned_at(
     offset: size_t,
     zero: bool,
 ) -> *mut libc::c_void {
-    if (alignment == 0 as libc::c_int as size_t || !_mi_is_power_of_two(alignment))
-        as libc::c_int as libc::c_long != 0
+    if (alignment == 0 as libc::c_int as size_t || !_mi_is_power_of_two(alignment)) as libc::c_int
+        as libc::c_long
+        != 0
     {
         _mi_error_message(
             75 as libc::c_int,
@@ -3935,15 +3730,16 @@ unsafe extern "C" fn mi_heap_malloc_zero_aligned_at(
     if (size
         <= (128 as libc::c_int as libc::c_ulong)
             .wrapping_mul(::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong)
-        && alignment <= size) as libc::c_int as libc::c_long != 0
+        && alignment <= size) as libc::c_int as libc::c_long
+        != 0
     {
         let align_mask: uintptr_t = alignment.wrapping_sub(1 as libc::c_int as size_t);
-        let padsize: size_t = size
-            .wrapping_add(::core::mem::size_of::<mi_padding_t>() as libc::c_ulong);
+        let padsize: size_t =
+            size.wrapping_add(::core::mem::size_of::<mi_padding_t>() as libc::c_ulong);
         let mut page: *mut mi_page_t = _mi_heap_get_free_small_page(heap, padsize);
         if !((*page).free).is_null() as libc::c_int as libc::c_long != 0 {
-            let is_aligned: bool = ((*page).free as uintptr_t).wrapping_add(offset)
-                & align_mask == 0 as libc::c_int as libc::c_ulong;
+            let is_aligned: bool = ((*page).free as uintptr_t).wrapping_add(offset) & align_mask
+                == 0 as libc::c_int as libc::c_ulong;
             if is_aligned as libc::c_int as libc::c_long != 0 {
                 _mi_stat_increase(&mut (*(*heap).tld).stats.malloc, size);
                 let mut p: *mut libc::c_void = if zero as libc::c_int != 0 {
@@ -3951,46 +3747,46 @@ unsafe extern "C" fn mi_heap_malloc_zero_aligned_at(
                 } else {
                     _mi_page_malloc(heap, page, padsize)
                 };
-                if !p.is_null() {} else {
+                if !p.is_null() {
+                } else {
                     _mi_assert_fail(
                         b"p != NULL\0" as *const u8 as *const libc::c_char,
                         b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                         3380 as libc::c_int as libc::c_uint,
-                        (*::core::mem::transmute::<
-                            &[u8; 31],
-                            &[libc::c_char; 31],
-                        >(b"mi_heap_malloc_zero_aligned_at\0"))
-                            .as_ptr(),
+                        (*::core::mem::transmute::<&[u8; 31], &[libc::c_char; 31]>(
+                            b"mi_heap_malloc_zero_aligned_at\0",
+                        ))
+                        .as_ptr(),
                     );
                 };
-                if (p as uintptr_t).wrapping_add(offset).wrapping_rem(alignment)
+                if (p as uintptr_t)
+                    .wrapping_add(offset)
+                    .wrapping_rem(alignment)
                     == 0 as libc::c_int as libc::c_ulong
-                {} else {
+                {
+                } else {
                     _mi_assert_fail(
                         b"((uintptr_t)p + offset) % alignment == 0\0" as *const u8
                             as *const libc::c_char,
                         b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                         3381 as libc::c_int as libc::c_uint,
-                        (*::core::mem::transmute::<
-                            &[u8; 31],
-                            &[libc::c_char; 31],
-                        >(b"mi_heap_malloc_zero_aligned_at\0"))
-                            .as_ptr(),
+                        (*::core::mem::transmute::<&[u8; 31], &[libc::c_char; 31]>(
+                            b"mi_heap_malloc_zero_aligned_at\0",
+                        ))
+                        .as_ptr(),
                     );
                 };
                 if !p.is_null() {
-                    if mi_usable_size(p) == size {} else {
+                    if mi_usable_size(p) == size {
+                    } else {
                         _mi_assert_fail(
-                            b"mi_usable_size(p)==(size)\0" as *const u8
-                                as *const libc::c_char,
-                            b"preprocess/mimalloc.c\0" as *const u8
-                                as *const libc::c_char,
+                            b"mi_usable_size(p)==(size)\0" as *const u8 as *const libc::c_char,
+                            b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                             3382 as libc::c_int as libc::c_uint,
-                            (*::core::mem::transmute::<
-                                &[u8; 31],
-                                &[libc::c_char; 31],
-                            >(b"mi_heap_malloc_zero_aligned_at\0"))
-                                .as_ptr(),
+                            (*::core::mem::transmute::<&[u8; 31], &[libc::c_char; 31]>(
+                                b"mi_heap_malloc_zero_aligned_at\0",
+                            ))
+                            .as_ptr(),
                         );
                     };
                 }
@@ -4007,13 +3803,7 @@ pub unsafe extern "C" fn mi_heap_malloc_aligned_at(
     mut alignment: size_t,
     mut offset: size_t,
 ) -> *mut libc::c_void {
-    return mi_heap_malloc_zero_aligned_at(
-        heap,
-        size,
-        alignment,
-        offset,
-        0 as libc::c_int != 0,
-    );
+    return mi_heap_malloc_zero_aligned_at(heap, size, alignment, offset, 0 as libc::c_int != 0);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_heap_malloc_aligned(
@@ -4030,13 +3820,7 @@ pub unsafe extern "C" fn mi_heap_zalloc_aligned_at(
     mut alignment: size_t,
     mut offset: size_t,
 ) -> *mut libc::c_void {
-    return mi_heap_malloc_zero_aligned_at(
-        heap,
-        size,
-        alignment,
-        offset,
-        1 as libc::c_int != 0,
-    );
+    return mi_heap_malloc_zero_aligned_at(heap, size, alignment, offset, 1 as libc::c_int != 0);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_heap_zalloc_aligned(
@@ -4067,13 +3851,7 @@ pub unsafe extern "C" fn mi_heap_calloc_aligned(
     mut size: size_t,
     mut alignment: size_t,
 ) -> *mut libc::c_void {
-    return mi_heap_calloc_aligned_at(
-        heap,
-        count,
-        size,
-        alignment,
-        0 as libc::c_int as size_t,
-    );
+    return mi_heap_calloc_aligned_at(heap, count, size, alignment, 0 as libc::c_int as size_t);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_malloc_aligned_at(
@@ -4081,12 +3859,7 @@ pub unsafe extern "C" fn mi_malloc_aligned_at(
     mut alignment: size_t,
     mut offset: size_t,
 ) -> *mut libc::c_void {
-    return mi_heap_malloc_aligned_at(
-        mi_prim_get_default_heap(),
-        size,
-        alignment,
-        offset,
-    );
+    return mi_heap_malloc_aligned_at(mi_prim_get_default_heap(), size, alignment, offset);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_malloc_aligned(
@@ -4101,12 +3874,7 @@ pub unsafe extern "C" fn mi_zalloc_aligned_at(
     mut alignment: size_t,
     mut offset: size_t,
 ) -> *mut libc::c_void {
-    return mi_heap_zalloc_aligned_at(
-        mi_prim_get_default_heap(),
-        size,
-        alignment,
-        offset,
-    );
+    return mi_heap_zalloc_aligned_at(mi_prim_get_default_heap(), size, alignment, offset);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_zalloc_aligned(
@@ -4122,13 +3890,7 @@ pub unsafe extern "C" fn mi_calloc_aligned_at(
     mut alignment: size_t,
     mut offset: size_t,
 ) -> *mut libc::c_void {
-    return mi_heap_calloc_aligned_at(
-        mi_prim_get_default_heap(),
-        count,
-        size,
-        alignment,
-        offset,
-    );
+    return mi_heap_calloc_aligned_at(mi_prim_get_default_heap(), count, size, alignment, offset);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_calloc_aligned(
@@ -4146,16 +3908,16 @@ unsafe extern "C" fn mi_heap_realloc_zero_aligned_at(
     mut offset: size_t,
     mut zero: bool,
 ) -> *mut libc::c_void {
-    if alignment > 0 as libc::c_int as size_t {} else {
+    if alignment > 0 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"alignment > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3428 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 32],
-                &[libc::c_char; 32],
-            >(b"mi_heap_realloc_zero_aligned_at\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 32], &[libc::c_char; 32]>(
+                b"mi_heap_realloc_zero_aligned_at\0",
+            ))
+            .as_ptr(),
         );
     };
     if alignment <= ::core::mem::size_of::<uintptr_t>() as libc::c_ulong {
@@ -4165,29 +3927,25 @@ unsafe extern "C" fn mi_heap_realloc_zero_aligned_at(
         return mi_heap_malloc_zero_aligned_at(heap, newsize, alignment, offset, zero);
     }
     let mut size: size_t = mi_usable_size(p);
-    if newsize <= size && newsize >= size.wrapping_sub(size / 2 as libc::c_int as size_t)
-        && (p as uintptr_t).wrapping_add(offset).wrapping_rem(alignment)
+    if newsize <= size
+        && newsize >= size.wrapping_sub(size / 2 as libc::c_int as size_t)
+        && (p as uintptr_t)
+            .wrapping_add(offset)
+            .wrapping_rem(alignment)
             == 0 as libc::c_int as libc::c_ulong
     {
-        return p
+        return p;
     } else {
-        let mut newp: *mut libc::c_void = mi_heap_malloc_aligned_at(
-            heap,
-            newsize,
-            alignment,
-            offset,
-        );
+        let mut newp: *mut libc::c_void =
+            mi_heap_malloc_aligned_at(heap, newsize, alignment, offset);
         if !newp.is_null() {
             if zero as libc::c_int != 0 && newsize > size {
-                let mut start: size_t = if size
-                    >= ::core::mem::size_of::<intptr_t>() as libc::c_ulong
-                {
-                    size.wrapping_sub(
-                        ::core::mem::size_of::<intptr_t>() as libc::c_ulong,
-                    )
-                } else {
-                    0 as libc::c_int as libc::c_ulong
-                };
+                let mut start: size_t =
+                    if size >= ::core::mem::size_of::<intptr_t>() as libc::c_ulong {
+                        size.wrapping_sub(::core::mem::size_of::<intptr_t>() as libc::c_ulong)
+                    } else {
+                        0 as libc::c_int as libc::c_ulong
+                    };
                 _mi_memzero(
                     (newp as *mut uint8_t).offset(start as isize) as *mut libc::c_void,
                     newsize.wrapping_sub(start),
@@ -4206,16 +3964,16 @@ unsafe extern "C" fn mi_heap_realloc_zero_aligned(
     mut alignment: size_t,
     mut zero: bool,
 ) -> *mut libc::c_void {
-    if alignment > 0 as libc::c_int as size_t {} else {
+    if alignment > 0 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"alignment > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3450 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 29],
-                &[libc::c_char; 29],
-            >(b"mi_heap_realloc_zero_aligned\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 29], &[libc::c_char; 29]>(
+                b"mi_heap_realloc_zero_aligned\0",
+            ))
+            .as_ptr(),
         );
     };
     if alignment <= ::core::mem::size_of::<uintptr_t>() as libc::c_ulong {
@@ -4248,13 +4006,7 @@ pub unsafe extern "C" fn mi_heap_realloc_aligned(
     mut newsize: size_t,
     mut alignment: size_t,
 ) -> *mut libc::c_void {
-    return mi_heap_realloc_zero_aligned(
-        heap,
-        p,
-        newsize,
-        alignment,
-        0 as libc::c_int != 0,
-    );
+    return mi_heap_realloc_zero_aligned(heap, p, newsize, alignment, 0 as libc::c_int != 0);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_heap_rezalloc_aligned_at(
@@ -4280,13 +4032,7 @@ pub unsafe extern "C" fn mi_heap_rezalloc_aligned(
     mut newsize: size_t,
     mut alignment: size_t,
 ) -> *mut libc::c_void {
-    return mi_heap_realloc_zero_aligned(
-        heap,
-        p,
-        newsize,
-        alignment,
-        1 as libc::c_int != 0,
-    );
+    return mi_heap_realloc_zero_aligned(heap, p, newsize, alignment, 1 as libc::c_int != 0);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_heap_recalloc_aligned_at(
@@ -4324,13 +4070,7 @@ pub unsafe extern "C" fn mi_realloc_aligned_at(
     mut alignment: size_t,
     mut offset: size_t,
 ) -> *mut libc::c_void {
-    return mi_heap_realloc_aligned_at(
-        mi_prim_get_default_heap(),
-        p,
-        newsize,
-        alignment,
-        offset,
-    );
+    return mi_heap_realloc_aligned_at(mi_prim_get_default_heap(), p, newsize, alignment, offset);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_realloc_aligned(
@@ -4347,13 +4087,7 @@ pub unsafe extern "C" fn mi_rezalloc_aligned_at(
     mut alignment: size_t,
     mut offset: size_t,
 ) -> *mut libc::c_void {
-    return mi_heap_rezalloc_aligned_at(
-        mi_prim_get_default_heap(),
-        p,
-        newsize,
-        alignment,
-        offset,
-    );
+    return mi_heap_rezalloc_aligned_at(mi_prim_get_default_heap(), p, newsize, alignment, offset);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_rezalloc_aligned(
@@ -4387,13 +4121,7 @@ pub unsafe extern "C" fn mi_recalloc_aligned(
     mut size: size_t,
     mut alignment: size_t,
 ) -> *mut libc::c_void {
-    return mi_heap_recalloc_aligned(
-        mi_prim_get_default_heap(),
-        p,
-        newcount,
-        size,
-        alignment,
-    );
+    return mi_heap_recalloc_aligned(mi_prim_get_default_heap(), p, newcount, size, alignment);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_malloc_size(mut p: *const libc::c_void) -> size_t {
@@ -4422,8 +4150,7 @@ pub unsafe extern "C" fn mi_posix_memalign(
     if p.is_null() {
         return 22 as libc::c_int;
     }
-    if alignment
-        .wrapping_rem(::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong)
+    if alignment.wrapping_rem(::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong)
         != 0 as libc::c_int as libc::c_ulong
     {
         return 22 as libc::c_int;
@@ -4435,16 +4162,13 @@ pub unsafe extern "C" fn mi_posix_memalign(
     if q.is_null() && size != 0 as libc::c_int as size_t {
         return 12 as libc::c_int;
     }
-    if (q as uintptr_t).wrapping_rem(alignment) == 0 as libc::c_int as libc::c_ulong
-    {} else {
+    if (q as uintptr_t).wrapping_rem(alignment) == 0 as libc::c_int as libc::c_ulong {
+    } else {
         _mi_assert_fail(
             b"((uintptr_t)q % alignment) == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3526 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 18],
-                &[libc::c_char; 18],
-            >(b"mi_posix_memalign\0"))
+            (*::core::mem::transmute::<&[u8; 18], &[libc::c_char; 18]>(b"mi_posix_memalign\0"))
                 .as_ptr(),
         );
     };
@@ -4452,19 +4176,15 @@ pub unsafe extern "C" fn mi_posix_memalign(
     return 0 as libc::c_int;
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn mi_memalign(
-    mut alignment: size_t,
-    mut size: size_t,
-) -> *mut libc::c_void {
+pub unsafe extern "C" fn mi_memalign(mut alignment: size_t, mut size: size_t) -> *mut libc::c_void {
     let mut p: *mut libc::c_void = mi_malloc_aligned(size, alignment);
-    if (p as uintptr_t).wrapping_rem(alignment) == 0 as libc::c_int as libc::c_ulong
-    {} else {
+    if (p as uintptr_t).wrapping_rem(alignment) == 0 as libc::c_int as libc::c_ulong {
+    } else {
         _mi_assert_fail(
             b"((uintptr_t)p % alignment) == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3532 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<&[u8; 12], &[libc::c_char; 12]>(b"mi_memalign\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 12], &[libc::c_char; 12]>(b"mi_memalign\0")).as_ptr(),
         );
     };
     return p;
@@ -4488,16 +4208,13 @@ pub unsafe extern "C" fn mi_aligned_alloc(
     mut size: size_t,
 ) -> *mut libc::c_void {
     let mut p: *mut libc::c_void = mi_malloc_aligned(size, alignment);
-    if (p as uintptr_t).wrapping_rem(alignment) == 0 as libc::c_int as libc::c_ulong
-    {} else {
+    if (p as uintptr_t).wrapping_rem(alignment) == 0 as libc::c_int as libc::c_ulong {
+    } else {
         _mi_assert_fail(
             b"((uintptr_t)p % alignment) == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3546 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 17],
-                &[libc::c_char; 17],
-            >(b"mi_aligned_alloc\0"))
+            (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"mi_aligned_alloc\0"))
                 .as_ptr(),
         );
     };
@@ -4521,15 +4238,13 @@ pub unsafe extern "C" fn mi_reallocarr(
     mut count: size_t,
     mut size: size_t,
 ) -> libc::c_int {
-    if !p.is_null() {} else {
+    if !p.is_null() {
+    } else {
         _mi_assert_fail(
             b"p != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3555 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 14],
-                &[libc::c_char; 14],
-            >(b"mi_reallocarr\0"))
+            (*::core::mem::transmute::<&[u8; 14], &[libc::c_char; 14]>(b"mi_reallocarr\0"))
                 .as_ptr(),
         );
     };
@@ -4645,21 +4360,19 @@ unsafe extern "C" fn mi_bitmap_index_create_ex(
     mut idx: size_t,
     mut bitidx: size_t,
 ) -> mi_bitmap_index_t {
-    if bitidx <= (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t
-    {} else {
+    if bitidx <= (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t {
+    } else {
         _mi_assert_fail(
             b"bitidx <= MI_BITMAP_FIELD_BITS\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3632 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 26],
-                &[libc::c_char; 26],
-            >(b"mi_bitmap_index_create_ex\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 26], &[libc::c_char; 26]>(
+                b"mi_bitmap_index_create_ex\0",
+            ))
+            .as_ptr(),
         );
     };
-    return (idx
-        * (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t)
+    return (idx * (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t)
         .wrapping_add(bitidx);
 }
 #[inline]
@@ -4667,17 +4380,16 @@ unsafe extern "C" fn mi_bitmap_index_create(
     mut idx: size_t,
     mut bitidx: size_t,
 ) -> mi_bitmap_index_t {
-    if bitidx < (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t
-    {} else {
+    if bitidx < (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t {
+    } else {
         _mi_assert_fail(
             b"bitidx < MI_BITMAP_FIELD_BITS\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3636 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 23],
-                &[libc::c_char; 23],
-            >(b"mi_bitmap_index_create\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
+                b"mi_bitmap_index_create\0",
+            ))
+            .as_ptr(),
         );
     };
     return mi_bitmap_index_create_ex(idx, bitidx);
@@ -4685,47 +4397,37 @@ unsafe extern "C" fn mi_bitmap_index_create(
 #[inline]
 unsafe extern "C" fn mi_bitmap_index_field(mut bitmap_idx: mi_bitmap_index_t) -> size_t {
     return bitmap_idx
-        / (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int))
-            as mi_bitmap_index_t;
+        / (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as mi_bitmap_index_t;
 }
 #[inline]
-unsafe extern "C" fn mi_bitmap_index_bit_in_field(
-    mut bitmap_idx: mi_bitmap_index_t,
-) -> size_t {
+unsafe extern "C" fn mi_bitmap_index_bit_in_field(mut bitmap_idx: mi_bitmap_index_t) -> size_t {
     return bitmap_idx
-        % (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int))
-            as mi_bitmap_index_t;
+        % (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as mi_bitmap_index_t;
 }
 #[inline]
 unsafe extern "C" fn mi_bitmap_index_bit(mut bitmap_idx: mi_bitmap_index_t) -> size_t {
     return bitmap_idx;
 }
-static mut mi_arenas: [*mut mi_arena_t; 132] = [0 as *const mi_arena_t
-    as *mut mi_arena_t; 132];
+static mut mi_arenas: [*mut mi_arena_t; 132] = [0 as *const mi_arena_t as *mut mi_arena_t; 132];
 static mut mi_arena_count: size_t = 0;
 unsafe extern "C" fn mi_arena_segment_os_clear_abandoned(
     mut segment: *mut mi_segment_t,
     mut take_lock: bool,
 ) -> bool {
-    if (*segment).memid.memkind as libc::c_uint
-        != MI_MEM_ARENA as libc::c_int as libc::c_uint
-    {} else {
+    if (*segment).memid.memkind as libc::c_uint != MI_MEM_ARENA as libc::c_int as libc::c_uint {
+    } else {
         _mi_assert_fail(
-            b"segment->memid.memkind != MI_MEM_ARENA\0" as *const u8
-                as *const libc::c_char,
+            b"segment->memid.memkind != MI_MEM_ARENA\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3696 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 36],
-                &[libc::c_char; 36],
-            >(b"mi_arena_segment_os_clear_abandoned\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 36], &[libc::c_char; 36]>(
+                b"mi_arena_segment_os_clear_abandoned\0",
+            ))
+            .as_ptr(),
         );
     };
     let subproc: *mut mi_subproc_t = (*segment).subproc;
-    if take_lock as libc::c_int != 0
-        && !mi_lock_try_acquire(&mut (*subproc).abandoned_os_lock)
-    {
+    if take_lock as libc::c_int != 0 && !mi_lock_try_acquire(&mut (*subproc).abandoned_os_lock) {
         return 0 as libc::c_int != 0;
     }
     let mut reclaimed: bool = 0 as libc::c_int != 0;
@@ -4753,10 +4455,7 @@ unsafe extern "C" fn mi_arena_segment_os_clear_abandoned(
             1 as libc::c_int as uintptr_t,
         );
         if take_lock {
-            ::core::intrinsics::atomic_store_release(
-                &mut (*segment).thread_id,
-                _mi_thread_id(),
-            );
+            ::core::intrinsics::atomic_store_release(&mut (*segment).thread_id, _mi_thread_id());
         }
         reclaimed = 1 as libc::c_int != 0;
     }
@@ -4766,11 +4465,9 @@ unsafe extern "C" fn mi_arena_segment_os_clear_abandoned(
     return reclaimed;
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn _mi_arena_segment_clear_abandoned(
-    mut segment: *mut mi_segment_t,
-) -> bool {
-    if ((*segment).memid.memkind as libc::c_uint
-        != MI_MEM_ARENA as libc::c_int as libc::c_uint) as libc::c_int as libc::c_long
+pub unsafe extern "C" fn _mi_arena_segment_clear_abandoned(mut segment: *mut mi_segment_t) -> bool {
+    if ((*segment).memid.memkind as libc::c_uint != MI_MEM_ARENA as libc::c_int as libc::c_uint)
+        as libc::c_int as libc::c_long
         != 0
     {
         return mi_arena_segment_os_clear_abandoned(segment, 1 as libc::c_int != 0);
@@ -4779,16 +4476,16 @@ pub unsafe extern "C" fn _mi_arena_segment_clear_abandoned(
     let mut bitmap_idx: size_t = 0;
     mi_arena_memid_indices((*segment).memid, &mut arena_idx, &mut bitmap_idx);
     let mut arena: *mut mi_arena_t = mi_arena_from_index(arena_idx);
-    if !arena.is_null() {} else {
+    if !arena.is_null() {
+    } else {
         _mi_assert_fail(
             b"arena != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3739 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 34],
-                &[libc::c_char; 34],
-            >(b"_mi_arena_segment_clear_abandoned\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 34], &[libc::c_char; 34]>(
+                b"_mi_arena_segment_clear_abandoned\0",
+            ))
+            .as_ptr(),
         );
     };
     let mut was_marked: bool = _mi_bitmap_unclaim(
@@ -4798,30 +4495,26 @@ pub unsafe extern "C" fn _mi_arena_segment_clear_abandoned(
         bitmap_idx,
     );
     if was_marked {
-        if ::core::intrinsics::atomic_load_acquire(
-            &mut (*segment).thread_id as *mut mi_threadid_t,
-        ) == 0 as libc::c_int as mi_threadid_t
-        {} else {
+        if ::core::intrinsics::atomic_load_acquire(&mut (*segment).thread_id as *mut mi_threadid_t)
+            == 0 as libc::c_int as mi_threadid_t
+        {
+        } else {
             _mi_assert_fail(
                 b"mi_atomic_load_acquire(&segment->thread_id) == 0\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 3742 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 34],
-                    &[libc::c_char; 34],
-                >(b"_mi_arena_segment_clear_abandoned\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 34], &[libc::c_char; 34]>(
+                    b"_mi_arena_segment_clear_abandoned\0",
+                ))
+                .as_ptr(),
             );
         };
         ::core::intrinsics::atomic_xsub_relaxed(
             &mut (*(*segment).subproc).abandoned_count,
             1 as libc::c_int as uintptr_t,
         );
-        ::core::intrinsics::atomic_store_release(
-            &mut (*segment).thread_id,
-            _mi_thread_id(),
-        );
+        ::core::intrinsics::atomic_store_release(&mut (*segment).thread_id, _mi_thread_id());
     }
     if !was_marked
         || _mi_bitmap_is_claimed(
@@ -4829,8 +4522,10 @@ pub unsafe extern "C" fn _mi_arena_segment_clear_abandoned(
             (*arena).field_count,
             1 as libc::c_int as size_t,
             bitmap_idx,
-        ) as libc::c_int != 0
-    {} else {
+        ) as libc::c_int
+            != 0
+    {
+    } else {
         _mi_assert_fail(
             b"!was_marked || _mi_bitmap_is_claimed(arena->blocks_inuse, arena->field_count, 1, bitmap_idx)\0"
                 as *const u8 as *const libc::c_char,
@@ -4846,19 +4541,16 @@ pub unsafe extern "C" fn _mi_arena_segment_clear_abandoned(
     return was_marked;
 }
 unsafe extern "C" fn mi_arena_segment_os_mark_abandoned(mut segment: *mut mi_segment_t) {
-    if (*segment).memid.memkind as libc::c_uint
-        != MI_MEM_ARENA as libc::c_int as libc::c_uint
-    {} else {
+    if (*segment).memid.memkind as libc::c_uint != MI_MEM_ARENA as libc::c_int as libc::c_uint {
+    } else {
         _mi_assert_fail(
-            b"segment->memid.memkind != MI_MEM_ARENA\0" as *const u8
-                as *const libc::c_char,
+            b"segment->memid.memkind != MI_MEM_ARENA\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3750 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 35],
-                &[libc::c_char; 35],
-            >(b"mi_arena_segment_os_mark_abandoned\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 35], &[libc::c_char; 35]>(
+                b"mi_arena_segment_os_mark_abandoned\0",
+            ))
+            .as_ptr(),
         );
     };
     let subproc: *mut mi_subproc_t = (*segment).subproc;
@@ -4870,43 +4562,41 @@ unsafe extern "C" fn mi_arena_segment_os_mark_abandoned(mut segment: *mut mi_seg
         );
     } else {
         let mut prev: *mut mi_segment_t = (*subproc).abandoned_os_list_tail;
-        if prev.is_null() || ((*prev).abandoned_os_next).is_null() {} else {
+        if prev.is_null() || ((*prev).abandoned_os_next).is_null() {
+        } else {
             _mi_assert_fail(
                 b"prev == NULL || prev->abandoned_os_next == NULL\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 3757 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 35],
-                    &[libc::c_char; 35],
-                >(b"mi_arena_segment_os_mark_abandoned\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 35], &[libc::c_char; 35]>(
+                    b"mi_arena_segment_os_mark_abandoned\0",
+                ))
+                .as_ptr(),
             );
         };
-        if ((*segment).abandoned_os_prev).is_null() {} else {
+        if ((*segment).abandoned_os_prev).is_null() {
+        } else {
             _mi_assert_fail(
-                b"segment->abandoned_os_prev == NULL\0" as *const u8
-                    as *const libc::c_char,
+                b"segment->abandoned_os_prev == NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 3758 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 35],
-                    &[libc::c_char; 35],
-                >(b"mi_arena_segment_os_mark_abandoned\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 35], &[libc::c_char; 35]>(
+                    b"mi_arena_segment_os_mark_abandoned\0",
+                ))
+                .as_ptr(),
             );
         };
-        if ((*segment).abandoned_os_next).is_null() {} else {
+        if ((*segment).abandoned_os_next).is_null() {
+        } else {
             _mi_assert_fail(
-                b"segment->abandoned_os_next == NULL\0" as *const u8
-                    as *const libc::c_char,
+                b"segment->abandoned_os_next == NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 3759 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 35],
-                    &[libc::c_char; 35],
-                >(b"mi_arena_segment_os_mark_abandoned\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 35], &[libc::c_char; 35]>(
+                    b"mi_arena_segment_os_mark_abandoned\0",
+                ))
+                .as_ptr(),
             );
         };
         if !prev.is_null() {
@@ -4929,27 +4619,25 @@ unsafe extern "C" fn mi_arena_segment_os_mark_abandoned(mut segment: *mut mi_seg
     };
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn _mi_arena_segment_mark_abandoned(
-    mut segment: *mut mi_segment_t,
-) {
-    if (*segment).used == (*segment).abandoned {} else {
+pub unsafe extern "C" fn _mi_arena_segment_mark_abandoned(mut segment: *mut mi_segment_t) {
+    if (*segment).used == (*segment).abandoned {
+    } else {
         _mi_assert_fail(
             b"segment->used == segment->abandoned\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3773 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 33],
-                &[libc::c_char; 33],
-            >(b"_mi_arena_segment_mark_abandoned\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 33], &[libc::c_char; 33]>(
+                b"_mi_arena_segment_mark_abandoned\0",
+            ))
+            .as_ptr(),
         );
     };
     ::core::intrinsics::atomic_store_release(
         &mut (*segment).thread_id,
         0 as libc::c_int as uintptr_t,
     );
-    if ((*segment).memid.memkind as libc::c_uint
-        != MI_MEM_ARENA as libc::c_int as libc::c_uint) as libc::c_int as libc::c_long
+    if ((*segment).memid.memkind as libc::c_uint != MI_MEM_ARENA as libc::c_int as libc::c_uint)
+        as libc::c_int as libc::c_long
         != 0
     {
         mi_arena_segment_os_mark_abandoned(segment);
@@ -4959,16 +4647,16 @@ pub unsafe extern "C" fn _mi_arena_segment_mark_abandoned(
     let mut bitmap_idx: size_t = 0;
     mi_arena_memid_indices((*segment).memid, &mut arena_idx, &mut bitmap_idx);
     let mut arena: *mut mi_arena_t = mi_arena_from_index(arena_idx);
-    if !arena.is_null() {} else {
+    if !arena.is_null() {
+    } else {
         _mi_assert_fail(
             b"arena != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3783 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 33],
-                &[libc::c_char; 33],
-            >(b"_mi_arena_segment_mark_abandoned\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 33], &[libc::c_char; 33]>(
+                b"_mi_arena_segment_mark_abandoned\0",
+            ))
+            .as_ptr(),
         );
     };
     let subproc: *mut mi_subproc_t = (*segment).subproc;
@@ -4985,16 +4673,16 @@ pub unsafe extern "C" fn _mi_arena_segment_mark_abandoned(
             1 as libc::c_int as uintptr_t,
         );
     }
-    if was_unmarked as libc::c_int != 0 {} else {
+    if was_unmarked as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"was_unmarked\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3787 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 33],
-                &[libc::c_char; 33],
-            >(b"_mi_arena_segment_mark_abandoned\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 33], &[libc::c_char; 33]>(
+                b"_mi_arena_segment_mark_abandoned\0",
+            ))
+            .as_ptr(),
         );
     };
     if _mi_bitmap_is_claimed(
@@ -5002,18 +4690,19 @@ pub unsafe extern "C" fn _mi_arena_segment_mark_abandoned(
         (*arena).field_count,
         1 as libc::c_int as size_t,
         bitmap_idx,
-    ) as libc::c_int != 0
-    {} else {
+    ) as libc::c_int
+        != 0
+    {
+    } else {
         _mi_assert_fail(
             b"_mi_bitmap_is_claimed(arena->blocks_inuse, arena->field_count, 1, bitmap_idx)\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3788 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 33],
-                &[libc::c_char; 33],
-            >(b"_mi_arena_segment_mark_abandoned\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 33], &[libc::c_char; 33]>(
+                b"_mi_arena_segment_mark_abandoned\0",
+            ))
+            .as_ptr(),
         );
     };
 }
@@ -5024,40 +4713,35 @@ pub unsafe extern "C" fn _mi_arena_field_cursor_init(
     mut visit_all: bool,
     mut current: *mut mi_arena_field_cursor_t,
 ) {
-    if heap.is_null() || (*(*heap).tld).segments.subproc == subproc {} else {
+    if heap.is_null() || (*(*heap).tld).segments.subproc == subproc {
+    } else {
         _mi_assert_fail(
             b"heap == NULL || heap->tld->segments.subproc == subproc\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3791 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 28],
-                &[libc::c_char; 28],
-            >(b"_mi_arena_field_cursor_init\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 28], &[libc::c_char; 28]>(
+                b"_mi_arena_field_cursor_init\0",
+            ))
+            .as_ptr(),
         );
     };
     (*current).bitmap_idx = 0 as libc::c_int as size_t;
     (*current).subproc = subproc;
     (*current).visit_all = visit_all;
     (*current).hold_visit_lock = 0 as libc::c_int != 0;
-    let abandoned_count: size_t = ::core::intrinsics::atomic_load_relaxed(
-        &mut (*subproc).abandoned_count,
-    );
-    let abandoned_list_count: size_t = ::core::intrinsics::atomic_load_relaxed(
-        &mut (*subproc).abandoned_os_list_count,
-    );
+    let abandoned_count: size_t =
+        ::core::intrinsics::atomic_load_relaxed(&mut (*subproc).abandoned_count);
+    let abandoned_list_count: size_t =
+        ::core::intrinsics::atomic_load_relaxed(&mut (*subproc).abandoned_os_list_count);
     let max_arena: size_t = mi_arena_get_count();
     if !heap.is_null() && (*heap).arena_id != _mi_arena_id_none() {
         (*current).start = mi_arena_id_index((*heap).arena_id);
         (*current).end = ((*current).start).wrapping_add(1 as libc::c_int as size_t);
         (*current).os_list_count = 0 as libc::c_int as size_t;
     } else {
-        if abandoned_count > abandoned_list_count
-            && max_arena > 0 as libc::c_int as size_t
-        {
-            (*current)
-                .start = (if heap.is_null() || max_arena == 0 as libc::c_int as size_t {
+        if abandoned_count > abandoned_list_count && max_arena > 0 as libc::c_int as size_t {
+            (*current).start = (if heap.is_null() || max_arena == 0 as libc::c_int as size_t {
                 0 as libc::c_int
             } else {
                 (_mi_heap_random_next(heap)).wrapping_rem(max_arena) as mi_arena_id_t
@@ -5069,23 +4753,21 @@ pub unsafe extern "C" fn _mi_arena_field_cursor_init(
         }
         (*current).os_list_count = abandoned_list_count;
     }
-    if (*current).start <= max_arena {} else {
+    if (*current).start <= max_arena {
+    } else {
         _mi_assert_fail(
             b"current->start <= max_arena\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3815 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 28],
-                &[libc::c_char; 28],
-            >(b"_mi_arena_field_cursor_init\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 28], &[libc::c_char; 28]>(
+                b"_mi_arena_field_cursor_init\0",
+            ))
+            .as_ptr(),
         );
     };
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn _mi_arena_field_cursor_done(
-    mut current: *mut mi_arena_field_cursor_t,
-) {
+pub unsafe extern "C" fn _mi_arena_field_cursor_done(mut current: *mut mi_arena_field_cursor_t) {
     if (*current).hold_visit_lock {
         mi_lock_release(&mut (*(*current).subproc).abandoned_os_visit_lock);
         (*current).hold_visit_lock = 0 as libc::c_int != 0;
@@ -5109,36 +4791,36 @@ unsafe extern "C" fn mi_arena_segment_clear_abandoned_at(
         (*arena).field_count,
         1 as libc::c_int as size_t,
         bitmap_idx,
-    ) as libc::c_int != 0
-    {} else {
+    ) as libc::c_int
+        != 0
+    {
+    } else {
         _mi_assert_fail(
             b"_mi_bitmap_is_claimed(arena->blocks_inuse, arena->field_count, 1, bitmap_idx)\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3825 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 36],
-                &[libc::c_char; 36],
-            >(b"mi_arena_segment_clear_abandoned_at\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 36], &[libc::c_char; 36]>(
+                b"mi_arena_segment_clear_abandoned_at\0",
+            ))
+            .as_ptr(),
         );
     };
-    let mut segment: *mut mi_segment_t = mi_arena_block_start(arena, bitmap_idx)
-        as *mut mi_segment_t;
-    if ::core::intrinsics::atomic_load_relaxed(
-        &mut (*segment).thread_id as *mut mi_threadid_t,
-    ) == 0 as libc::c_int as mi_threadid_t
-    {} else {
+    let mut segment: *mut mi_segment_t =
+        mi_arena_block_start(arena, bitmap_idx) as *mut mi_segment_t;
+    if ::core::intrinsics::atomic_load_relaxed(&mut (*segment).thread_id as *mut mi_threadid_t)
+        == 0 as libc::c_int as mi_threadid_t
+    {
+    } else {
         _mi_assert_fail(
             b"mi_atomic_load_relaxed(&segment->thread_id) == 0\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3827 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 36],
-                &[libc::c_char; 36],
-            >(b"mi_arena_segment_clear_abandoned_at\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 36], &[libc::c_char; 36]>(
+                b"mi_arena_segment_clear_abandoned_at\0",
+            ))
+            .as_ptr(),
         );
     };
     if (*segment).subproc != subproc {
@@ -5149,16 +4831,16 @@ unsafe extern "C" fn mi_arena_segment_clear_abandoned_at(
             bitmap_idx,
             0 as *mut bool,
         );
-        if was_zero as libc::c_int != 0 {} else {
+        if was_zero as libc::c_int != 0 {
+        } else {
             _mi_assert_fail(
                 b"was_zero\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 3830 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 36],
-                    &[libc::c_char; 36],
-                >(b"mi_arena_segment_clear_abandoned_at\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 36], &[libc::c_char; 36]>(
+                    b"mi_arena_segment_clear_abandoned_at\0",
+                ))
+                .as_ptr(),
             );
         };
         return 0 as *mut mi_segment_t;
@@ -5190,19 +4872,14 @@ unsafe extern "C" fn mi_arena_segment_clear_abandoned_next_field(
                     &mut *((*arena).blocks_abandoned).offset(field_idx as isize)
                         as *mut mi_bitmap_field_t,
                 );
-                if (field != 0 as libc::c_int as size_t) as libc::c_int as libc::c_long
-                    != 0
-                {
+                if (field != 0 as libc::c_int as size_t) as libc::c_int as libc::c_long != 0 {
                     if !has_lock
-                        && mi_option_is_enabled(mi_option_visit_abandoned) as libc::c_int
-                            != 0
+                        && mi_option_is_enabled(mi_option_visit_abandoned) as libc::c_int != 0
                     {
                         has_lock = if (*previous).visit_all as libc::c_int != 0 {
-                            mi_lock_acquire(&mut (*arena).abandoned_visit_lock)
-                                as libc::c_int
+                            mi_lock_acquire(&mut (*arena).abandoned_visit_lock) as libc::c_int
                         } else {
-                            mi_lock_try_acquire(&mut (*arena).abandoned_visit_lock)
-                                as libc::c_int
+                            mi_lock_try_acquire(&mut (*arena).abandoned_visit_lock) as libc::c_int
                         } != 0;
                         if !has_lock {
                             if (*previous).visit_all {
@@ -5217,30 +4894,26 @@ unsafe extern "C" fn mi_arena_segment_clear_abandoned_next_field(
                     }
                     if has_lock as libc::c_int != 0
                         || !mi_option_is_enabled(mi_option_visit_abandoned)
-                    {} else {
+                    {
+                    } else {
                         _mi_assert_fail(
                             b"has_lock || !mi_option_is_enabled(mi_option_visit_abandoned)\0"
                                 as *const u8 as *const libc::c_char,
-                            b"preprocess/mimalloc.c\0" as *const u8
-                                as *const libc::c_char,
+                            b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                             3859 as libc::c_int as libc::c_uint,
-                            (*::core::mem::transmute::<
-                                &[u8; 44],
-                                &[libc::c_char; 44],
-                            >(b"mi_arena_segment_clear_abandoned_next_field\0"))
-                                .as_ptr(),
+                            (*::core::mem::transmute::<&[u8; 44], &[libc::c_char; 44]>(
+                                b"mi_arena_segment_clear_abandoned_next_field\0",
+                            ))
+                            .as_ptr(),
                         );
                     };
                     while bit_idx
-                        < (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int))
-                            as size_t
+                        < (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t
                     {
                         let mut mask: size_t = (1 as libc::c_int as size_t) << bit_idx;
                         if (field & mask == mask) as libc::c_int as libc::c_long != 0 {
-                            let mut bitmap_idx: mi_bitmap_index_t = mi_bitmap_index_create(
-                                field_idx,
-                                bit_idx,
-                            );
+                            let mut bitmap_idx: mi_bitmap_index_t =
+                                mi_bitmap_index_create(field_idx, bit_idx);
                             let segment: *mut mi_segment_t = mi_arena_segment_clear_abandoned_at(
                                 arena,
                                 (*previous).subproc,
@@ -5250,8 +4923,7 @@ unsafe extern "C" fn mi_arena_segment_clear_abandoned_next_field(
                                 if has_lock {
                                     mi_lock_release(&mut (*arena).abandoned_visit_lock);
                                 }
-                                (*previous)
-                                    .bitmap_idx = mi_bitmap_index_create_ex(
+                                (*previous).bitmap_idx = mi_bitmap_index_create_ex(
                                     field_idx,
                                     bit_idx.wrapping_add(1 as libc::c_int as size_t),
                                 );
@@ -5281,13 +4953,10 @@ unsafe extern "C" fn mi_arena_segment_clear_abandoned_next_list(
     mut previous: *mut mi_arena_field_cursor_t,
 ) -> *mut mi_segment_t {
     if !(*previous).hold_visit_lock {
-        (*previous)
-            .hold_visit_lock = if (*previous).visit_all as libc::c_int != 0 {
-            mi_lock_acquire(&mut (*(*previous).subproc).abandoned_os_visit_lock)
-                as libc::c_int
+        (*previous).hold_visit_lock = if (*previous).visit_all as libc::c_int != 0 {
+            mi_lock_acquire(&mut (*(*previous).subproc).abandoned_os_visit_lock) as libc::c_int
         } else {
-            mi_lock_try_acquire(&mut (*(*previous).subproc).abandoned_os_visit_lock)
-                as libc::c_int
+            mi_lock_try_acquire(&mut (*(*previous).subproc).abandoned_os_visit_lock) as libc::c_int
         } != 0;
         if !(*previous).hold_visit_lock {
             if (*previous).visit_all {
@@ -5303,15 +4972,13 @@ unsafe extern "C" fn mi_arena_segment_clear_abandoned_next_list(
     while (*previous).os_list_count > 0 as libc::c_int as size_t {
         (*previous).os_list_count = ((*previous).os_list_count).wrapping_sub(1);
         (*previous).os_list_count;
-        let has_lock: bool = mi_lock_acquire(
-            &mut (*(*previous).subproc).abandoned_os_lock,
-        );
+        let has_lock: bool = mi_lock_acquire(&mut (*(*previous).subproc).abandoned_os_lock);
         if has_lock {
-            let mut segment: *mut mi_segment_t = (*(*previous).subproc)
-                .abandoned_os_list;
+            let mut segment: *mut mi_segment_t = (*(*previous).subproc).abandoned_os_list;
             if segment.is_null()
                 || mi_arena_segment_os_clear_abandoned(segment, 0 as libc::c_int != 0)
-                    as libc::c_int != 0
+                    as libc::c_int
+                    != 0
             {
                 mi_lock_release(&mut (*(*previous).subproc).abandoned_os_lock);
                 return segment;
@@ -5326,16 +4993,16 @@ unsafe extern "C" fn mi_arena_segment_clear_abandoned_next_list(
             return 0 as *mut mi_segment_t;
         }
     }
-    if (*previous).os_list_count == 0 as libc::c_int as size_t {} else {
+    if (*previous).os_list_count == 0 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"previous->os_list_count == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3906 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 43],
-                &[libc::c_char; 43],
-            >(b"mi_arena_segment_clear_abandoned_next_list\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 43], &[libc::c_char; 43]>(
+                b"mi_arena_segment_clear_abandoned_next_list\0",
+            ))
+            .as_ptr(),
         );
     };
     return 0 as *mut mi_segment_t;
@@ -5345,23 +5012,21 @@ pub unsafe extern "C" fn _mi_arena_segment_clear_abandoned_next(
     mut previous: *mut mi_arena_field_cursor_t,
 ) -> *mut mi_segment_t {
     if (*previous).start < (*previous).end {
-        let mut segment: *mut mi_segment_t = mi_arena_segment_clear_abandoned_next_field(
-            previous,
-        );
+        let mut segment: *mut mi_segment_t = mi_arena_segment_clear_abandoned_next_field(previous);
         if !segment.is_null() {
             return segment;
         }
     }
-    if (*previous).start == (*previous).end {} else {
+    if (*previous).start == (*previous).end {
+    } else {
         _mi_assert_fail(
             b"previous->start == previous->end\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3914 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 39],
-                &[libc::c_char; 39],
-            >(b"_mi_arena_segment_clear_abandoned_next\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 39], &[libc::c_char; 39]>(
+                b"_mi_arena_segment_clear_abandoned_next\0",
+            ))
+            .as_ptr(),
         );
     };
     return mi_arena_segment_clear_abandoned_next_list(previous);
@@ -5371,7 +5036,7 @@ pub unsafe extern "C" fn mi_abandoned_visit_blocks(
     mut subproc_id: mi_subproc_id_t,
     mut heap_tag: libc::c_int,
     mut visit_blocks: bool,
-    mut visitor: Option::<mi_block_visit_fun>,
+    mut visitor: Option<mi_block_visit_fun>,
     mut arg: *mut libc::c_void,
 ) -> bool {
     if !mi_option_is_enabled(mi_option_visit_abandoned) {
@@ -5399,12 +5064,10 @@ pub unsafe extern "C" fn mi_abandoned_visit_blocks(
     );
     let mut segment: *mut mi_segment_t = 0 as *mut mi_segment_t;
     let mut ok: bool = 1 as libc::c_int != 0;
-    while ok as libc::c_int != 0
-        && {
-            segment = _mi_arena_segment_clear_abandoned_next(&mut current);
-            !segment.is_null()
-        }
-    {
+    while ok as libc::c_int != 0 && {
+        segment = _mi_arena_segment_clear_abandoned_next(&mut current);
+        !segment.is_null()
+    } {
         ok = _mi_segment_visit_blocks(segment, heap_tag, visit_blocks, visitor, arg);
         _mi_arena_segment_mark_abandoned(segment);
     }
@@ -5420,15 +5083,13 @@ pub unsafe extern "C" fn mi_arena_id_index(mut id: mi_arena_id_t) -> size_t {
     }) as size_t;
 }
 unsafe extern "C" fn mi_arena_id_create(mut arena_index: size_t) -> mi_arena_id_t {
-    if arena_index < 132 as libc::c_int as size_t {} else {
+    if arena_index < 132 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"arena_index < MI_MAX_ARENAS\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3938 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 19],
-                &[libc::c_char; 19],
-            >(b"mi_arena_id_create\0"))
+            (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(b"mi_arena_id_create\0"))
                 .as_ptr(),
         );
     };
@@ -5443,8 +5104,7 @@ unsafe extern "C" fn mi_arena_id_is_suitable(
     mut arena_is_exclusive: bool,
     mut req_arena_id: mi_arena_id_t,
 ) -> bool {
-    return !arena_is_exclusive && req_arena_id == _mi_arena_id_none()
-        || arena_id == req_arena_id;
+    return !arena_is_exclusive && req_arena_id == _mi_arena_id_none() || arena_id == req_arena_id;
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_arena_memid_is_suitable(
@@ -5456,52 +5116,48 @@ pub unsafe extern "C" fn _mi_arena_memid_is_suitable(
             memid.mem.arena.id,
             memid.mem.arena.is_exclusive,
             request_arena_id,
-        )
+        );
     } else {
         return mi_arena_id_is_suitable(
             _mi_arena_id_none(),
             0 as libc::c_int != 0,
             request_arena_id,
-        )
+        );
     };
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_arena_get_count() -> size_t {
-    return ::core::intrinsics::atomic_load_relaxed(&mut mi_arena_count);
+    return ::core::intrinsics::atomic_load_relaxed(&raw mut mi_arena_count);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_arena_from_index(mut idx: size_t) -> *mut mi_arena_t {
-    if idx < mi_arena_get_count() {} else {
+    if idx < mi_arena_get_count() {
+    } else {
         _mi_assert_fail(
             b"idx < mi_arena_get_count()\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3960 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"mi_arena_from_index\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"mi_arena_from_index\0"))
                 .as_ptr(),
         );
     };
     return ::core::intrinsics::atomic_load_acquire(
-        &mut *mi_arenas.as_mut_ptr().offset(idx as isize) as *mut *mut mi_arena_t,
+        &mut *(*(&raw mut mi_arenas)).as_mut_ptr().offset(idx as isize) as *mut *mut mi_arena_t,
     );
 }
 unsafe extern "C" fn mi_block_count_of_size(mut size: size_t) -> size_t {
     return _mi_divide_up(
         size,
         ((1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))) as size_t,
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+            as size_t,
     );
 }
 unsafe extern "C" fn mi_arena_block_size(mut bcount: size_t) -> size_t {
-    return (bcount as libc::c_ulonglong)
-        .wrapping_mul(
-            (1 as libc::c_ulonglong)
-                << 3 as libc::c_int
-                    + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)),
-        ) as size_t;
+    return (bcount as libc::c_ulonglong).wrapping_mul(
+        (1 as libc::c_ulonglong)
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)),
+    ) as size_t;
 }
 unsafe extern "C" fn mi_arena_size(mut arena: *mut mi_arena_t) -> size_t {
     return mi_arena_block_size((*arena).block_count);
@@ -5523,17 +5179,16 @@ pub unsafe extern "C" fn mi_arena_memid_indices(
     mut arena_index: *mut size_t,
     mut bitmap_index: *mut mi_bitmap_index_t,
 ) -> bool {
-    if memid.memkind as libc::c_uint == MI_MEM_ARENA as libc::c_int as libc::c_uint
-    {} else {
+    if memid.memkind as libc::c_uint == MI_MEM_ARENA as libc::c_int as libc::c_uint {
+    } else {
         _mi_assert_fail(
             b"memid.memkind == MI_MEM_ARENA\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             3980 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 23],
-                &[libc::c_char; 23],
-            >(b"mi_arena_memid_indices\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
+                b"mi_arena_memid_indices\0",
+            ))
+            .as_ptr(),
         );
     };
     *arena_index = mi_arena_id_index(memid.mem.arena.id);
@@ -5550,18 +5205,14 @@ unsafe extern "C" fn mi_arena_static_zalloc(
     *memid = _mi_memid_none();
     if size == 0 as libc::c_int as size_t
         || size as libc::c_ulonglong
-            > ((((1 as libc::c_int) << 3 as libc::c_int) / 2 as libc::c_int)
-                as libc::c_ulonglong)
+            > ((((1 as libc::c_int) << 3 as libc::c_int) / 2 as libc::c_int) as libc::c_ulonglong)
                 .wrapping_mul(1024 as libc::c_ulonglong)
     {
         return 0 as *mut libc::c_void;
     }
-    let toplow: size_t = ::core::intrinsics::atomic_load_relaxed(
-        &mut mi_arena_static_top,
-    );
+    let toplow: size_t = ::core::intrinsics::atomic_load_relaxed(&raw mut mi_arena_static_top);
     if toplow.wrapping_add(size) as libc::c_ulonglong
-        > ((((1 as libc::c_int) << 3 as libc::c_int) / 2 as libc::c_int)
-            as libc::c_ulonglong)
+        > ((((1 as libc::c_int) << 3 as libc::c_int) / 2 as libc::c_int) as libc::c_ulonglong)
             .wrapping_mul(1024 as libc::c_ulonglong)
     {
         return 0 as *mut libc::c_void;
@@ -5573,24 +5224,19 @@ unsafe extern "C" fn mi_arena_static_zalloc(
         .wrapping_add(alignment)
         .wrapping_sub(1 as libc::c_int as size_t);
     if toplow.wrapping_add(oversize) as libc::c_ulonglong
-        > ((((1 as libc::c_int) << 3 as libc::c_int) / 2 as libc::c_int)
-            as libc::c_ulonglong)
+        > ((((1 as libc::c_int) << 3 as libc::c_int) / 2 as libc::c_int) as libc::c_ulonglong)
             .wrapping_mul(1024 as libc::c_ulonglong)
     {
         return 0 as *mut libc::c_void;
     }
-    let oldtop: size_t = ::core::intrinsics::atomic_xadd_acqrel(
-        &mut mi_arena_static_top,
-        oversize,
-    );
+    let oldtop: size_t = ::core::intrinsics::atomic_xadd_acqrel(&raw mut mi_arena_static_top, oversize);
     let mut top: size_t = oldtop.wrapping_add(oversize);
     if top as libc::c_ulonglong
-        > ((((1 as libc::c_int) << 3 as libc::c_int) / 2 as libc::c_int)
-            as libc::c_ulonglong)
+        > ((((1 as libc::c_int) << 3 as libc::c_int) / 2 as libc::c_int) as libc::c_ulonglong)
             .wrapping_mul(1024 as libc::c_ulonglong)
     {
         let fresh7 = ::core::intrinsics::atomic_cxchg_acqrel_acquire(
-            &mut mi_arena_static_top,
+            &raw mut mi_arena_static_top,
             *&mut top,
             oldtop,
         );
@@ -5601,8 +5247,7 @@ unsafe extern "C" fn mi_arena_static_zalloc(
     *memid = _mi_memid_create(MI_MEM_STATIC);
     (*memid).initially_zero = 1 as libc::c_int != 0;
     let start: size_t = _mi_align_up(oldtop, alignment);
-    let p: *mut uint8_t = &mut *mi_arena_static.as_mut_ptr().offset(start as isize)
-        as *mut uint8_t;
+    let p: *mut uint8_t = &mut *(*(&raw mut mi_arena_static)).as_mut_ptr().offset(start as isize) as *mut uint8_t;
     _mi_memzero_aligned(p as *mut libc::c_void, size);
     return p as *mut libc::c_void;
 }
@@ -5612,15 +5257,11 @@ pub unsafe extern "C" fn _mi_arena_meta_zalloc(
     mut memid: *mut mi_memid_t,
 ) -> *mut libc::c_void {
     *memid = _mi_memid_none();
-    let mut p: *mut libc::c_void = mi_arena_static_zalloc(
-        size,
-        16 as libc::c_int as size_t,
-        memid,
-    );
+    let mut p: *mut libc::c_void = mi_arena_static_zalloc(size, 16 as libc::c_int as size_t, memid);
     if !p.is_null() {
         return p;
     }
-    p = _mi_os_alloc(size, memid, &mut _mi_stats_main);
+    p = _mi_os_alloc(size, memid, &raw mut _mi_stats_main);
     if p.is_null() {
         return 0 as *mut libc::c_void;
     }
@@ -5637,19 +5278,18 @@ pub unsafe extern "C" fn _mi_arena_meta_free(
     mut size: size_t,
 ) {
     if mi_memkind_is_os(memid.memkind) {
-        _mi_os_free(p, size, memid, &mut _mi_stats_main);
+        _mi_os_free(p, size, memid, &raw mut _mi_stats_main);
     } else {
-        if memid.memkind as libc::c_uint == MI_MEM_STATIC as libc::c_int as libc::c_uint
-        {} else {
+        if memid.memkind as libc::c_uint == MI_MEM_STATIC as libc::c_int as libc::c_uint {
+        } else {
             _mi_assert_fail(
                 b"memid.memkind == MI_MEM_STATIC\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 4026 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 20],
-                    &[libc::c_char; 20],
-                >(b"_mi_arena_meta_free\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(
+                    b"_mi_arena_meta_free\0",
+                ))
+                .as_ptr(),
             );
         };
     };
@@ -5659,8 +5299,7 @@ pub unsafe extern "C" fn mi_arena_block_start(
     mut arena: *mut mi_arena_t,
     mut bindex: mi_bitmap_index_t,
 ) -> *mut libc::c_void {
-    return ((*arena).start)
-        .offset(mi_arena_block_size(mi_bitmap_index_bit(bindex)) as isize)
+    return ((*arena).start).offset(mi_arena_block_size(mi_bitmap_index_bit(bindex)) as isize)
         as *mut libc::c_void;
 }
 unsafe extern "C" fn mi_arena_try_claim(
@@ -5695,16 +5334,13 @@ unsafe extern "C" fn mi_arena_try_alloc_at(
     mut memid: *mut mi_memid_t,
     mut tld: *mut mi_os_tld_t,
 ) -> *mut libc::c_void {
-    if mi_arena_id_index((*arena).id) == arena_index {} else {
+    if mi_arena_id_index((*arena).id) == arena_index {
+    } else {
         _mi_assert_fail(
-            b"mi_arena_id_index(arena->id) == arena_index\0" as *const u8
-                as *const libc::c_char,
+            b"mi_arena_id_index(arena->id) == arena_index\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4045 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"mi_arena_try_alloc_at\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"mi_arena_try_alloc_at\0"))
                 .as_ptr(),
         );
     };
@@ -5723,11 +5359,8 @@ unsafe extern "C" fn mi_arena_try_alloc_at(
             bitmap_index,
         );
     }
-    if (*arena).memid.initially_zero as libc::c_int != 0
-        && !((*arena).blocks_dirty).is_null()
-    {
-        (*memid)
-            .initially_zero = _mi_bitmap_claim_across(
+    if (*arena).memid.initially_zero as libc::c_int != 0 && !((*arena).blocks_dirty).is_null() {
+        (*memid).initially_zero = _mi_bitmap_claim_across(
             (*arena).blocks_dirty,
             (*arena).field_count,
             needed_bcount,
@@ -5761,8 +5394,7 @@ unsafe extern "C" fn mi_arena_try_alloc_at(
             }
         }
     } else {
-        (*memid)
-            .initially_committed = _mi_bitmap_is_claimed_across(
+        (*memid).initially_committed = _mi_bitmap_is_claimed_across(
             (*arena).blocks_committed,
             (*arena).field_count,
             needed_bcount,
@@ -5785,47 +5417,44 @@ unsafe extern "C" fn mi_arena_try_alloc_at_id(
 ) -> *mut libc::c_void {
     if alignment as libc::c_ulonglong
         <= (1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
-    {} else {
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
+    {
+    } else {
         _mi_assert_fail(
             b"alignment <= MI_SEGMENT_ALIGN\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4083 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 25],
-                &[libc::c_char; 25],
-            >(b"mi_arena_try_alloc_at_id\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                b"mi_arena_try_alloc_at_id\0",
+            ))
+            .as_ptr(),
         );
     };
     let bcount: size_t = mi_block_count_of_size(size);
     let arena_index: size_t = mi_arena_id_index(arena_id);
-    if arena_index
-        < ::core::intrinsics::atomic_load_relaxed(&mut mi_arena_count as *mut size_t)
-    {} else {
+    if arena_index < ::core::intrinsics::atomic_load_relaxed(&raw mut mi_arena_count as *mut size_t) {
+    } else {
         _mi_assert_fail(
             b"arena_index < mi_atomic_load_relaxed(&mi_arena_count)\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4086 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 25],
-                &[libc::c_char; 25],
-            >(b"mi_arena_try_alloc_at_id\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                b"mi_arena_try_alloc_at_id\0",
+            ))
+            .as_ptr(),
         );
     };
-    if size <= mi_arena_block_size(bcount) {} else {
+    if size <= mi_arena_block_size(bcount) {
+    } else {
         _mi_assert_fail(
             b"size <= mi_arena_block_size(bcount)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4087 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 25],
-                &[libc::c_char; 25],
-            >(b"mi_arena_try_alloc_at_id\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                b"mi_arena_try_alloc_at_id\0",
+            ))
+            .as_ptr(),
         );
     };
     let mut arena: *mut mi_arena_t = mi_arena_from_index(arena_index);
@@ -5840,34 +5469,28 @@ unsafe extern "C" fn mi_arena_try_alloc_at_id(
     }
     if req_arena_id == _mi_arena_id_none() {
         let numa_suitable: bool = numa_node < 0 as libc::c_int
-            || (*arena).numa_node < 0 as libc::c_int || (*arena).numa_node == numa_node;
+            || (*arena).numa_node < 0 as libc::c_int
+            || (*arena).numa_node == numa_node;
         if match_numa_node {
             if !numa_suitable {
                 return 0 as *mut libc::c_void;
             }
         } else if numa_suitable {
-            return 0 as *mut libc::c_void
+            return 0 as *mut libc::c_void;
         }
     }
-    let mut p: *mut libc::c_void = mi_arena_try_alloc_at(
-        arena,
-        arena_index,
-        bcount,
-        commit,
-        memid,
-        tld,
-    );
-    if p.is_null() || _mi_is_aligned(p, alignment) as libc::c_int != 0 {} else {
+    let mut p: *mut libc::c_void =
+        mi_arena_try_alloc_at(arena, arena_index, bcount, commit, memid, tld);
+    if p.is_null() || _mi_is_aligned(p, alignment) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
-            b"p == NULL || _mi_is_aligned(p, alignment)\0" as *const u8
-                as *const libc::c_char,
+            b"p == NULL || _mi_is_aligned(p, alignment)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4098 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 25],
-                &[libc::c_char; 25],
-            >(b"mi_arena_try_alloc_at_id\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                b"mi_arena_try_alloc_at_id\0",
+            ))
+            .as_ptr(),
         );
     };
     return p;
@@ -5885,21 +5508,18 @@ unsafe extern "C" fn mi_arena_try_alloc(
 ) -> *mut libc::c_void {
     if alignment as libc::c_ulonglong
         <= (1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
-    {} else {
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
+    {
+    } else {
         _mi_assert_fail(
             b"alignment <= MI_SEGMENT_ALIGN\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4106 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 19],
-                &[libc::c_char; 19],
-            >(b"mi_arena_try_alloc\0"))
+            (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(b"mi_arena_try_alloc\0"))
                 .as_ptr(),
         );
     };
-    let max_arena: size_t = ::core::intrinsics::atomic_load_relaxed(&mut mi_arena_count);
+    let max_arena: size_t = ::core::intrinsics::atomic_load_relaxed(&raw mut mi_arena_count);
     if (max_arena == 0 as libc::c_int as size_t) as libc::c_int as libc::c_long != 0 {
         return 0 as *mut libc::c_void;
     }
@@ -5979,9 +5599,7 @@ unsafe extern "C" fn mi_arena_reserve(
     if req_arena_id != _mi_arena_id_none() {
         return 0 as libc::c_int != 0;
     }
-    let arena_count: size_t = ::core::intrinsics::atomic_load_acquire(
-        &mut mi_arena_count,
-    );
+    let arena_count: size_t = ::core::intrinsics::atomic_load_acquire(&raw mut mi_arena_count);
     if arena_count > (132 as libc::c_int - 4 as libc::c_int) as size_t {
         return 0 as libc::c_int != 0;
     }
@@ -5995,18 +5613,16 @@ unsafe extern "C" fn mi_arena_reserve(
     arena_reserve = _mi_align_up(
         arena_reserve,
         ((1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))) as size_t,
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+            as size_t,
     );
     arena_reserve = _mi_align_up(
         arena_reserve,
         ((1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))) as size_t,
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+            as size_t,
     );
-    if arena_count >= 8 as libc::c_int as size_t
-        && arena_count <= 128 as libc::c_int as size_t
-    {
+    if arena_count >= 8 as libc::c_int as size_t && arena_count <= 128 as libc::c_int as size_t {
         let multiplier: size_t = (1 as libc::c_int as size_t)
             << _mi_clamp(
                 arena_count / 8 as libc::c_int as size_t,
@@ -6024,9 +5640,7 @@ unsafe extern "C" fn mi_arena_reserve(
     let mut arena_commit: bool = 0 as libc::c_int != 0;
     if mi_option_get(mi_option_arena_eager_commit) == 2 as libc::c_int as libc::c_long {
         arena_commit = _mi_os_has_overcommit();
-    } else if mi_option_get(mi_option_arena_eager_commit)
-        == 1 as libc::c_int as libc::c_long
-    {
+    } else if mi_option_get(mi_option_arena_eager_commit) == 1 as libc::c_int as libc::c_long {
         arena_commit = 1 as libc::c_int != 0;
     }
     return mi_reserve_os_memory_ex(
@@ -6048,39 +5662,37 @@ pub unsafe extern "C" fn _mi_arena_alloc_aligned(
     mut memid: *mut mi_memid_t,
     mut tld: *mut mi_os_tld_t,
 ) -> *mut libc::c_void {
-    if !memid.is_null() && !tld.is_null() {} else {
+    if !memid.is_null() && !tld.is_null() {
+    } else {
         _mi_assert_fail(
             b"memid != NULL && tld != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4158 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 24],
-                &[libc::c_char; 24],
-            >(b"_mi_arena_alloc_aligned\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 24], &[libc::c_char; 24]>(
+                b"_mi_arena_alloc_aligned\0",
+            ))
+            .as_ptr(),
         );
     };
-    if size > 0 as libc::c_int as size_t {} else {
+    if size > 0 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"size > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4159 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 24],
-                &[libc::c_char; 24],
-            >(b"_mi_arena_alloc_aligned\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 24], &[libc::c_char; 24]>(
+                b"_mi_arena_alloc_aligned\0",
+            ))
+            .as_ptr(),
         );
     };
     *memid = _mi_memid_none();
     let numa_node: libc::c_int = _mi_os_numa_node(tld);
-    if !mi_option_is_enabled(mi_option_disallow_arena_alloc)
-        || req_arena_id != _mi_arena_id_none()
+    if !mi_option_is_enabled(mi_option_disallow_arena_alloc) || req_arena_id != _mi_arena_id_none()
     {
         if size as libc::c_ulonglong
             >= ((1 as libc::c_ulonglong)
-                << 3 as libc::c_int
-                    + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+                << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
                 .wrapping_div(2 as libc::c_int as libc::c_ulonglong)
             && alignment as libc::c_ulonglong
                 <= (1 as libc::c_ulonglong)
@@ -6104,18 +5716,17 @@ pub unsafe extern "C" fn _mi_arena_alloc_aligned(
             if req_arena_id == _mi_arena_id_none() {
                 let mut arena_id: mi_arena_id_t = 0 as libc::c_int;
                 if mi_arena_reserve(size, allow_large, req_arena_id, &mut arena_id) {
-                    if req_arena_id == _mi_arena_id_none() {} else {
+                    if req_arena_id == _mi_arena_id_none() {
+                    } else {
                         _mi_assert_fail(
                             b"req_arena_id == _mi_arena_id_none()\0" as *const u8
                                 as *const libc::c_char,
-                            b"preprocess/mimalloc.c\0" as *const u8
-                                as *const libc::c_char,
+                            b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                             4169 as libc::c_int as libc::c_uint,
-                            (*::core::mem::transmute::<
-                                &[u8; 24],
-                                &[libc::c_char; 24],
-                            >(b"_mi_arena_alloc_aligned\0"))
-                                .as_ptr(),
+                            (*::core::mem::transmute::<&[u8; 24], &[libc::c_char; 24]>(
+                                b"_mi_arena_alloc_aligned\0",
+                            ))
+                            .as_ptr(),
                         );
                     };
                     p = mi_arena_try_alloc_at_id(
@@ -6152,16 +5763,9 @@ pub unsafe extern "C" fn _mi_arena_alloc_aligned(
             allow_large,
             memid,
             (*tld).stats,
-        )
+        );
     } else {
-        return _mi_os_alloc_aligned(
-            size,
-            alignment,
-            commit,
-            allow_large,
-            memid,
-            (*tld).stats,
-        )
+        return _mi_os_alloc_aligned(size, alignment, commit, allow_large, memid, (*tld).stats);
     };
 }
 #[unsafe(no_mangle)]
@@ -6176,8 +5780,8 @@ pub unsafe extern "C" fn _mi_arena_alloc(
     return _mi_arena_alloc_aligned(
         size,
         ((1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))) as size_t,
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+            as size_t,
         0 as libc::c_int as size_t,
         commit,
         allow_large,
@@ -6199,7 +5803,7 @@ pub unsafe extern "C" fn mi_arena_area(
         return 0 as *mut libc::c_void;
     }
     let mut arena: *mut mi_arena_t = ::core::intrinsics::atomic_load_acquire(
-        &mut *mi_arenas.as_mut_ptr().offset(arena_index as isize) as *mut *mut mi_arena_t,
+        &mut *(*(&raw mut mi_arenas)).as_mut_ptr().offset(arena_index as isize) as *mut *mut mi_arena_t,
     );
     if arena.is_null() {
         return 0 as *mut libc::c_void;
@@ -6210,8 +5814,7 @@ pub unsafe extern "C" fn mi_arena_area(
     return (*arena).start as *mut libc::c_void;
 }
 unsafe extern "C" fn mi_arena_purge_delay() -> libc::c_long {
-    return mi_option_get(mi_option_purge_delay)
-        * mi_option_get(mi_option_arena_purge_mult);
+    return mi_option_get(mi_option_purge_delay) * mi_option_get(mi_option_arena_purge_mult);
 }
 unsafe extern "C" fn mi_arena_purge(
     mut arena: *mut mi_arena_t,
@@ -6219,39 +5822,33 @@ unsafe extern "C" fn mi_arena_purge(
     mut blocks: size_t,
     mut stats: *mut mi_stats_t,
 ) {
-    if !((*arena).blocks_committed).is_null() {} else {
+    if !((*arena).blocks_committed).is_null() {
+    } else {
         _mi_assert_fail(
             b"arena->blocks_committed != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4204 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 15],
-                &[libc::c_char; 15],
-            >(b"mi_arena_purge\0"))
+            (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"mi_arena_purge\0"))
                 .as_ptr(),
         );
     };
-    if !((*arena).blocks_purge).is_null() {} else {
+    if !((*arena).blocks_purge).is_null() {
+    } else {
         _mi_assert_fail(
             b"arena->blocks_purge != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4205 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 15],
-                &[libc::c_char; 15],
-            >(b"mi_arena_purge\0"))
+            (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"mi_arena_purge\0"))
                 .as_ptr(),
         );
     };
-    if !(*arena).memid.is_pinned {} else {
+    if !(*arena).memid.is_pinned {
+    } else {
         _mi_assert_fail(
             b"!arena->memid.is_pinned\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4206 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 15],
-                &[libc::c_char; 15],
-            >(b"mi_arena_purge\0"))
+            (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"mi_arena_purge\0"))
                 .as_ptr(),
         );
     };
@@ -6266,22 +5863,20 @@ unsafe extern "C" fn mi_arena_purge(
     ) {
         needs_recommit = _mi_os_purge(p, size, stats);
     } else {
-        if mi_option_is_enabled(mi_option_purge_decommits) as libc::c_int != 0 {} else {
+        if mi_option_is_enabled(mi_option_purge_decommits) as libc::c_int != 0 {
+        } else {
             _mi_assert_fail(
                 b"mi_option_is_enabled(mi_option_purge_decommits)\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 4214 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 15],
-                    &[libc::c_char; 15],
-                >(b"mi_arena_purge\0"))
+                (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"mi_arena_purge\0"))
                     .as_ptr(),
             );
         };
         needs_recommit = _mi_os_purge_ex(p, size, 0 as libc::c_int != 0, stats);
         if needs_recommit {
-            _mi_stat_increase(&mut _mi_stats_main.committed, size);
+            _mi_stat_increase(&raw mut _mi_stats_main.committed, size);
         }
     }
     _mi_bitmap_unclaim_across(
@@ -6305,29 +5900,27 @@ unsafe extern "C" fn mi_arena_schedule_purge(
     mut blocks: size_t,
     mut stats: *mut mi_stats_t,
 ) {
-    if !((*arena).blocks_purge).is_null() {} else {
+    if !((*arena).blocks_purge).is_null() {
+    } else {
         _mi_assert_fail(
             b"arena->blocks_purge != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4224 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 24],
-                &[libc::c_char; 24],
-            >(b"mi_arena_schedule_purge\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 24], &[libc::c_char; 24]>(
+                b"mi_arena_schedule_purge\0",
+            ))
+            .as_ptr(),
         );
     };
     let delay: libc::c_long = mi_arena_purge_delay();
     if delay < 0 as libc::c_int as libc::c_long {
         return;
     }
-    if _mi_preloading() as libc::c_int != 0 || delay == 0 as libc::c_int as libc::c_long
-    {
+    if _mi_preloading() as libc::c_int != 0 || delay == 0 as libc::c_int as libc::c_long {
         mi_arena_purge(arena, bitmap_idx, blocks, stats);
     } else {
-        let mut expire: mi_msecs_t = ::core::intrinsics::atomic_load_relaxed(
-            &mut (*arena).purge_expire,
-        );
+        let mut expire: mi_msecs_t =
+            ::core::intrinsics::atomic_load_relaxed(&mut (*arena).purge_expire);
         if expire != 0 as libc::c_int as mi_msecs_t {
             ::core::intrinsics::atomic_xadd_acqrel(
                 &mut (*arena).purge_expire,
@@ -6385,13 +5978,11 @@ unsafe extern "C" fn mi_arena_try_purge(
     mut force: bool,
     mut stats: *mut mi_stats_t,
 ) -> bool {
-    if (*arena).memid.is_pinned as libc::c_int != 0 || ((*arena).blocks_purge).is_null()
-    {
+    if (*arena).memid.is_pinned as libc::c_int != 0 || ((*arena).blocks_purge).is_null() {
         return 0 as libc::c_int != 0;
     }
-    let mut expire: mi_msecs_t = ::core::intrinsics::atomic_load_relaxed(
-        &mut (*arena).purge_expire,
-    );
+    let mut expire: mi_msecs_t =
+        ::core::intrinsics::atomic_load_relaxed(&mut (*arena).purge_expire);
     if expire == 0 as libc::c_int as mi_msecs_t {
         return 0 as libc::c_int != 0;
     }
@@ -6414,15 +6005,11 @@ unsafe extern "C" fn mi_arena_try_purge(
         );
         if purge != 0 as libc::c_int as size_t {
             let mut bitidx: size_t = 0 as libc::c_int as size_t;
-            while bitidx
-                < (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t
-            {
+            while bitidx < (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t {
                 let mut bitlen: size_t = 0 as libc::c_int as size_t;
                 while bitidx.wrapping_add(bitlen)
-                    < (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int))
-                        as size_t
-                    && purge
-                        & (1 as libc::c_int as size_t) << bitidx.wrapping_add(bitlen)
+                    < (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t
+                    && purge & (1 as libc::c_int as size_t) << bitidx.wrapping_add(bitlen)
                         != 0 as libc::c_int as size_t
                 {
                     bitlen = bitlen.wrapping_add(1);
@@ -6443,8 +6030,7 @@ unsafe extern "C" fn mi_arena_try_purge(
                 }
                 if bitlen > 0 as libc::c_int as size_t {
                     purge = ::core::intrinsics::atomic_load_acquire(
-                        &mut *((*arena).blocks_purge).offset(i as isize)
-                            as *mut mi_bitmap_field_t,
+                        &mut *((*arena).blocks_purge).offset(i as isize) as *mut mi_bitmap_field_t,
                     );
                     if !mi_arena_purge_range(arena, i, bitidx, bitlen, purge, stats) {
                         full_purge = 0 as libc::c_int != 0;
@@ -6457,8 +6043,7 @@ unsafe extern "C" fn mi_arena_try_purge(
                         bitmap_index,
                     );
                 }
-                bitidx = bitidx
-                    .wrapping_add(bitlen.wrapping_add(1 as libc::c_int as size_t));
+                bitidx = bitidx.wrapping_add(bitlen.wrapping_add(1 as libc::c_int as size_t));
             }
         }
         i = i.wrapping_add(1);
@@ -6487,24 +6072,22 @@ unsafe extern "C" fn mi_arenas_try_purge(
     {
         return;
     }
-    let max_arena: size_t = ::core::intrinsics::atomic_load_acquire(&mut mi_arena_count);
+    let max_arena: size_t = ::core::intrinsics::atomic_load_acquire(&raw mut mi_arena_count);
     if max_arena == 0 as libc::c_int as size_t {
         return;
     }
     static mut purge_guard: mi_atomic_guard_t = 0;
     let mut _mi_guard_expected: uintptr_t = 0 as libc::c_int as uintptr_t;
     let mut _mi_guard_once: bool = 1 as libc::c_int != 0;
-    while _mi_guard_once as libc::c_int != 0
-        && {
-            let fresh10 = ::core::intrinsics::atomic_cxchg_acqrel_acquire(
-                &mut purge_guard as *mut mi_atomic_guard_t,
-                *(&mut _mi_guard_expected as *mut uintptr_t),
-                1 as libc::c_int as uintptr_t,
-            );
-            *(&mut _mi_guard_expected as *mut uintptr_t) = fresh10.0;
-            fresh10.1 as libc::c_int != 0
-        }
-    {
+    while _mi_guard_once as libc::c_int != 0 && {
+        let fresh10 = ::core::intrinsics::atomic_cxchg_acqrel_acquire(
+            &raw mut purge_guard as *mut mi_atomic_guard_t,
+            *(&mut _mi_guard_expected as *mut uintptr_t),
+            1 as libc::c_int as uintptr_t,
+        );
+        *(&mut _mi_guard_expected as *mut uintptr_t) = fresh10.0;
+        fresh10.1 as libc::c_int != 0
+    } {
         let mut now: mi_msecs_t = _mi_clock_now();
         let mut max_purge_count: size_t = if visit_all as libc::c_int != 0 {
             max_arena
@@ -6514,7 +6097,7 @@ unsafe extern "C" fn mi_arenas_try_purge(
         let mut i: size_t = 0 as libc::c_int as size_t;
         while i < max_arena {
             let mut arena: *mut mi_arena_t = ::core::intrinsics::atomic_load_acquire(
-                &mut *mi_arenas.as_mut_ptr().offset(i as isize) as *mut *mut mi_arena_t,
+                &mut *(*(&raw mut mi_arenas)).as_mut_ptr().offset(i as isize) as *mut *mut mi_arena_t,
             );
             if !arena.is_null() {
                 if mi_arena_try_purge(arena, now, force, stats) {
@@ -6528,10 +6111,7 @@ unsafe extern "C" fn mi_arenas_try_purge(
             i = i.wrapping_add(1);
             i;
         }
-        ::core::intrinsics::atomic_store_release(
-            &mut purge_guard,
-            0 as libc::c_int as uintptr_t,
-        );
+        ::core::intrinsics::atomic_store_release(&raw mut purge_guard, 0 as libc::c_int as uintptr_t);
         _mi_guard_once = 0 as libc::c_int != 0;
     }
 }
@@ -6543,27 +6123,23 @@ pub unsafe extern "C" fn _mi_arena_free(
     mut memid: mi_memid_t,
     mut stats: *mut mi_stats_t,
 ) {
-    if size > 0 as libc::c_int as size_t && !stats.is_null() {} else {
+    if size > 0 as libc::c_int as size_t && !stats.is_null() {
+    } else {
         _mi_assert_fail(
             b"size > 0 && stats != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4326 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 15],
-                &[libc::c_char; 15],
-            >(b"_mi_arena_free\0"))
+            (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"_mi_arena_free\0"))
                 .as_ptr(),
         );
     };
-    if committed_size <= size {} else {
+    if committed_size <= size {
+    } else {
         _mi_assert_fail(
             b"committed_size <= size\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4327 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 15],
-                &[libc::c_char; 15],
-            >(b"_mi_arena_free\0"))
+            (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"_mi_arena_free\0"))
                 .as_ptr(),
         );
     };
@@ -6576,40 +6152,33 @@ pub unsafe extern "C" fn _mi_arena_free(
     let all_committed: bool = committed_size == size;
     if mi_memkind_is_os(memid.memkind) {
         if !all_committed && committed_size > 0 as libc::c_int as size_t {
-            _mi_stat_decrease(&mut _mi_stats_main.committed, committed_size);
+            _mi_stat_decrease(&raw mut _mi_stats_main.committed, committed_size);
         }
         _mi_os_free(p, size, memid, stats);
-    } else if memid.memkind as libc::c_uint
-        == MI_MEM_ARENA as libc::c_int as libc::c_uint
-    {
+    } else if memid.memkind as libc::c_uint == MI_MEM_ARENA as libc::c_int as libc::c_uint {
         let mut arena_idx: size_t = 0;
         let mut bitmap_idx: size_t = 0;
         mi_arena_memid_indices(memid, &mut arena_idx, &mut bitmap_idx);
-        if arena_idx < 132 as libc::c_int as size_t {} else {
+        if arena_idx < 132 as libc::c_int as size_t {
+        } else {
             _mi_assert_fail(
                 b"arena_idx < MI_MAX_ARENAS\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 4342 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 15],
-                    &[libc::c_char; 15],
-                >(b"_mi_arena_free\0"))
+                (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"_mi_arena_free\0"))
                     .as_ptr(),
             );
         };
         let mut arena: *mut mi_arena_t = ::core::intrinsics::atomic_load_acquire(
-            &mut *mi_arenas.as_mut_ptr().offset(arena_idx as isize)
-                as *mut *mut mi_arena_t,
+            &mut *(*(&raw mut mi_arenas)).as_mut_ptr().offset(arena_idx as isize) as *mut *mut mi_arena_t,
         );
-        if !arena.is_null() {} else {
+        if !arena.is_null() {
+        } else {
             _mi_assert_fail(
                 b"arena != NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 4344 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 15],
-                    &[libc::c_char; 15],
-                >(b"_mi_arena_free\0"))
+                (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"_mi_arena_free\0"))
                     .as_ptr(),
             );
         };
@@ -6617,24 +6186,22 @@ pub unsafe extern "C" fn _mi_arena_free(
         if arena.is_null() {
             _mi_error_message(
                 22 as libc::c_int,
-                b"trying to free from an invalid arena: %p, size %zu, memid: 0x%zx\n\0"
-                    as *const u8 as *const libc::c_char,
+                b"trying to free from an invalid arena: %p, size %zu, memid: 0x%zx\n\0" as *const u8
+                    as *const libc::c_char,
                 p,
                 size,
                 memid,
             );
             return;
         }
-        if (*arena).field_count > mi_bitmap_index_field(bitmap_idx) {} else {
+        if (*arena).field_count > mi_bitmap_index_field(bitmap_idx) {
+        } else {
             _mi_assert_fail(
                 b"arena->field_count > mi_bitmap_index_field(bitmap_idx)\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 4350 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 15],
-                    &[libc::c_char; 15],
-                >(b"_mi_arena_free\0"))
+                (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"_mi_arena_free\0"))
                     .as_ptr(),
             );
         };
@@ -6649,45 +6216,42 @@ pub unsafe extern "C" fn _mi_arena_free(
             );
             return;
         }
-        if (*arena).memid.is_pinned as libc::c_int != 0
-            || ((*arena).blocks_committed).is_null()
-        {
-            if all_committed as libc::c_int != 0 {} else {
+        if (*arena).memid.is_pinned as libc::c_int != 0 || ((*arena).blocks_committed).is_null() {
+            if all_committed as libc::c_int != 0 {
+            } else {
                 _mi_assert_fail(
                     b"all_committed\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     4356 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 15],
-                        &[libc::c_char; 15],
-                    >(b"_mi_arena_free\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(
+                        b"_mi_arena_free\0",
+                    ))
+                    .as_ptr(),
                 );
             };
         } else {
-            if !((*arena).blocks_committed).is_null() {} else {
+            if !((*arena).blocks_committed).is_null() {
+            } else {
                 _mi_assert_fail(
-                    b"arena->blocks_committed != NULL\0" as *const u8
-                        as *const libc::c_char,
+                    b"arena->blocks_committed != NULL\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     4359 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 15],
-                        &[libc::c_char; 15],
-                    >(b"_mi_arena_free\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(
+                        b"_mi_arena_free\0",
+                    ))
+                    .as_ptr(),
                 );
             };
-            if !((*arena).blocks_purge).is_null() {} else {
+            if !((*arena).blocks_purge).is_null() {
+            } else {
                 _mi_assert_fail(
                     b"arena->blocks_purge != NULL\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     4360 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 15],
-                        &[libc::c_char; 15],
-                    >(b"_mi_arena_free\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(
+                        b"_mi_arena_free\0",
+                    ))
+                    .as_ptr(),
                 );
             };
             if !all_committed {
@@ -6698,7 +6262,7 @@ pub unsafe extern "C" fn _mi_arena_free(
                     bitmap_idx,
                 );
                 if committed_size > 0 as libc::c_int as size_t {
-                    _mi_stat_decrease(&mut _mi_stats_main.committed, committed_size);
+                    _mi_stat_decrease(&raw mut _mi_stats_main.committed, committed_size);
                 }
             }
             mi_arena_schedule_purge(arena, bitmap_idx, blocks, stats);
@@ -6712,24 +6276,21 @@ pub unsafe extern "C" fn _mi_arena_free(
         if !all_inuse {
             _mi_error_message(
                 11 as libc::c_int,
-                b"trying to free an already freed arena block: %p, size %zu\n\0"
-                    as *const u8 as *const libc::c_char,
+                b"trying to free an already freed arena block: %p, size %zu\n\0" as *const u8
+                    as *const libc::c_char,
                 p,
                 size,
             );
             return;
         }
     } else {
-        if (memid.memkind as libc::c_uint) < MI_MEM_OS as libc::c_int as libc::c_uint
-        {} else {
+        if (memid.memkind as libc::c_uint) < MI_MEM_OS as libc::c_int as libc::c_uint {
+        } else {
             _mi_assert_fail(
                 b"memid.memkind < MI_MEM_OS\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 4377 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 15],
-                    &[libc::c_char; 15],
-                >(b"_mi_arena_free\0"))
+                (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"_mi_arena_free\0"))
                     .as_ptr(),
             );
         };
@@ -6737,12 +6298,12 @@ pub unsafe extern "C" fn _mi_arena_free(
     mi_arenas_try_purge(0 as libc::c_int != 0, 0 as libc::c_int != 0, stats);
 }
 unsafe extern "C" fn mi_arenas_unsafe_destroy() {
-    let max_arena: size_t = ::core::intrinsics::atomic_load_relaxed(&mut mi_arena_count);
+    let max_arena: size_t = ::core::intrinsics::atomic_load_relaxed(&raw mut mi_arena_count);
     let mut new_max_arena: size_t = 0 as libc::c_int as size_t;
     let mut i: size_t = 0 as libc::c_int as size_t;
     while i < max_arena {
         let mut arena: *mut mi_arena_t = ::core::intrinsics::atomic_load_acquire(
-            &mut *mi_arenas.as_mut_ptr().offset(i as isize) as *mut *mut mi_arena_t,
+            &mut *(*(&raw mut mi_arenas)).as_mut_ptr().offset(i as isize) as *mut *mut mi_arena_t,
         );
         if !arena.is_null() {
             mi_lock_done(&mut (*arena).abandoned_visit_lock);
@@ -6750,15 +6311,14 @@ unsafe extern "C" fn mi_arenas_unsafe_destroy() {
                 && mi_memkind_is_os((*arena).memid.memkind) as libc::c_int != 0
             {
                 ::core::intrinsics::atomic_store_release(
-                    &mut *mi_arenas.as_mut_ptr().offset(i as isize)
-                        as *mut *mut mi_arena_t,
+                    &mut *(*(&raw mut mi_arenas)).as_mut_ptr().offset(i as isize) as *mut *mut mi_arena_t,
                     0 as *mut mi_arena_t,
                 );
                 _mi_os_free(
                     (*arena).start as *mut libc::c_void,
                     mi_arena_size(arena),
                     (*arena).memid,
-                    &mut _mi_stats_main,
+                    &raw mut _mi_stats_main,
                 );
             } else {
                 new_max_arena = i;
@@ -6774,7 +6334,7 @@ unsafe extern "C" fn mi_arenas_unsafe_destroy() {
     }
     let mut expected: size_t = max_arena;
     let fresh11 = ::core::intrinsics::atomic_cxchg_acqrel_acquire(
-        &mut mi_arena_count,
+        &raw mut mi_arena_count,
         *&mut expected,
         new_max_arena,
     );
@@ -6782,10 +6342,7 @@ unsafe extern "C" fn mi_arenas_unsafe_destroy() {
     fresh11.1;
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn _mi_arenas_collect(
-    mut force_purge: bool,
-    mut stats: *mut mi_stats_t,
-) {
+pub unsafe extern "C" fn _mi_arenas_collect(mut force_purge: bool, mut stats: *mut mi_stats_t) {
     mi_arenas_try_purge(force_purge, force_purge, stats);
 }
 #[unsafe(no_mangle)]
@@ -6795,15 +6352,15 @@ pub unsafe extern "C" fn _mi_arena_unsafe_destroy_all(mut stats: *mut mi_stats_t
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_arena_contains(mut p: *const libc::c_void) -> bool {
-    let max_arena: size_t = ::core::intrinsics::atomic_load_relaxed(&mut mi_arena_count);
+    let max_arena: size_t = ::core::intrinsics::atomic_load_relaxed(&raw mut mi_arena_count);
     let mut i: size_t = 0 as libc::c_int as size_t;
     while i < max_arena {
         let mut arena: *mut mi_arena_t = ::core::intrinsics::atomic_load_relaxed(
-            &mut *mi_arenas.as_mut_ptr().offset(i as isize) as *mut *mut mi_arena_t,
+            &mut *(*(&raw mut mi_arenas)).as_mut_ptr().offset(i as isize) as *mut *mut mi_arena_t,
         );
-        if !arena.is_null() && (*arena).start <= p as *const uint8_t as *mut uint8_t
-            && ((*arena).start)
-                .offset(mi_arena_block_size((*arena).block_count) as isize)
+        if !arena.is_null()
+            && (*arena).start <= p as *const uint8_t as *mut uint8_t
+            && ((*arena).start).offset(mi_arena_block_size((*arena).block_count) as isize)
                 > p as *const uint8_t as *mut uint8_t
         {
             return 1 as libc::c_int != 0;
@@ -6818,26 +6375,24 @@ unsafe extern "C" fn mi_arena_add(
     mut arena_id: *mut mi_arena_id_t,
     mut stats: *mut mi_stats_t,
 ) -> bool {
-    if !arena.is_null() {} else {
+    if !arena.is_null() {
+    } else {
         _mi_assert_fail(
             b"arena != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4419 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"mi_arena_add\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"mi_arena_add\0")).as_ptr(),
         );
     };
     if (::core::intrinsics::atomic_load_relaxed(&mut (*arena).start as *mut *mut uint8_t)
         as uintptr_t as libc::c_ulonglong)
         .wrapping_rem(
             (1 as libc::c_ulonglong)
-                << 3 as libc::c_int
-                    + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)),
-        ) == 0 as libc::c_int as libc::c_ulonglong
-    {} else {
+                << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)),
+        )
+        == 0 as libc::c_int as libc::c_ulonglong
+    {
+    } else {
         _mi_assert_fail(
             b"(uintptr_t)mi_atomic_load_ptr_relaxed(uint8_t,&arena->start) % MI_SEGMENT_ALIGN == 0\0"
                 as *const u8 as *const libc::c_char,
@@ -6850,36 +6405,28 @@ unsafe extern "C" fn mi_arena_add(
                 .as_ptr(),
         );
     };
-    if (*arena).block_count > 0 as libc::c_int as size_t {} else {
+    if (*arena).block_count > 0 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"arena->block_count > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4421 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"mi_arena_add\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"mi_arena_add\0")).as_ptr(),
         );
     };
     if !arena_id.is_null() {
         *arena_id = -(1 as libc::c_int);
     }
-    let mut i: size_t = ::core::intrinsics::atomic_xadd_acqrel(
-        &mut mi_arena_count,
-        1 as libc::c_int as uintptr_t,
-    );
+    let mut i: size_t =
+        ::core::intrinsics::atomic_xadd_acqrel(&raw mut mi_arena_count, 1 as libc::c_int as uintptr_t);
     if i >= 132 as libc::c_int as size_t {
-        ::core::intrinsics::atomic_xsub_acqrel(
-            &mut mi_arena_count,
-            1 as libc::c_int as uintptr_t,
-        );
+        ::core::intrinsics::atomic_xsub_acqrel(&raw mut mi_arena_count, 1 as libc::c_int as uintptr_t);
         return 0 as libc::c_int != 0;
     }
     _mi_stat_counter_increase(&mut (*stats).arena_count, 1 as libc::c_int as size_t);
     (*arena).id = mi_arena_id_create(i);
     ::core::intrinsics::atomic_store_release(
-        &mut *mi_arenas.as_mut_ptr().offset(i as isize) as *mut *mut mi_arena_t,
+        &mut *(*(&raw mut mi_arenas)).as_mut_ptr().offset(i as isize) as *mut *mut mi_arena_t,
         arena,
     );
     if !arena_id.is_null() {
@@ -6901,34 +6448,29 @@ unsafe extern "C" fn mi_manage_os_memory_ex2(
     }
     if (size as libc::c_ulonglong)
         < (1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
     {
         return 0 as libc::c_int != 0;
     }
     if is_large {
-        if memid.initially_committed as libc::c_int != 0
-            && memid.is_pinned as libc::c_int != 0
-        {} else {
+        if memid.initially_committed as libc::c_int != 0 && memid.is_pinned as libc::c_int != 0 {
+        } else {
             _mi_assert_fail(
                 b"memid.initially_committed && memid.is_pinned\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 4439 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 24],
-                    &[libc::c_char; 24],
-                >(b"mi_manage_os_memory_ex2\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 24], &[libc::c_char; 24]>(
+                    b"mi_manage_os_memory_ex2\0",
+                ))
+                .as_ptr(),
             );
         };
     }
-    let bcount: size_t = (size as libc::c_ulonglong)
-        .wrapping_div(
-            (1 as libc::c_ulonglong)
-                << 3 as libc::c_int
-                    + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)),
-        ) as size_t;
+    let bcount: size_t = (size as libc::c_ulonglong).wrapping_div(
+        (1 as libc::c_ulonglong)
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)),
+    ) as size_t;
     let fields: size_t = _mi_divide_up(
         bcount,
         (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t,
@@ -6938,13 +6480,10 @@ unsafe extern "C" fn mi_manage_os_memory_ex2(
     } else {
         5 as libc::c_int
     }) as size_t;
-    let asize: size_t = (::core::mem::size_of::<mi_arena_t>() as libc::c_ulong)
-        .wrapping_add(
-            (bitmaps * fields)
-                .wrapping_mul(
-                    ::core::mem::size_of::<mi_bitmap_field_t>() as libc::c_ulong,
-                ),
-        );
+    let asize: size_t = (::core::mem::size_of::<mi_arena_t>() as libc::c_ulong).wrapping_add(
+        (bitmaps * fields)
+            .wrapping_mul(::core::mem::size_of::<mi_bitmap_field_t>() as libc::c_ulong),
+    );
     let mut meta_memid: mi_memid_t = mi_memid_s {
         mem: C2RustUnnamed_0 {
             os: mi_memid_os_info {
@@ -6957,8 +6496,8 @@ unsafe extern "C" fn mi_manage_os_memory_ex2(
         initially_zero: false,
         memkind: MI_MEM_NONE,
     };
-    let mut arena: *mut mi_arena_t = _mi_arena_meta_zalloc(asize, &mut meta_memid)
-        as *mut mi_arena_t;
+    let mut arena: *mut mi_arena_t =
+        _mi_arena_meta_zalloc(asize, &mut meta_memid) as *mut mi_arena_t;
     if arena.is_null() {
         return 0 as libc::c_int != 0;
     }
@@ -6975,17 +6514,13 @@ unsafe extern "C" fn mi_manage_os_memory_ex2(
     (*arena).purge_expire = 0 as libc::c_int as libc::c_long;
     (*arena).search_idx = 0 as libc::c_int as libc::c_ulong;
     mi_lock_init(&mut (*arena).abandoned_visit_lock);
-    (*arena)
-        .blocks_dirty = &mut *((*arena).blocks_inuse)
-        .as_mut_ptr()
-        .offset(fields as isize) as *mut mi_bitmap_field_t;
-    (*arena)
-        .blocks_abandoned = &mut *((*arena).blocks_inuse)
+    (*arena).blocks_dirty = &mut *((*arena).blocks_inuse).as_mut_ptr().offset(fields as isize)
+        as *mut mi_bitmap_field_t;
+    (*arena).blocks_abandoned = &mut *((*arena).blocks_inuse)
         .as_mut_ptr()
         .offset((2 as libc::c_int as size_t * fields) as isize)
         as *mut mi_bitmap_field_t;
-    (*arena)
-        .blocks_committed = if (*arena).memid.is_pinned as libc::c_int != 0 {
+    (*arena).blocks_committed = if (*arena).memid.is_pinned as libc::c_int != 0 {
         0 as *mut mi_bitmap_field_t
     } else {
         &mut *((*arena).blocks_inuse)
@@ -6993,8 +6528,7 @@ unsafe extern "C" fn mi_manage_os_memory_ex2(
             .offset((3 as libc::c_int as size_t * fields) as isize)
             as *mut mi_bitmap_field_t
     };
-    (*arena)
-        .blocks_purge = if (*arena).memid.is_pinned as libc::c_int != 0 {
+    (*arena).blocks_purge = if (*arena).memid.is_pinned as libc::c_int != 0 {
         0 as *mut mi_bitmap_field_t
     } else {
         &mut *((*arena).blocks_inuse)
@@ -7008,32 +6542,29 @@ unsafe extern "C" fn mi_manage_os_memory_ex2(
         memset(
             (*arena).blocks_committed as *mut libc::c_void,
             0xff as libc::c_int,
-            fields
-                .wrapping_mul(
-                    ::core::mem::size_of::<mi_bitmap_field_t>() as libc::c_ulong,
-                ),
+            fields.wrapping_mul(::core::mem::size_of::<mi_bitmap_field_t>() as libc::c_ulong),
         );
     }
     let mut post: ptrdiff_t = (fields
         * (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t)
         .wrapping_sub(bcount) as ptrdiff_t;
-    if post >= 0 as libc::c_int as ptrdiff_t {} else {
+    if post >= 0 as libc::c_int as ptrdiff_t {
+    } else {
         _mi_assert_fail(
             b"post >= 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4469 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 24],
-                &[libc::c_char; 24],
-            >(b"mi_manage_os_memory_ex2\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 24], &[libc::c_char; 24]>(
+                b"mi_manage_os_memory_ex2\0",
+            ))
+            .as_ptr(),
         );
     };
     if post > 0 as libc::c_int as ptrdiff_t {
         let mut postidx: mi_bitmap_index_t = mi_bitmap_index_create(
             fields.wrapping_sub(1 as libc::c_int as size_t),
-            ((8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as ptrdiff_t
-                - post) as size_t,
+            ((8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as ptrdiff_t - post)
+                as size_t,
         );
         _mi_bitmap_claim(
             ((*arena).blocks_inuse).as_mut_ptr(),
@@ -7043,7 +6574,7 @@ unsafe extern "C" fn mi_manage_os_memory_ex2(
             0 as *mut bool,
         );
     }
-    return mi_arena_add(arena, arena_id, &mut _mi_stats_main);
+    return mi_arena_add(arena, arena_id, &raw mut _mi_stats_main);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_manage_os_memory_ex(
@@ -7060,15 +6591,7 @@ pub unsafe extern "C" fn mi_manage_os_memory_ex(
     memid.initially_committed = is_committed;
     memid.initially_zero = is_zero;
     memid.is_pinned = is_large;
-    return mi_manage_os_memory_ex2(
-        start,
-        size,
-        is_large,
-        numa_node,
-        exclusive,
-        memid,
-        arena_id,
-    );
+    return mi_manage_os_memory_ex2(start, size, is_large, numa_node, exclusive, memid, arena_id);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_reserve_os_memory_ex(
@@ -7084,8 +6607,8 @@ pub unsafe extern "C" fn mi_reserve_os_memory_ex(
     size = _mi_align_up(
         size,
         ((1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))) as size_t,
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+            as size_t,
     );
     let mut memid: mi_memid_t = mi_memid_s {
         mem: C2RustUnnamed_0 {
@@ -7102,12 +6625,12 @@ pub unsafe extern "C" fn mi_reserve_os_memory_ex(
     let mut start: *mut libc::c_void = _mi_os_alloc_aligned(
         size,
         ((1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))) as size_t,
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+            as size_t,
         commit,
         allow_large,
         &mut memid,
-        &mut _mi_stats_main,
+        &raw mut _mi_stats_main,
     );
     if start.is_null() {
         return 12 as libc::c_int;
@@ -7122,7 +6645,7 @@ pub unsafe extern "C" fn mi_reserve_os_memory_ex(
         memid,
         arena_id,
     ) {
-        _mi_os_free_ex(start, size, commit, memid, &mut _mi_stats_main);
+        _mi_os_free_ex(start, size, commit, memid, &raw mut _mi_stats_main);
         _mi_verbose_message(
             b"failed to reserve %zu KiB memory\n\0" as *const u8 as *const libc::c_char,
             _mi_divide_up(size, 1024 as libc::c_int as size_t),
@@ -7195,18 +6718,15 @@ unsafe extern "C" fn mi_debug_show_bitmap(
             &mut *fields.offset(i as isize) as *mut mi_bitmap_field_t,
         );
         let mut bit: size_t = 0 as libc::c_int as size_t;
-        while bit
-            < (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t
-        {
+        while bit < (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t {
             if bcount < block_count {
-                let mut inuse: bool = (1 as libc::c_int as uintptr_t) << bit & field
-                    != 0 as libc::c_int as uintptr_t;
+                let mut inuse: bool =
+                    (1 as libc::c_int as uintptr_t) << bit & field != 0 as libc::c_int as uintptr_t;
                 if inuse {
                     inuse_count = inuse_count.wrapping_add(1);
                     inuse_count;
                 }
-                buf[bit
-                    as usize] = (if inuse as libc::c_int != 0 {
+                buf[bit as usize] = (if inuse as libc::c_int != 0 {
                     'x' as i32
                 } else {
                     '.' as i32
@@ -7219,8 +6739,8 @@ unsafe extern "C" fn mi_debug_show_bitmap(
             bcount = bcount.wrapping_add(1);
             bcount;
         }
-        buf[(8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int))
-            as usize] = 0 as libc::c_int as libc::c_char;
+        buf[(8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as usize] =
+            0 as libc::c_int as libc::c_char;
         _mi_verbose_message(
             b"%s  %s\n\0" as *const u8 as *const libc::c_char,
             prefix,
@@ -7242,16 +6762,14 @@ pub unsafe extern "C" fn mi_debug_show_arenas(
     mut show_abandoned: bool,
     mut show_purge: bool,
 ) {
-    let mut max_arenas: size_t = ::core::intrinsics::atomic_load_relaxed(
-        &mut mi_arena_count,
-    );
+    let mut max_arenas: size_t = ::core::intrinsics::atomic_load_relaxed(&raw mut mi_arena_count);
     let mut inuse_total: size_t = 0 as libc::c_int as size_t;
     let mut abandoned_total: size_t = 0 as libc::c_int as size_t;
     let mut purge_total: size_t = 0 as libc::c_int as size_t;
     let mut i: size_t = 0 as libc::c_int as size_t;
     while i < max_arenas {
         let mut arena: *mut mi_arena_t = ::core::intrinsics::atomic_load_relaxed(
-            &mut *mi_arenas.as_mut_ptr().offset(i as isize) as *mut *mut mi_arena_t,
+            &mut *(*(&raw mut mi_arenas)).as_mut_ptr().offset(i as isize) as *mut *mut mi_arena_t,
         );
         if arena.is_null() {
             break;
@@ -7262,11 +6780,8 @@ pub unsafe extern "C" fn mi_debug_show_arenas(
             i,
             (*arena).block_count,
             ((1 as libc::c_ulonglong)
-                << 3 as libc::c_int
-                    + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
-                .wrapping_div(
-                    (1024 as libc::c_ulonglong).wrapping_mul(1024 as libc::c_ulonglong),
-                ),
+                << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+                .wrapping_div((1024 as libc::c_ulonglong).wrapping_mul(1024 as libc::c_ulonglong)),
             (*arena).field_count,
             if (*arena).memid.is_pinned as libc::c_int != 0 {
                 b", pinned\0" as *const u8 as *const libc::c_char
@@ -7275,16 +6790,13 @@ pub unsafe extern "C" fn mi_debug_show_arenas(
             },
         );
         if show_inuse {
-            inuse_total = inuse_total
-                .wrapping_add(
-                    mi_debug_show_bitmap(
-                        b"  \0" as *const u8 as *const libc::c_char,
-                        b"inuse blocks\0" as *const u8 as *const libc::c_char,
-                        (*arena).block_count,
-                        ((*arena).blocks_inuse).as_mut_ptr(),
-                        (*arena).field_count,
-                    ),
-                );
+            inuse_total = inuse_total.wrapping_add(mi_debug_show_bitmap(
+                b"  \0" as *const u8 as *const libc::c_char,
+                b"inuse blocks\0" as *const u8 as *const libc::c_char,
+                (*arena).block_count,
+                ((*arena).blocks_inuse).as_mut_ptr(),
+                (*arena).field_count,
+            ));
         }
         if !((*arena).blocks_committed).is_null() {
             mi_debug_show_bitmap(
@@ -7296,28 +6808,22 @@ pub unsafe extern "C" fn mi_debug_show_arenas(
             );
         }
         if show_abandoned {
-            abandoned_total = abandoned_total
-                .wrapping_add(
-                    mi_debug_show_bitmap(
-                        b"  \0" as *const u8 as *const libc::c_char,
-                        b"abandoned blocks\0" as *const u8 as *const libc::c_char,
-                        (*arena).block_count,
-                        (*arena).blocks_abandoned,
-                        (*arena).field_count,
-                    ),
-                );
+            abandoned_total = abandoned_total.wrapping_add(mi_debug_show_bitmap(
+                b"  \0" as *const u8 as *const libc::c_char,
+                b"abandoned blocks\0" as *const u8 as *const libc::c_char,
+                (*arena).block_count,
+                (*arena).blocks_abandoned,
+                (*arena).field_count,
+            ));
         }
         if show_purge as libc::c_int != 0 && !((*arena).blocks_purge).is_null() {
-            purge_total = purge_total
-                .wrapping_add(
-                    mi_debug_show_bitmap(
-                        b"  \0" as *const u8 as *const libc::c_char,
-                        b"purgeable blocks\0" as *const u8 as *const libc::c_char,
-                        (*arena).block_count,
-                        (*arena).blocks_purge,
-                        (*arena).field_count,
-                    ),
-                );
+            purge_total = purge_total.wrapping_add(mi_debug_show_bitmap(
+                b"  \0" as *const u8 as *const libc::c_char,
+                b"purgeable blocks\0" as *const u8 as *const libc::c_char,
+                (*arena).block_count,
+                (*arena).blocks_purge,
+                (*arena).field_count,
+            ));
         }
         i = i.wrapping_add(1);
         i;
@@ -7385,15 +6891,14 @@ pub unsafe extern "C" fn mi_reserve_huge_os_pages_at_ex(
     );
     if p.is_null() || pages_reserved == 0 as libc::c_int as size_t {
         _mi_warning_message(
-            b"failed to reserve %zu GiB huge pages\n\0" as *const u8
-                as *const libc::c_char,
+            b"failed to reserve %zu GiB huge pages\n\0" as *const u8 as *const libc::c_char,
             pages,
         );
         return 12 as libc::c_int;
     }
     _mi_verbose_message(
-        b"numa node %i: reserved %zu GiB huge pages (of the %zu GiB requested)\n\0"
-            as *const u8 as *const libc::c_char,
+        b"numa node %i: reserved %zu GiB huge pages (of the %zu GiB requested)\n\0" as *const u8
+            as *const libc::c_char,
         numa_node,
         pages_reserved,
         pages,
@@ -7407,7 +6912,7 @@ pub unsafe extern "C" fn mi_reserve_huge_os_pages_at_ex(
         memid,
         arena_id,
     ) {
-        _mi_os_free(p, hsize, memid, &mut _mi_stats_main);
+        _mi_os_free(p, hsize, memid, &raw mut _mi_stats_main);
         return 12 as libc::c_int;
     }
     return 0 as libc::c_int;
@@ -7457,11 +6962,8 @@ pub unsafe extern "C" fn mi_reserve_huge_os_pages_interleave(
             node_pages = node_pages.wrapping_add(1);
             node_pages;
         }
-        let mut err: libc::c_int = mi_reserve_huge_os_pages_at(
-            node_pages,
-            numa_node as libc::c_int,
-            timeout_per,
-        );
+        let mut err: libc::c_int =
+            mi_reserve_huge_os_pages_at(node_pages, numa_node as libc::c_int, timeout_per);
         if err != 0 {
             return err;
         }
@@ -7502,28 +7004,23 @@ pub unsafe extern "C" fn mi_reserve_huge_os_pages(
 unsafe extern "C" fn mi_bitmap_mask_(mut count: size_t, mut bitidx: size_t) -> size_t {
     if count.wrapping_add(bitidx)
         <= (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
-            b"count + bitidx <= MI_BITMAP_FIELD_BITS\0" as *const u8
-                as *const libc::c_char,
+            b"count + bitidx <= MI_BITMAP_FIELD_BITS\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4606 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 16],
-                &[libc::c_char; 16],
-            >(b"mi_bitmap_mask_\0"))
+            (*::core::mem::transmute::<&[u8; 16], &[libc::c_char; 16]>(b"mi_bitmap_mask_\0"))
                 .as_ptr(),
         );
     };
-    if count > 0 as libc::c_int as size_t {} else {
+    if count > 0 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"count > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4607 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 16],
-                &[libc::c_char; 16],
-            >(b"mi_bitmap_mask_\0"))
+            (*::core::mem::transmute::<&[u8; 16], &[libc::c_char; 16]>(b"mi_bitmap_mask_\0"))
                 .as_ptr(),
         );
     };
@@ -7533,8 +7030,8 @@ unsafe extern "C" fn mi_bitmap_mask_(mut count: size_t, mut bitidx: size_t) -> s
     if count == 0 as libc::c_int as size_t {
         return 0 as libc::c_int as size_t;
     }
-    return ((1 as libc::c_int as size_t) << count)
-        .wrapping_sub(1 as libc::c_int as size_t) << bitidx;
+    return ((1 as libc::c_int as size_t) << count).wrapping_sub(1 as libc::c_int as size_t)
+        << bitidx;
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_bitmap_try_find_claim_field(
@@ -7543,70 +7040,68 @@ pub unsafe extern "C" fn _mi_bitmap_try_find_claim_field(
     count: size_t,
     mut bitmap_idx: *mut mi_bitmap_index_t,
 ) -> bool {
-    if !bitmap_idx.is_null() {} else {
+    if !bitmap_idx.is_null() {
+    } else {
         _mi_assert_fail(
             b"bitmap_idx != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4614 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 32],
-                &[libc::c_char; 32],
-            >(b"_mi_bitmap_try_find_claim_field\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 32], &[libc::c_char; 32]>(
+                b"_mi_bitmap_try_find_claim_field\0",
+            ))
+            .as_ptr(),
         );
     };
-    if count <= (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t
-    {} else {
+    if count <= (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t {
+    } else {
         _mi_assert_fail(
             b"count <= MI_BITMAP_FIELD_BITS\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4615 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 32],
-                &[libc::c_char; 32],
-            >(b"_mi_bitmap_try_find_claim_field\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 32], &[libc::c_char; 32]>(
+                b"_mi_bitmap_try_find_claim_field\0",
+            ))
+            .as_ptr(),
         );
     };
-    let mut field: *mut mi_bitmap_field_t = &mut *bitmap.offset(idx as isize)
-        as *mut mi_bitmap_field_t;
+    let mut field: *mut mi_bitmap_field_t =
+        &mut *bitmap.offset(idx as isize) as *mut mi_bitmap_field_t;
     let mut map: size_t = ::core::intrinsics::atomic_load_relaxed(field);
     if map == !(0 as libc::c_int as size_t) {
         return 0 as libc::c_int != 0;
     }
     let mask: size_t = mi_bitmap_mask_(count, 0 as libc::c_int as size_t);
-    let bitidx_max: size_t = ((8 as libc::c_int
-        * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t)
+    let bitidx_max: size_t = ((8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int))
+        as size_t)
         .wrapping_sub(count);
     let mut bitidx: size_t = mi_ctz(!map);
     let mut m: size_t = mask << bitidx;
     while bitidx <= bitidx_max {
         let mapm: size_t = map & m;
         if mapm == 0 as libc::c_int as size_t {
-            if m >> bitidx == mask {} else {
+            if m >> bitidx == mask {
+            } else {
                 _mi_assert_fail(
                     b"(m >> bitidx) == mask\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     4630 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 32],
-                        &[libc::c_char; 32],
-                    >(b"_mi_bitmap_try_find_claim_field\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 32], &[libc::c_char; 32]>(
+                        b"_mi_bitmap_try_find_claim_field\0",
+                    ))
+                    .as_ptr(),
                 );
             };
             let newmap: size_t = map | m;
-            if (newmap ^ map) >> bitidx == mask {} else {
+            if (newmap ^ map) >> bitidx == mask {
+            } else {
                 _mi_assert_fail(
-                    b"(newmap^map) >> bitidx == mask\0" as *const u8
-                        as *const libc::c_char,
+                    b"(newmap^map) >> bitidx == mask\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     4632 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 32],
-                        &[libc::c_char; 32],
-                    >(b"_mi_bitmap_try_find_claim_field\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 32], &[libc::c_char; 32]>(
+                        b"_mi_bitmap_try_find_claim_field\0",
+                    ))
+                    .as_ptr(),
                 );
             };
             let fresh12 = ::core::intrinsics::atomic_cxchg_acqrel_acquire(
@@ -7621,16 +7116,16 @@ pub unsafe extern "C" fn _mi_bitmap_try_find_claim_field(
             *bitmap_idx = mi_bitmap_index_create(idx, bitidx);
             return 1 as libc::c_int != 0;
         } else {
-            if mapm != 0 as libc::c_int as size_t {} else {
+            if mapm != 0 as libc::c_int as size_t {
+            } else {
                 _mi_assert_fail(
                     b"mapm != 0\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     4643 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 32],
-                        &[libc::c_char; 32],
-                    >(b"_mi_bitmap_try_find_claim_field\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 32], &[libc::c_char; 32]>(
+                        b"_mi_bitmap_try_find_claim_field\0",
+                    ))
+                    .as_ptr(),
                 );
             };
             let shift: size_t = if count == 1 as libc::c_int as size_t {
@@ -7640,16 +7135,16 @@ pub unsafe extern "C" fn _mi_bitmap_try_find_claim_field(
                     .wrapping_sub(mi_clz(mapm))
                     .wrapping_sub(bitidx)
             };
-            if shift > 0 as libc::c_int as size_t && shift <= count {} else {
+            if shift > 0 as libc::c_int as size_t && shift <= count {
+            } else {
                 _mi_assert_fail(
                     b"shift > 0 && shift <= count\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     4645 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 32],
-                        &[libc::c_char; 32],
-                    >(b"_mi_bitmap_try_find_claim_field\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 32], &[libc::c_char; 32]>(
+                        b"_mi_bitmap_try_find_claim_field\0",
+                    ))
+                    .as_ptr(),
                 );
             };
             bitidx = bitidx.wrapping_add(shift);
@@ -7692,15 +7187,13 @@ pub unsafe extern "C" fn _mi_bitmap_unclaim(
     let idx: size_t = mi_bitmap_index_field(bitmap_idx);
     let bitidx: size_t = mi_bitmap_index_bit_in_field(bitmap_idx);
     let mask: size_t = mi_bitmap_mask_(count, bitidx);
-    if bitmap_fields > idx {} else {
+    if bitmap_fields > idx {
+    } else {
         _mi_assert_fail(
             b"bitmap_fields > idx\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4669 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 19],
-                &[libc::c_char; 19],
-            >(b"_mi_bitmap_unclaim\0"))
+            (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(b"_mi_bitmap_unclaim\0"))
                 .as_ptr(),
         );
     };
@@ -7721,15 +7214,13 @@ pub unsafe extern "C" fn _mi_bitmap_claim(
     let idx: size_t = mi_bitmap_index_field(bitmap_idx);
     let bitidx: size_t = mi_bitmap_index_bit_in_field(bitmap_idx);
     let mask: size_t = mi_bitmap_mask_(count, bitidx);
-    if bitmap_fields > idx {} else {
+    if bitmap_fields > idx {
+    } else {
         _mi_assert_fail(
             b"bitmap_fields > idx\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4677 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 17],
-                &[libc::c_char; 17],
-            >(b"_mi_bitmap_claim\0"))
+            (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"_mi_bitmap_claim\0"))
                 .as_ptr(),
         );
     };
@@ -7752,20 +7243,18 @@ unsafe extern "C" fn mi_bitmap_is_claimedx(
     let idx: size_t = mi_bitmap_index_field(bitmap_idx);
     let bitidx: size_t = mi_bitmap_index_bit_in_field(bitmap_idx);
     let mask: size_t = mi_bitmap_mask_(count, bitidx);
-    if bitmap_fields > idx {} else {
+    if bitmap_fields > idx {
+    } else {
         _mi_assert_fail(
             b"bitmap_fields > idx\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4686 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"mi_bitmap_is_claimedx\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"mi_bitmap_is_claimedx\0"))
                 .as_ptr(),
         );
     };
     let field: size_t = ::core::intrinsics::atomic_load_relaxed(
-        &mut *bitmap.offset(idx as isize) as *mut mi_bitmap_field_t,
+        &mut *bitmap.offset(idx as isize) as *mut mi_bitmap_field_t
     );
     if !any_ones.is_null() {
         *any_ones = field & mask != 0 as libc::c_int as size_t;
@@ -7782,15 +7271,13 @@ pub unsafe extern "C" fn _mi_bitmap_try_claim(
     let idx: size_t = mi_bitmap_index_field(bitmap_idx);
     let bitidx: size_t = mi_bitmap_index_bit_in_field(bitmap_idx);
     let mask: size_t = mi_bitmap_mask_(count, bitidx);
-    if bitmap_fields > idx {} else {
+    if bitmap_fields > idx {
+    } else {
         _mi_assert_fail(
             b"bitmap_fields > idx\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4695 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 21],
-                &[libc::c_char; 21],
-            >(b"_mi_bitmap_try_claim\0"))
+            (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(b"_mi_bitmap_try_claim\0"))
                 .as_ptr(),
         );
     };
@@ -7811,15 +7298,13 @@ pub unsafe extern "C" fn _mi_bitmap_try_claim(
             break;
         }
     }
-    if expected & mask == 0 as libc::c_int as size_t {} else {
+    if expected & mask == 0 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"(expected & mask) == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4701 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 21],
-                &[libc::c_char; 21],
-            >(b"_mi_bitmap_try_claim\0"))
+            (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(b"_mi_bitmap_try_claim\0"))
                 .as_ptr(),
         );
     };
@@ -7832,13 +7317,7 @@ pub unsafe extern "C" fn _mi_bitmap_is_claimed(
     mut count: size_t,
     mut bitmap_idx: mi_bitmap_index_t,
 ) -> bool {
-    return mi_bitmap_is_claimedx(
-        bitmap,
-        bitmap_fields,
-        count,
-        bitmap_idx,
-        0 as *mut bool,
-    );
+    return mi_bitmap_is_claimedx(bitmap, bitmap_fields, count, bitmap_idx, 0 as *mut bool);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_bitmap_is_any_claimed(
@@ -7861,33 +7340,32 @@ unsafe extern "C" fn mi_bitmap_try_find_claim_field_across(
     mut stats: *mut mi_stats_t,
 ) -> bool {
     let mut current_block: u64;
-    if !bitmap_idx.is_null() {} else {
+    if !bitmap_idx.is_null() {
+    } else {
         _mi_assert_fail(
             b"bitmap_idx != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4714 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 38],
-                &[libc::c_char; 38],
-            >(b"mi_bitmap_try_find_claim_field_across\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 38], &[libc::c_char; 38]>(
+                b"mi_bitmap_try_find_claim_field_across\0",
+            ))
+            .as_ptr(),
         );
     };
-    let mut field: *mut mi_bitmap_field_t = &mut *bitmap.offset(idx as isize)
-        as *mut mi_bitmap_field_t;
+    let mut field: *mut mi_bitmap_field_t =
+        &mut *bitmap.offset(idx as isize) as *mut mi_bitmap_field_t;
     let mut map: size_t = ::core::intrinsics::atomic_load_relaxed(field);
     let initial: size_t = mi_clz(map);
-    if initial <= (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t
-    {} else {
+    if initial <= (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t {
+    } else {
         _mi_assert_fail(
             b"initial <= MI_BITMAP_FIELD_BITS\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4718 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 38],
-                &[libc::c_char; 38],
-            >(b"mi_bitmap_try_find_claim_field_across\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 38], &[libc::c_char; 38]>(
+                b"mi_bitmap_try_find_claim_field_across\0",
+            ))
+            .as_ptr(),
         );
     };
     if initial == 0 as libc::c_int as size_t {
@@ -7910,29 +7388,26 @@ unsafe extern "C" fn mi_bitmap_try_find_claim_field_across(
         field;
         map = ::core::intrinsics::atomic_load_relaxed(field);
         let mask_bits: size_t = if found
-            .wrapping_add(
-                (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t,
-            ) <= count
+            .wrapping_add((8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t)
+            <= count
         {
             (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t
         } else {
             count.wrapping_sub(found)
         };
         if mask_bits > 0 as libc::c_int as size_t
-            && mask_bits
-                <= (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int))
-                    as size_t
-        {} else {
+            && mask_bits <= (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t
+        {
+        } else {
             _mi_assert_fail(
                 b"mask_bits > 0 && mask_bits <= MI_BITMAP_FIELD_BITS\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 4728 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 38],
-                    &[libc::c_char; 38],
-                >(b"mi_bitmap_try_find_claim_field_across\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 38], &[libc::c_char; 38]>(
+                    b"mi_bitmap_try_find_claim_field_across\0",
+                ))
+                .as_ptr(),
             );
         };
         mask = mi_bitmap_mask_(mask_bits, 0 as libc::c_int as size_t);
@@ -7941,25 +7416,24 @@ unsafe extern "C" fn mi_bitmap_try_find_claim_field_across(
         }
         found = found.wrapping_add(mask_bits);
     }
-    if field < &mut *bitmap.offset(bitmap_fields as isize) as *mut mi_bitmap_field_t
-    {} else {
+    if field < &mut *bitmap.offset(bitmap_fields as isize) as *mut mi_bitmap_field_t {
+    } else {
         _mi_assert_fail(
             b"field < &bitmap[bitmap_fields]\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4733 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 38],
-                &[libc::c_char; 38],
-            >(b"mi_bitmap_try_find_claim_field_across\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 38], &[libc::c_char; 38]>(
+                b"mi_bitmap_try_find_claim_field_across\0",
+            ))
+            .as_ptr(),
         );
     };
     let final_field: *mut mi_bitmap_field_t = field;
     let final_mask: size_t = mask;
-    let initial_field: *mut mi_bitmap_field_t = &mut *bitmap.offset(idx as isize)
-        as *mut mi_bitmap_field_t;
-    let initial_idx: size_t = ((8 as libc::c_int
-        * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t)
+    let initial_field: *mut mi_bitmap_field_t =
+        &mut *bitmap.offset(idx as isize) as *mut mi_bitmap_field_t;
+    let initial_idx: size_t = ((8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int))
+        as size_t)
         .wrapping_sub(initial);
     let initial_mask: size_t = mi_bitmap_mask_(initial, initial_idx);
     let mut newmap: size_t = 0;
@@ -7992,22 +7466,20 @@ unsafe extern "C" fn mi_bitmap_try_find_claim_field_across(
                     }
                     newmap = 0 as libc::c_int as size_t;
                     map = mi_bitmap_mask_(
-                        (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int))
-                            as size_t,
+                        (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t,
                         0 as libc::c_int as size_t,
                     );
-                    if ::core::intrinsics::atomic_load_relaxed(field) == map {} else {
+                    if ::core::intrinsics::atomic_load_relaxed(field) == map {
+                    } else {
                         _mi_assert_fail(
                             b"mi_atomic_load_relaxed(field) == map\0" as *const u8
                                 as *const libc::c_char,
-                            b"preprocess/mimalloc.c\0" as *const u8
-                                as *const libc::c_char,
+                            b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                             4764 as libc::c_int as libc::c_uint,
-                            (*::core::mem::transmute::<
-                                &[u8; 38],
-                                &[libc::c_char; 38],
-                            >(b"mi_bitmap_try_find_claim_field_across\0"))
-                                .as_ptr(),
+                            (*::core::mem::transmute::<&[u8; 38], &[libc::c_char; 38]>(
+                                b"mi_bitmap_try_find_claim_field_across\0",
+                            ))
+                            .as_ptr(),
                         );
                     };
                     ::core::intrinsics::atomic_store_release(field, newmap);
@@ -8015,18 +7487,17 @@ unsafe extern "C" fn mi_bitmap_try_find_claim_field_across(
                 if field == initial_field {
                     map = ::core::intrinsics::atomic_load_relaxed(field);
                     loop {
-                        if map & initial_mask == initial_mask {} else {
+                        if map & initial_mask == initial_mask {
+                        } else {
                             _mi_assert_fail(
                                 b"(map & initial_mask) == initial_mask\0" as *const u8
                                     as *const libc::c_char,
-                                b"preprocess/mimalloc.c\0" as *const u8
-                                    as *const libc::c_char,
+                                b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                                 4770 as libc::c_int as libc::c_uint,
-                                (*::core::mem::transmute::<
-                                    &[u8; 38],
-                                    &[libc::c_char; 38],
-                                >(b"mi_bitmap_try_find_claim_field_across\0"))
-                                    .as_ptr(),
+                                (*::core::mem::transmute::<&[u8; 38], &[libc::c_char; 38]>(
+                                    b"mi_bitmap_try_find_claim_field_across\0",
+                                ))
+                                .as_ptr(),
                             );
                         };
                         newmap = map & !initial_mask;
@@ -8054,17 +7525,16 @@ unsafe extern "C" fn mi_bitmap_try_find_claim_field_across(
                         retries.wrapping_add(1 as libc::c_int as size_t),
                         bitmap_idx,
                         stats,
-                    )
+                    );
                 } else {
-                    return 0 as libc::c_int != 0
+                    return 0 as libc::c_int != 0;
                 }
             }
             _ => {
                 field = field.offset(1);
                 if field < final_field {
                     newmap = mi_bitmap_mask_(
-                        (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int))
-                            as size_t,
+                        (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t,
                         0 as libc::c_int as size_t,
                     );
                     map = 0 as libc::c_int as size_t;
@@ -8080,18 +7550,16 @@ unsafe extern "C" fn mi_bitmap_try_find_claim_field_across(
                         current_block = 14576567515993809846;
                     }
                 } else {
-                    if field == final_field {} else {
+                    if field == final_field {
+                    } else {
                         _mi_assert_fail(
-                            b"field == final_field\0" as *const u8
-                                as *const libc::c_char,
-                            b"preprocess/mimalloc.c\0" as *const u8
-                                as *const libc::c_char,
+                            b"field == final_field\0" as *const u8 as *const libc::c_char,
+                            b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                             4751 as libc::c_int as libc::c_uint,
-                            (*::core::mem::transmute::<
-                                &[u8; 38],
-                                &[libc::c_char; 38],
-                            >(b"mi_bitmap_try_find_claim_field_across\0"))
-                                .as_ptr(),
+                            (*::core::mem::transmute::<&[u8; 38], &[libc::c_char; 38]>(
+                                b"mi_bitmap_try_find_claim_field_across\0",
+                            ))
+                            .as_ptr(),
                         );
                     };
                     map = ::core::intrinsics::atomic_load_relaxed(field);
@@ -8120,7 +7588,7 @@ unsafe extern "C" fn mi_bitmap_try_find_claim_field_across(
                 }
             }
         }
-    };
+    }
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_bitmap_try_find_from_claim_across(
@@ -8131,16 +7599,16 @@ pub unsafe extern "C" fn _mi_bitmap_try_find_from_claim_across(
     mut bitmap_idx: *mut mi_bitmap_index_t,
     mut stats: *mut mi_stats_t,
 ) -> bool {
-    if count > 0 as libc::c_int as size_t {} else {
+    if count > 0 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"count > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4783 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 38],
-                &[libc::c_char; 38],
-            >(b"_mi_bitmap_try_find_from_claim_across\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 38], &[libc::c_char; 38]>(
+                b"_mi_bitmap_try_find_from_claim_across\0",
+            ))
+            .as_ptr(),
         );
     };
     if count <= 2 as libc::c_int as size_t {
@@ -8187,48 +7655,48 @@ unsafe extern "C" fn mi_bitmap_mask_across(
     let bitidx: size_t = mi_bitmap_index_bit_in_field(bitmap_idx);
     if (bitidx.wrapping_add(count)
         <= (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t)
-        as libc::c_int as libc::c_long != 0
+        as libc::c_int as libc::c_long
+        != 0
     {
         *pre_mask = mi_bitmap_mask_(count, bitidx);
         *mid_mask = 0 as libc::c_int as size_t;
         *post_mask = 0 as libc::c_int as size_t;
-        if mi_bitmap_index_field(bitmap_idx) < bitmap_fields {} else {
+        if mi_bitmap_index_field(bitmap_idx) < bitmap_fields {
+        } else {
             _mi_assert_fail(
                 b"mi_bitmap_index_field(bitmap_idx) < bitmap_fields\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 4803 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 22],
-                    &[libc::c_char; 22],
-                >(b"mi_bitmap_mask_across\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(
+                    b"mi_bitmap_mask_across\0",
+                ))
+                .as_ptr(),
             );
         };
         return 0 as libc::c_int as size_t;
     } else {
-        let pre_bits: size_t = ((8 as libc::c_int
-            * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t)
+        let pre_bits: size_t = ((8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int))
+            as size_t)
             .wrapping_sub(bitidx);
-        if pre_bits < count {} else {
+        if pre_bits < count {
+        } else {
             _mi_assert_fail(
                 b"pre_bits < count\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 4808 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 22],
-                    &[libc::c_char; 22],
-                >(b"mi_bitmap_mask_across\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(
+                    b"mi_bitmap_mask_across\0",
+                ))
+                .as_ptr(),
             );
         };
         *pre_mask = mi_bitmap_mask_(pre_bits, bitidx);
         count = count.wrapping_sub(pre_bits);
-        let mid_count: size_t = count
-            / (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t;
+        let mid_count: size_t =
+            count / (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t;
         *mid_mask = !(0 as libc::c_int as size_t);
-        count = count
-            % (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t;
+        count = count % (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t;
         *post_mask = if count == 0 as libc::c_int as size_t {
             0 as libc::c_int as size_t
         } else {
@@ -8242,8 +7710,10 @@ unsafe extern "C" fn mi_bitmap_mask_across(
                 } else {
                     1 as libc::c_int
                 }) as size_t,
-            ) < bitmap_fields
-        {} else {
+            )
+            < bitmap_fields
+        {
+        } else {
             _mi_assert_fail(
                 b"mi_bitmap_index_field(bitmap_idx) + mid_count + (count==0 ? 0 : 1) < bitmap_fields\0"
                     as *const u8 as *const libc::c_char,
@@ -8279,8 +7749,8 @@ pub unsafe extern "C" fn _mi_bitmap_unclaim_across(
         &mut post_mask,
     );
     let mut all_one: bool = 1 as libc::c_int != 0;
-    let mut field: *mut mi_bitmap_field_t = &mut *bitmap.offset(idx as isize)
-        as *mut mi_bitmap_field_t;
+    let mut field: *mut mi_bitmap_field_t =
+        &mut *bitmap.offset(idx as isize) as *mut mi_bitmap_field_t;
     let fresh18 = field;
     field = field.offset(1);
     let mut prev: size_t = ::core::intrinsics::atomic_and_acqrel(fresh18, !pre_mask);
@@ -8330,8 +7800,7 @@ pub unsafe extern "C" fn _mi_bitmap_claim_across(
     );
     let mut all_zero: bool = 1 as libc::c_int != 0;
     let mut any_zero: bool = 0 as libc::c_int != 0;
-    let mut field: *mut size_t = &mut *bitmap.offset(idx as isize)
-        as *mut mi_bitmap_field_t;
+    let mut field: *mut size_t = &mut *bitmap.offset(idx as isize) as *mut mi_bitmap_field_t;
     let fresh21 = field;
     field = field.offset(1);
     let mut prev: size_t = ::core::intrinsics::atomic_or_acqrel(fresh21, pre_mask);
@@ -8392,8 +7861,8 @@ unsafe extern "C" fn mi_bitmap_is_claimedx_across(
     );
     let mut all_ones: bool = 1 as libc::c_int != 0;
     let mut any_ones: bool = 0 as libc::c_int != 0;
-    let mut field: *mut mi_bitmap_field_t = &mut *bitmap.offset(idx as isize)
-        as *mut mi_bitmap_field_t;
+    let mut field: *mut mi_bitmap_field_t =
+        &mut *bitmap.offset(idx as isize) as *mut mi_bitmap_field_t;
     let fresh24 = field;
     field = field.offset(1);
     let mut prev: size_t = ::core::intrinsics::atomic_load_relaxed(fresh24);
@@ -8440,13 +7909,7 @@ pub unsafe extern "C" fn _mi_bitmap_is_claimed_across(
     mut count: size_t,
     mut bitmap_idx: mi_bitmap_index_t,
 ) -> bool {
-    return mi_bitmap_is_claimedx_across(
-        bitmap,
-        bitmap_fields,
-        count,
-        bitmap_idx,
-        0 as *mut bool,
-    );
+    return mi_bitmap_is_claimedx_across(bitmap, bitmap_fields, count, bitmap_idx, 0 as *mut bool);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_bitmap_is_any_claimed_across(
@@ -8456,18 +7919,12 @@ pub unsafe extern "C" fn _mi_bitmap_is_any_claimed_across(
     mut bitmap_idx: mi_bitmap_index_t,
 ) -> bool {
     let mut any_ones: bool = false;
-    mi_bitmap_is_claimedx_across(
-        bitmap,
-        bitmap_fields,
-        count,
-        bitmap_idx,
-        &mut any_ones,
-    );
+    mi_bitmap_is_claimedx_across(bitmap, bitmap_fields, count, bitmap_idx, &mut any_ones);
     return any_ones;
 }
 unsafe extern "C" fn mi_heap_visit_pages(
     mut heap: *mut mi_heap_t,
-    mut fn_0: Option::<heap_page_visitor_fun>,
+    mut fn_0: Option<heap_page_visitor_fun>,
     mut arg1: *mut libc::c_void,
     mut arg2: *mut libc::c_void,
 ) -> bool {
@@ -8477,25 +7934,22 @@ unsafe extern "C" fn mi_heap_visit_pages(
     let mut total: size_t = (*heap).page_count;
     let mut count: size_t = 0 as libc::c_int as size_t;
     let mut i: size_t = 0 as libc::c_int as size_t;
-    while i
-        <= (73 as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as size_t
-    {
-        let mut pq: *mut mi_page_queue_t = &mut *((*heap).pages)
-            .as_mut_ptr()
-            .offset(i as isize) as *mut mi_page_queue_t;
+    while i <= (73 as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as size_t {
+        let mut pq: *mut mi_page_queue_t =
+            &mut *((*heap).pages).as_mut_ptr().offset(i as isize) as *mut mi_page_queue_t;
         let mut page: *mut mi_page_t = (*pq).first;
         while !page.is_null() {
             let mut next: *mut mi_page_t = (*page).next;
-            if mi_page_heap(page) == heap {} else {
+            if mi_page_heap(page) == heap {
+            } else {
                 _mi_assert_fail(
                     b"mi_page_heap(page) == heap\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     4914 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 20],
-                        &[libc::c_char; 20],
-                    >(b"mi_heap_visit_pages\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(
+                        b"mi_heap_visit_pages\0",
+                    ))
+                    .as_ptr(),
                 );
             };
             count = count.wrapping_add(1);
@@ -8508,15 +7962,13 @@ unsafe extern "C" fn mi_heap_visit_pages(
         i = i.wrapping_add(1);
         i;
     }
-    if count == total {} else {
+    if count == total {
+    } else {
         _mi_assert_fail(
             b"count == total\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4922 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"mi_heap_visit_pages\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"mi_heap_visit_pages\0"))
                 .as_ptr(),
         );
     };
@@ -8529,29 +7981,24 @@ unsafe extern "C" fn mi_heap_page_is_valid(
     mut arg1: *mut libc::c_void,
     mut arg2: *mut libc::c_void,
 ) -> bool {
-    if mi_page_heap(page) == heap {} else {
+    if mi_page_heap(page) == heap {
+    } else {
         _mi_assert_fail(
             b"mi_page_heap(page) == heap\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4930 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"mi_heap_page_is_valid\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"mi_heap_page_is_valid\0"))
                 .as_ptr(),
         );
     };
     let mut segment: *mut mi_segment_t = _mi_page_segment(page);
-    if (*segment).thread_id == (*heap).thread_id {} else {
+    if (*segment).thread_id == (*heap).thread_id {
+    } else {
         _mi_assert_fail(
-            b"segment->thread_id == heap->thread_id\0" as *const u8
-                as *const libc::c_char,
+            b"segment->thread_id == heap->thread_id\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4932 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"mi_heap_page_is_valid\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"mi_heap_page_is_valid\0"))
                 .as_ptr(),
         );
     };
@@ -8570,17 +8017,16 @@ unsafe extern "C" fn mi_heap_page_collect(
         page,
         0 as *mut libc::c_void,
         0 as *mut libc::c_void,
-    ) as libc::c_int != 0
-    {} else {
+    ) as libc::c_int
+        != 0
+    {
+    } else {
         _mi_assert_fail(
             b"mi_heap_page_is_valid(heap, pq, page, NULL, NULL)\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             4952 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 21],
-                &[libc::c_char; 21],
-            >(b"mi_heap_page_collect\0"))
+            (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(b"mi_heap_page_collect\0"))
                 .as_ptr(),
         );
     };
@@ -8610,20 +8056,18 @@ unsafe extern "C" fn mi_heap_page_never_delayed_free(
     _mi_page_use_delayed_free(page, MI_NEVER_DELAYED_FREE, 0 as libc::c_int != 0);
     return 1 as libc::c_int != 0;
 }
-unsafe extern "C" fn mi_heap_collect_ex(
-    mut heap: *mut mi_heap_t,
-    mut collect: mi_collect_t,
-) {
+unsafe extern "C" fn mi_heap_collect_ex(mut heap: *mut mi_heap_t, mut collect: mi_collect_t) {
     if heap.is_null() || !mi_heap_is_initialized(heap) {
         return;
     }
     let force: bool = collect as libc::c_uint >= MI_FORCE as libc::c_int as libc::c_uint;
     _mi_deferred_free(heap, force);
-    let is_main_thread: bool = _mi_is_main_thread() as libc::c_int != 0
-        && (*heap).thread_id == _mi_thread_id();
+    let is_main_thread: bool =
+        _mi_is_main_thread() as libc::c_int != 0 && (*heap).thread_id == _mi_thread_id();
     if collect as libc::c_uint >= MI_FORCE as libc::c_int as libc::c_uint
         && is_main_thread as libc::c_int != 0
-        && mi_heap_is_backing(heap) as libc::c_int != 0 && !(*heap).no_reclaim
+        && mi_heap_is_backing(heap) as libc::c_int != 0
+        && !(*heap).no_reclaim
     {
         _mi_abandoned_reclaim_all(heap, &mut (*(*heap).tld).segments);
     }
@@ -8665,8 +8109,9 @@ unsafe extern "C" fn mi_heap_collect_ex(
         || (::core::intrinsics::atomic_load_acquire(
             &mut (*heap).thread_delayed_free as *mut *mut mi_block_t,
         ))
-            .is_null()
-    {} else {
+        .is_null()
+    {
+    } else {
         _mi_assert_fail(
             b"collect != MI_ABANDON || mi_atomic_load_ptr_acquire(mi_block_t,&heap->thread_delayed_free) == NULL\0"
                 as *const u8 as *const libc::c_char,
@@ -8683,7 +8128,8 @@ unsafe extern "C" fn mi_heap_collect_ex(
         collect as libc::c_uint == MI_FORCE as libc::c_int as libc::c_uint,
         &mut (*(*heap).tld).segments,
     );
-    if force as libc::c_int != 0 && is_main_thread as libc::c_int != 0
+    if force as libc::c_int != 0
+        && is_main_thread as libc::c_int != 0
         && mi_heap_is_backing(heap) as libc::c_int != 0
     {
         _mi_thread_data_collect();
@@ -8723,40 +8169,34 @@ unsafe extern "C" fn mi_heap_is_default(mut heap: *const mi_heap_t) -> bool {
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_heap_get_backing() -> *mut mi_heap_t {
     let mut heap: *mut mi_heap_t = mi_heap_get_default();
-    if !heap.is_null() {} else {
+    if !heap.is_null() {
+    } else {
         _mi_assert_fail(
             b"heap!=NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5018 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"mi_heap_get_backing\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"mi_heap_get_backing\0"))
                 .as_ptr(),
         );
     };
     let mut bheap: *mut mi_heap_t = (*(*heap).tld).heap_backing;
-    if !bheap.is_null() {} else {
+    if !bheap.is_null() {
+    } else {
         _mi_assert_fail(
             b"bheap!=NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5020 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"mi_heap_get_backing\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"mi_heap_get_backing\0"))
                 .as_ptr(),
         );
     };
-    if (*bheap).thread_id == _mi_thread_id() {} else {
+    if (*bheap).thread_id == _mi_thread_id() {
+    } else {
         _mi_assert_fail(
             b"bheap->thread_id == _mi_thread_id()\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5021 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"mi_heap_get_backing\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"mi_heap_get_backing\0"))
                 .as_ptr(),
         );
     };
@@ -8772,7 +8212,7 @@ pub unsafe extern "C" fn _mi_heap_init(
 ) {
     _mi_memcpy_aligned(
         heap as *mut libc::c_void,
-        &_mi_heap_empty as *const mi_heap_t as *const libc::c_void,
+        (&raw const _mi_heap_empty) as *const mi_heap_t as *const libc::c_void,
         ::core::mem::size_of::<mi_heap_t>() as libc::c_ulong,
     );
     (*heap).tld = tld;
@@ -8799,32 +8239,33 @@ pub unsafe extern "C" fn mi_heap_new_ex(
     mut arena_id: mi_arena_id_t,
 ) -> *mut mi_heap_t {
     let mut bheap: *mut mi_heap_t = mi_heap_get_backing();
-    let mut heap: *mut mi_heap_t = mi_heap_malloc(
-        bheap,
-        ::core::mem::size_of::<mi_heap_t>() as libc::c_ulong,
-    ) as *mut mi_heap_t;
+    let mut heap: *mut mi_heap_t =
+        mi_heap_malloc(bheap, ::core::mem::size_of::<mi_heap_t>() as libc::c_ulong)
+            as *mut mi_heap_t;
     if heap.is_null() {
         return 0 as *mut mi_heap_t;
     }
-    if heap_tag >= 0 as libc::c_int && heap_tag < 256 as libc::c_int {} else {
+    if heap_tag >= 0 as libc::c_int && heap_tag < 256 as libc::c_int {
+    } else {
         _mi_assert_fail(
             b"heap_tag >= 0 && heap_tag < 256\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5048 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 15],
-                &[libc::c_char; 15],
-            >(b"mi_heap_new_ex\0"))
+            (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"mi_heap_new_ex\0"))
                 .as_ptr(),
         );
     };
-    _mi_heap_init(heap, (*bheap).tld, arena_id, allow_destroy, heap_tag as uint8_t);
+    _mi_heap_init(
+        heap,
+        (*bheap).tld,
+        arena_id,
+        allow_destroy,
+        heap_tag as uint8_t,
+    );
     return heap;
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn mi_heap_new_in_arena(
-    mut arena_id: mi_arena_id_t,
-) -> *mut mi_heap_t {
+pub unsafe extern "C" fn mi_heap_new_in_arena(mut arena_id: mi_arena_id_t) -> *mut mi_heap_t {
     return mi_heap_new_ex(0 as libc::c_int, 0 as libc::c_int != 0, arena_id);
 }
 #[unsafe(no_mangle)]
@@ -8843,67 +8284,56 @@ pub unsafe extern "C" fn _mi_heap_random_next(mut heap: *mut mi_heap_t) -> uintp
     return _mi_random_next(&mut (*heap).random);
 }
 unsafe extern "C" fn mi_heap_reset_pages(mut heap: *mut mi_heap_t) {
-    if !heap.is_null() {} else {
+    if !heap.is_null() {
+    } else {
         _mi_assert_fail(
             b"heap != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5065 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"mi_heap_reset_pages\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"mi_heap_reset_pages\0"))
                 .as_ptr(),
         );
     };
-    if mi_heap_is_initialized(heap) as libc::c_int != 0 {} else {
+    if mi_heap_is_initialized(heap) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_heap_is_initialized(heap)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5066 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"mi_heap_reset_pages\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"mi_heap_reset_pages\0"))
                 .as_ptr(),
         );
     };
     memset(
-        &mut (*heap).pages_free_direct as *mut [*mut mi_page_t; 130]
-            as *mut libc::c_void,
+        &mut (*heap).pages_free_direct as *mut [*mut mi_page_t; 130] as *mut libc::c_void,
         0 as libc::c_int,
         ::core::mem::size_of::<[*mut mi_page_t; 130]>() as libc::c_ulong,
     );
     _mi_memcpy_aligned(
         &mut (*heap).pages as *mut [mi_page_queue_t; 75] as *mut libc::c_void,
-        &_mi_heap_empty.pages as *const [mi_page_queue_t; 75] as *const libc::c_void,
+        (&raw const _mi_heap_empty.pages) as *const [mi_page_queue_t; 75] as *const libc::c_void,
         ::core::mem::size_of::<[mi_page_queue_t; 75]>() as libc::c_ulong,
     );
     (*heap).thread_delayed_free = 0 as *mut mi_block_t;
     (*heap).page_count = 0 as libc::c_int as size_t;
 }
 unsafe extern "C" fn mi_heap_free(mut heap: *mut mi_heap_t) {
-    if !heap.is_null() {} else {
+    if !heap.is_null() {
+    } else {
         _mi_assert_fail(
             b"heap != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5073 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"mi_heap_free\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"mi_heap_free\0")).as_ptr(),
         );
     };
-    if mi_heap_is_initialized(heap) as libc::c_int != 0 {} else {
+    if mi_heap_is_initialized(heap) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_heap_is_initialized(heap)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5074 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"mi_heap_free\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"mi_heap_free\0")).as_ptr(),
         );
     };
     if heap.is_null() || !mi_heap_is_initialized(heap) {
@@ -8921,16 +8351,13 @@ unsafe extern "C" fn mi_heap_free(mut heap: *mut mi_heap_t) {
         prev = curr;
         curr = (*curr).next;
     }
-    if curr == heap {} else {
+    if curr == heap {
+    } else {
         _mi_assert_fail(
             b"curr == heap\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5086 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"mi_heap_free\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"mi_heap_free\0")).as_ptr(),
         );
     };
     if curr == heap {
@@ -8940,16 +8367,13 @@ unsafe extern "C" fn mi_heap_free(mut heap: *mut mi_heap_t) {
             (*(*heap).tld).heaps = (*heap).next;
         }
     }
-    if !((*(*heap).tld).heaps).is_null() {} else {
+    if !((*(*heap).tld).heaps).is_null() {
+    } else {
         _mi_assert_fail(
             b"heap->tld->heaps != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5091 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"mi_heap_free\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"mi_heap_free\0")).as_ptr(),
         );
     };
     mi_free(heap as *mut libc::c_void);
@@ -8982,8 +8406,7 @@ unsafe extern "C" fn _mi_heap_page_destroy(
     let bsize: size_t = mi_page_block_size(page);
     if bsize as libc::c_ulonglong
         > ((1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
             .wrapping_div(2 as libc::c_int as libc::c_ulonglong)
     {
         _mi_stat_decrease(&mut (*(*heap).tld).stats.huge, bsize);
@@ -8992,30 +8415,25 @@ unsafe extern "C" fn _mi_heap_page_destroy(
     let inuse: size_t = (*page).used as size_t;
     if bsize as libc::c_ulonglong
         <= ((1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
             .wrapping_div(2 as libc::c_int as libc::c_ulonglong)
     {
         _mi_stat_decrease(&mut (*(*heap).tld).stats.normal, bsize * inuse);
         _mi_stat_decrease(
             &mut *((*(*heap).tld).stats.normal_bins)
                 .as_mut_ptr()
-                .offset(
-                    (_mi_bin as unsafe extern "C" fn(size_t) -> uint8_t)(bsize) as isize,
-                ),
+                .offset((_mi_bin as unsafe extern "C" fn(size_t) -> uint8_t)(bsize) as isize),
             inuse,
         );
     }
     _mi_stat_decrease(&mut (*(*heap).tld).stats.malloc, bsize * inuse);
-    if (mi_page_thread_free(page)).is_null() {} else {
+    if (mi_page_thread_free(page)).is_null() {
+    } else {
         _mi_assert_fail(
             b"mi_page_thread_free(page) == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5126 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"_mi_heap_page_destroy\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"_mi_heap_page_destroy\0"))
                 .as_ptr(),
         );
     };
@@ -9046,39 +8464,33 @@ pub unsafe extern "C" fn _mi_heap_destroy_pages(mut heap: *mut mi_heap_t) {
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_heap_destroy(mut heap: *mut mi_heap_t) {
-    if !heap.is_null() {} else {
+    if !heap.is_null() {
+    } else {
         _mi_assert_fail(
             b"heap != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5145 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 16],
-                &[libc::c_char; 16],
-            >(b"mi_heap_destroy\0"))
+            (*::core::mem::transmute::<&[u8; 16], &[libc::c_char; 16]>(b"mi_heap_destroy\0"))
                 .as_ptr(),
         );
     };
-    if mi_heap_is_initialized(heap) as libc::c_int != 0 {} else {
+    if mi_heap_is_initialized(heap) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_heap_is_initialized(heap)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5146 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 16],
-                &[libc::c_char; 16],
-            >(b"mi_heap_destroy\0"))
+            (*::core::mem::transmute::<&[u8; 16], &[libc::c_char; 16]>(b"mi_heap_destroy\0"))
                 .as_ptr(),
         );
     };
-    if (*heap).no_reclaim as libc::c_int != 0 {} else {
+    if (*heap).no_reclaim as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"heap->no_reclaim\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5147 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 16],
-                &[libc::c_char; 16],
-            >(b"mi_heap_destroy\0"))
+            (*::core::mem::transmute::<&[u8; 16], &[libc::c_char; 16]>(b"mi_heap_destroy\0"))
                 .as_ptr(),
         );
     };
@@ -9112,15 +8524,13 @@ pub unsafe extern "C" fn _mi_heap_unsafe_destroy_all() {
     }
 }
 unsafe extern "C" fn mi_heap_absorb(mut heap: *mut mi_heap_t, mut from: *mut mi_heap_t) {
-    if !heap.is_null() {} else {
+    if !heap.is_null() {
+    } else {
         _mi_assert_fail(
             b"heap!=NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5182 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 15],
-                &[libc::c_char; 15],
-            >(b"mi_heap_absorb\0"))
+            (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"mi_heap_absorb\0"))
                 .as_ptr(),
         );
     };
@@ -9129,30 +8539,24 @@ unsafe extern "C" fn mi_heap_absorb(mut heap: *mut mi_heap_t, mut from: *mut mi_
     }
     _mi_heap_delayed_free_partial(from);
     let mut i: size_t = 0 as libc::c_int as size_t;
-    while i
-        <= (73 as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as size_t
-    {
-        let mut pq: *mut mi_page_queue_t = &mut *((*heap).pages)
-            .as_mut_ptr()
-            .offset(i as isize) as *mut mi_page_queue_t;
-        let mut append: *mut mi_page_queue_t = &mut *((*from).pages)
-            .as_mut_ptr()
-            .offset(i as isize) as *mut mi_page_queue_t;
+    while i <= (73 as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as size_t {
+        let mut pq: *mut mi_page_queue_t =
+            &mut *((*heap).pages).as_mut_ptr().offset(i as isize) as *mut mi_page_queue_t;
+        let mut append: *mut mi_page_queue_t =
+            &mut *((*from).pages).as_mut_ptr().offset(i as isize) as *mut mi_page_queue_t;
         let mut pcount: size_t = _mi_page_queue_append(heap, pq, append);
         (*heap).page_count = ((*heap).page_count).wrapping_add(pcount);
         (*from).page_count = ((*from).page_count).wrapping_sub(pcount);
         i = i.wrapping_add(1);
         i;
     }
-    if (*from).page_count == 0 as libc::c_int as size_t {} else {
+    if (*from).page_count == 0 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"from->page_count == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5192 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 15],
-                &[libc::c_char; 15],
-            >(b"mi_heap_absorb\0"))
+            (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"mi_heap_absorb\0"))
                 .as_ptr(),
         );
     };
@@ -9160,17 +8564,15 @@ unsafe extern "C" fn mi_heap_absorb(mut heap: *mut mi_heap_t, mut from: *mut mi_
     if (::core::intrinsics::atomic_load_relaxed(
         &mut (*from).thread_delayed_free as *mut *mut mi_block_t,
     ))
-        .is_null()
-    {} else {
+    .is_null()
+    {
+    } else {
         _mi_assert_fail(
             b"mi_atomic_load_ptr_relaxed(mi_block_t,&from->thread_delayed_free) == NULL\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5195 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 15],
-                &[libc::c_char; 15],
-            >(b"mi_heap_absorb\0"))
+            (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"mi_heap_absorb\0"))
                 .as_ptr(),
         );
     };
@@ -9178,27 +8580,23 @@ unsafe extern "C" fn mi_heap_absorb(mut heap: *mut mi_heap_t, mut from: *mut mi_
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_heap_delete(mut heap: *mut mi_heap_t) {
-    if !heap.is_null() {} else {
+    if !heap.is_null() {
+    } else {
         _mi_assert_fail(
             b"heap != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5201 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 15],
-                &[libc::c_char; 15],
-            >(b"mi_heap_delete\0"))
+            (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"mi_heap_delete\0"))
                 .as_ptr(),
         );
     };
-    if mi_heap_is_initialized(heap) as libc::c_int != 0 {} else {
+    if mi_heap_is_initialized(heap) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_heap_is_initialized(heap)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5202 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 15],
-                &[libc::c_char; 15],
-            >(b"mi_heap_delete\0"))
+            (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"mi_heap_delete\0"))
                 .as_ptr(),
         );
     };
@@ -9210,45 +8608,37 @@ pub unsafe extern "C" fn mi_heap_delete(mut heap: *mut mi_heap_t) {
     } else {
         _mi_heap_collect_abandon(heap);
     }
-    if (*heap).page_count == 0 as libc::c_int as size_t {} else {
+    if (*heap).page_count == 0 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"heap->page_count==0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5211 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 15],
-                &[libc::c_char; 15],
-            >(b"mi_heap_delete\0"))
+            (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"mi_heap_delete\0"))
                 .as_ptr(),
         );
     };
     mi_heap_free(heap);
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn mi_heap_set_default(
-    mut heap: *mut mi_heap_t,
-) -> *mut mi_heap_t {
-    if !heap.is_null() {} else {
+pub unsafe extern "C" fn mi_heap_set_default(mut heap: *mut mi_heap_t) -> *mut mi_heap_t {
+    if !heap.is_null() {
+    } else {
         _mi_assert_fail(
             b"heap != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5215 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"mi_heap_set_default\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"mi_heap_set_default\0"))
                 .as_ptr(),
         );
     };
-    if mi_heap_is_initialized(heap) as libc::c_int != 0 {} else {
+    if mi_heap_is_initialized(heap) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_heap_is_initialized(heap)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5216 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"mi_heap_set_default\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"mi_heap_set_default\0"))
                 .as_ptr(),
         );
     };
@@ -9264,17 +8654,14 @@ unsafe extern "C" fn mi_heap_of_block(mut p: *const libc::c_void) -> *mut mi_hea
         return 0 as *mut mi_heap_t;
     }
     let mut segment: *mut mi_segment_t = _mi_ptr_segment(p);
-    let mut valid: bool = _mi_ptr_cookie(segment as *const libc::c_void)
-        == (*segment).cookie;
-    if valid as libc::c_int != 0 {} else {
+    let mut valid: bool = _mi_ptr_cookie(segment as *const libc::c_void) == (*segment).cookie;
+    if valid as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"valid\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5227 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 17],
-                &[libc::c_char; 17],
-            >(b"mi_heap_of_block\0"))
+            (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"mi_heap_of_block\0"))
                 .as_ptr(),
         );
     };
@@ -9288,16 +8675,16 @@ pub unsafe extern "C" fn mi_heap_contains_block(
     mut heap: *mut mi_heap_t,
     mut p: *const libc::c_void,
 ) -> bool {
-    if !heap.is_null() {} else {
+    if !heap.is_null() {
+    } else {
         _mi_assert_fail(
             b"heap != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5232 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 23],
-                &[libc::c_char; 23],
-            >(b"mi_heap_contains_block\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
+                b"mi_heap_contains_block\0",
+            ))
+            .as_ptr(),
         );
     };
     if heap.is_null() || !mi_heap_is_initialized(heap) {
@@ -9325,23 +8712,20 @@ pub unsafe extern "C" fn mi_heap_check_owned(
     mut heap: *mut mi_heap_t,
     mut p: *const libc::c_void,
 ) -> bool {
-    if !heap.is_null() {} else {
+    if !heap.is_null() {
+    } else {
         _mi_assert_fail(
             b"heap != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5246 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"mi_heap_check_owned\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"mi_heap_check_owned\0"))
                 .as_ptr(),
         );
     };
     if heap.is_null() || !mi_heap_is_initialized(heap) {
         return 0 as libc::c_int != 0;
     }
-    if p as uintptr_t
-        & (((1 as libc::c_int) << 3 as libc::c_int) - 1 as libc::c_int) as uintptr_t
+    if p as uintptr_t & (((1 as libc::c_int) << 3 as libc::c_int) - 1 as libc::c_int) as uintptr_t
         != 0 as libc::c_int as uintptr_t
     {
         return 0 as libc::c_int != 0;
@@ -9388,18 +8772,13 @@ unsafe extern "C" fn mi_get_fast_divisor(
     mut magic: *mut uint64_t,
     mut shift: *mut size_t,
 ) {
-    if divisor > 0 as libc::c_int as size_t
-        && divisor <= 4294967295 as libc::c_uint as size_t
-    {} else {
+    if divisor > 0 as libc::c_int as size_t && divisor <= 4294967295 as libc::c_uint as size_t {
+    } else {
         _mi_assert_fail(
-            b"divisor > 0 && divisor <= UINT32_MAX\0" as *const u8
-                as *const libc::c_char,
+            b"divisor > 0 && divisor <= UINT32_MAX\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5268 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"mi_get_fast_divisor\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"mi_get_fast_divisor\0"))
                 .as_ptr(),
         );
     };
@@ -9415,15 +8794,13 @@ unsafe extern "C" fn mi_fast_divide(
     mut magic: uint64_t,
     mut shift: size_t,
 ) -> size_t {
-    if n <= 4294967295 as libc::c_uint as size_t {} else {
+    if n <= 4294967295 as libc::c_uint as size_t {
+    } else {
         _mi_assert_fail(
             b"n <= UINT32_MAX\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5273 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 15],
-                &[libc::c_char; 15],
-            >(b"mi_fast_divide\0"))
+            (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"mi_fast_divide\0"))
                 .as_ptr(),
         );
     };
@@ -9434,105 +8811,104 @@ unsafe extern "C" fn mi_fast_divide(
 pub unsafe extern "C" fn _mi_heap_area_visit_blocks(
     mut area: *const mi_heap_area_t,
     mut page: *mut mi_page_t,
-    mut visitor: Option::<mi_block_visit_fun>,
+    mut visitor: Option<mi_block_visit_fun>,
     mut arg: *mut libc::c_void,
 ) -> bool {
-    if !area.is_null() {} else {
+    if !area.is_null() {
+    } else {
         _mi_assert_fail(
             b"area != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5278 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 27],
-                &[libc::c_char; 27],
-            >(b"_mi_heap_area_visit_blocks\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
+                b"_mi_heap_area_visit_blocks\0",
+            ))
+            .as_ptr(),
         );
     };
     if area.is_null() {
         return 1 as libc::c_int != 0;
     }
-    if !page.is_null() {} else {
+    if !page.is_null() {
+    } else {
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5280 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 27],
-                &[libc::c_char; 27],
-            >(b"_mi_heap_area_visit_blocks\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
+                b"_mi_heap_area_visit_blocks\0",
+            ))
+            .as_ptr(),
         );
     };
     if page.is_null() {
         return 1 as libc::c_int != 0;
     }
     _mi_page_free_collect(page, 1 as libc::c_int != 0);
-    if ((*page).local_free).is_null() {} else {
+    if ((*page).local_free).is_null() {
+    } else {
         _mi_assert_fail(
             b"page->local_free == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5283 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 27],
-                &[libc::c_char; 27],
-            >(b"_mi_heap_area_visit_blocks\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
+                b"_mi_heap_area_visit_blocks\0",
+            ))
+            .as_ptr(),
         );
     };
     if (*page).used as libc::c_int == 0 as libc::c_int {
         return 1 as libc::c_int != 0;
     }
     let mut psize: size_t = 0;
-    let pstart: *mut uint8_t = _mi_segment_page_start(
-        _mi_page_segment(page),
-        page,
-        &mut psize,
-    );
+    let pstart: *mut uint8_t = _mi_segment_page_start(_mi_page_segment(page), page, &mut psize);
     let heap: *mut mi_heap_t = mi_page_heap(page);
     let bsize: size_t = mi_page_block_size(page);
     let ubsize: size_t = mi_page_usable_block_size(page);
     if (*page).capacity as libc::c_int == 1 as libc::c_int {
-        if (*page).used as libc::c_int == 1 as libc::c_int && ((*page).free).is_null()
-        {} else {
+        if (*page).used as libc::c_int == 1 as libc::c_int && ((*page).free).is_null() {
+        } else {
             _mi_assert_fail(
-                b"page->used == 1 && page->free == NULL\0" as *const u8
-                    as *const libc::c_char,
+                b"page->used == 1 && page->free == NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 5291 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 27],
-                    &[libc::c_char; 27],
-                >(b"_mi_heap_area_visit_blocks\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
+                    b"_mi_heap_area_visit_blocks\0",
+                ))
+                .as_ptr(),
             );
         };
-        return visitor
-            .expect(
-                "non-null function pointer",
-            )(mi_page_heap(page), area, pstart as *mut libc::c_void, ubsize, arg);
+        return visitor.expect("non-null function pointer")(
+            mi_page_heap(page),
+            area,
+            pstart as *mut libc::c_void,
+            ubsize,
+            arg,
+        );
     }
-    if bsize <= 4294967295 as libc::c_uint as size_t {} else {
+    if bsize <= 4294967295 as libc::c_uint as size_t {
+    } else {
         _mi_assert_fail(
             b"bsize <= UINT32_MAX\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5294 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 27],
-                &[libc::c_char; 27],
-            >(b"_mi_heap_area_visit_blocks\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
+                b"_mi_heap_area_visit_blocks\0",
+            ))
+            .as_ptr(),
         );
     };
     if (*page).used as libc::c_int == (*page).capacity as libc::c_int {
         let mut block: *mut uint8_t = pstart;
         let mut i: size_t = 0 as libc::c_int as size_t;
         while i < (*page).capacity as size_t {
-            if !visitor
-                .expect(
-                    "non-null function pointer",
-                )(heap, area, block as *mut libc::c_void, ubsize, arg)
-            {
+            if !visitor.expect("non-null function pointer")(
+                heap,
+                area,
+                block as *mut libc::c_void,
+                ubsize,
+                arg,
+            ) {
                 return 0 as libc::c_int != 0;
             }
             block = block.offset(bsize as isize);
@@ -9556,7 +8932,8 @@ pub unsafe extern "C" fn _mi_heap_area_visit_blocks(
         != 0 as libc::c_int
     {
         let mut shift: size_t = ((*page).capacity as libc::c_int
-            % (((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int)) as size_t;
+            % (((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int))
+            as size_t;
         let mut mask: uintptr_t = (18446744073709551615 as libc::c_ulong) << shift;
         free_map[bmapsize.wrapping_sub(1 as libc::c_int as uintptr_t) as usize] = mask;
     }
@@ -9570,99 +8947,92 @@ pub unsafe extern "C" fn _mi_heap_area_visit_blocks(
         free_count;
         if block_0 as *mut uint8_t >= pstart
             && (block_0 as *mut uint8_t) < pstart.offset(psize as isize)
-        {} else {
+        {
+        } else {
             _mi_assert_fail(
-                b"(uint8_t*)block >= pstart && (uint8_t*)block < (pstart + psize)\0"
-                    as *const u8 as *const libc::c_char,
+                b"(uint8_t*)block >= pstart && (uint8_t*)block < (pstart + psize)\0" as *const u8
+                    as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 5322 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 27],
-                    &[libc::c_char; 27],
-                >(b"_mi_heap_area_visit_blocks\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
+                    b"_mi_heap_area_visit_blocks\0",
+                ))
+                .as_ptr(),
             );
         };
-        let mut offset: size_t = (block_0 as *mut uint8_t).offset_from(pstart)
-            as libc::c_long as size_t;
-        if offset % bsize == 0 as libc::c_int as size_t {} else {
+        let mut offset: size_t =
+            (block_0 as *mut uint8_t).offset_from(pstart) as libc::c_long as size_t;
+        if offset % bsize == 0 as libc::c_int as size_t {
+        } else {
             _mi_assert_fail(
                 b"offset % bsize == 0\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 5324 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 27],
-                    &[libc::c_char; 27],
-                >(b"_mi_heap_area_visit_blocks\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
+                    b"_mi_heap_area_visit_blocks\0",
+                ))
+                .as_ptr(),
             );
         };
-        if offset <= 4294967295 as libc::c_uint as size_t {} else {
+        if offset <= 4294967295 as libc::c_uint as size_t {
+        } else {
             _mi_assert_fail(
                 b"offset <= UINT32_MAX\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 5325 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 27],
-                    &[libc::c_char; 27],
-                >(b"_mi_heap_area_visit_blocks\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
+                    b"_mi_heap_area_visit_blocks\0",
+                ))
+                .as_ptr(),
             );
         };
         let mut blockidx: size_t = mi_fast_divide(offset, magic, shift_0);
-        if blockidx == offset / bsize {} else {
+        if blockidx == offset / bsize {
+        } else {
             _mi_assert_fail(
                 b"blockidx == offset / bsize\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 5327 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 27],
-                    &[libc::c_char; 27],
-                >(b"_mi_heap_area_visit_blocks\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
+                    b"_mi_heap_area_visit_blocks\0",
+                ))
+                .as_ptr(),
             );
         };
         if (blockidx as libc::c_ulonglong)
             < ((1 as libc::c_ulonglong) << 13 as libc::c_int + 3 as libc::c_int)
-                .wrapping_div(
-                    ::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong
-                        as libc::c_ulonglong,
-                )
-        {} else {
+                .wrapping_div(::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong
+                    as libc::c_ulonglong)
+        {
+        } else {
             _mi_assert_fail(
                 b"blockidx < MI_MAX_BLOCKS\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 5328 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 27],
-                    &[libc::c_char; 27],
-                >(b"_mi_heap_area_visit_blocks\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
+                    b"_mi_heap_area_visit_blocks\0",
+                ))
+                .as_ptr(),
             );
         };
-        let mut bitidx: size_t = blockidx
-            / (((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int) as size_t;
-        let mut bit: size_t = blockidx
-            .wrapping_sub(
-                bitidx
-                    * (((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int)
-                        as size_t,
-            );
+        let mut bitidx: size_t =
+            blockidx / (((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int) as size_t;
+        let mut bit: size_t = blockidx.wrapping_sub(
+            bitidx * (((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int) as size_t,
+        );
         free_map[bitidx as usize] |= (1 as libc::c_int as uintptr_t) << bit;
         block_0 = mi_block_next(page, block_0);
     }
-    if (*page).capacity as size_t == free_count.wrapping_add((*page).used as size_t)
-    {} else {
+    if (*page).capacity as size_t == free_count.wrapping_add((*page).used as size_t) {
+    } else {
         _mi_assert_fail(
-            b"page->capacity == (free_count + page->used)\0" as *const u8
-                as *const libc::c_char,
+            b"page->capacity == (free_count + page->used)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5333 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 27],
-                &[libc::c_char; 27],
-            >(b"_mi_heap_area_visit_blocks\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
+                b"_mi_heap_area_visit_blocks\0",
+            ))
+            .as_ptr(),
         );
     };
     let mut used_count: size_t = 0 as libc::c_int as size_t;
@@ -9671,16 +9041,16 @@ pub unsafe extern "C" fn _mi_heap_area_visit_blocks(
     while i_0 < bmapsize {
         if free_map[i_0 as usize] == 0 as libc::c_int as uintptr_t {
             let mut j: size_t = 0 as libc::c_int as size_t;
-            while j
-                < (((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int) as size_t
-            {
+            while j < (((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int) as size_t {
                 used_count = used_count.wrapping_add(1);
                 used_count;
-                if !visitor
-                    .expect(
-                        "non-null function pointer",
-                    )(heap, area, block_1 as *mut libc::c_void, ubsize, arg)
-                {
+                if !visitor.expect("non-null function pointer")(
+                    heap,
+                    area,
+                    block_1 as *mut libc::c_void,
+                    ubsize,
+                    arg,
+                ) {
                     return 0 as libc::c_int != 0;
                 }
                 block_1 = block_1.offset(bsize as isize);
@@ -9693,41 +9063,35 @@ pub unsafe extern "C" fn _mi_heap_area_visit_blocks(
                 used_count = used_count.wrapping_add(1);
                 used_count;
                 let mut bitidx_0: size_t = mi_ctz(m);
-                if !visitor
-                    .expect(
-                        "non-null function pointer",
-                    )(
+                if !visitor.expect("non-null function pointer")(
                     heap,
                     area,
                     block_1.offset((bitidx_0 * bsize) as isize) as *mut libc::c_void,
                     ubsize,
                     arg,
-                )
-                {
+                ) {
                     return 0 as libc::c_int != 0;
                 }
                 m &= m.wrapping_sub(1 as libc::c_int as uintptr_t);
             }
-            block_1 = block_1
-                .offset(
-                    (bsize
-                        * (((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int)
-                            as size_t) as isize,
-                );
+            block_1 = block_1.offset(
+                (bsize * (((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int) as size_t)
+                    as isize,
+            );
         }
         i_0 = i_0.wrapping_add(1);
         i_0;
     }
-    if (*page).used as size_t == used_count {} else {
+    if (*page).used as size_t == used_count {
+    } else {
         _mi_assert_fail(
             b"page->used == used_count\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5361 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 27],
-                &[libc::c_char; 27],
-            >(b"_mi_heap_area_visit_blocks\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
+                b"_mi_heap_area_visit_blocks\0",
+            ))
+            .as_ptr(),
         );
     };
     return 1 as libc::c_int != 0;
@@ -9739,10 +9103,8 @@ unsafe extern "C" fn mi_heap_visit_areas_page(
     mut vfun: *mut libc::c_void,
     mut arg: *mut libc::c_void,
 ) -> bool {
-    let mut fun: Option::<mi_heap_area_visit_fun> = ::core::mem::transmute::<
-        *mut libc::c_void,
-        Option::<mi_heap_area_visit_fun>,
-    >(vfun);
+    let mut fun: Option<mi_heap_area_visit_fun> =
+        ::core::mem::transmute::<*mut libc::c_void, Option<mi_heap_area_visit_fun>>(vfun);
     let mut xarea: mi_heap_area_ex_t = mi_heap_area_ex_s {
         area: mi_heap_area_s {
             blocks: 0 as *mut libc::c_void,
@@ -9761,7 +9123,7 @@ unsafe extern "C" fn mi_heap_visit_areas_page(
 }
 unsafe extern "C" fn mi_heap_visit_areas(
     mut heap: *const mi_heap_t,
-    mut visitor: Option::<mi_heap_area_visit_fun>,
+    mut visitor: Option<mi_heap_area_visit_fun>,
     mut arg: *mut libc::c_void,
 ) -> bool {
     if visitor.is_none() {
@@ -9779,10 +9141,7 @@ unsafe extern "C" fn mi_heap_visit_areas(
                     *mut libc::c_void,
                 ) -> bool,
         ),
-        ::core::mem::transmute::<
-            Option::<mi_heap_area_visit_fun>,
-            *mut libc::c_void,
-        >(visitor),
+        ::core::mem::transmute::<Option<mi_heap_area_visit_fun>, *mut libc::c_void>(visitor),
         arg,
     );
 }
@@ -9792,17 +9151,13 @@ unsafe extern "C" fn mi_heap_area_visitor(
     mut arg: *mut libc::c_void,
 ) -> bool {
     let mut args: *mut mi_visit_blocks_args_t = arg as *mut mi_visit_blocks_args_t;
-    if !((*args).visitor)
-        .expect(
-            "non-null function pointer",
-        )(
+    if !((*args).visitor).expect("non-null function pointer")(
         heap,
         &(*xarea).area,
         0 as *mut libc::c_void,
         (*xarea).area.block_size,
         (*args).arg,
-    )
-    {
+    ) {
         return 0 as libc::c_int != 0;
     }
     if (*args).visit_blocks {
@@ -9811,16 +9166,16 @@ unsafe extern "C" fn mi_heap_area_visitor(
             (*xarea).page,
             (*args).visitor,
             (*args).arg,
-        )
+        );
     } else {
-        return 1 as libc::c_int != 0
+        return 1 as libc::c_int != 0;
     };
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_heap_visit_blocks(
     mut heap: *const mi_heap_t,
     mut visit_blocks: bool,
-    mut visitor: Option::<mi_block_visit_fun>,
+    mut visitor: Option<mi_block_visit_fun>,
     mut arg: *mut libc::c_void,
 ) -> bool {
     let mut args: mi_visit_blocks_args_t = {
@@ -9898,9 +9253,7 @@ pub unsafe extern "C" fn _mi_thread_id() -> mi_threadid_t {
 }
 #[unsafe(no_mangle)]
 #[thread_local]
-pub static mut _mi_heap_default: *mut mi_heap_t = unsafe {
-    &raw mut _mi_heap_empty
-};
+pub static mut _mi_heap_default: *mut mi_heap_t = unsafe { &raw mut _mi_heap_empty };
 static mut mi_subproc_default: mi_subproc_t = mi_subproc_s {
     abandoned_count: 0,
     abandoned_os_list_count: 0,
@@ -9914,10 +9267,8 @@ static mut mi_subproc_default: mi_subproc_t = mi_subproc_s {
             __spins: 0,
             __elision: 0,
             __list: __pthread_internal_list {
-                __prev: 0 as *const __pthread_internal_list
-                    as *mut __pthread_internal_list,
-                __next: 0 as *const __pthread_internal_list
-                    as *mut __pthread_internal_list,
+                __prev: 0 as *const __pthread_internal_list as *mut __pthread_internal_list,
+                __next: 0 as *const __pthread_internal_list as *mut __pthread_internal_list,
             },
         },
     },
@@ -9931,10 +9282,8 @@ static mut mi_subproc_default: mi_subproc_t = mi_subproc_s {
             __spins: 0,
             __elision: 0,
             __list: __pthread_internal_list {
-                __prev: 0 as *const __pthread_internal_list
-                    as *mut __pthread_internal_list,
-                __next: 0 as *const __pthread_internal_list
-                    as *mut __pthread_internal_list,
+                __prev: 0 as *const __pthread_internal_list as *mut __pthread_internal_list,
+                __next: 0 as *const __pthread_internal_list as *mut __pthread_internal_list,
             },
         },
     },
@@ -10076,58 +9425,19 @@ static mut tld_main: mi_tld_t = mi_tld_s {
             peak: 0,
             current: 0,
         },
-        pages_extended: mi_stat_counter_s {
-            total: 0,
-            count: 0,
-        },
-        mmap_calls: mi_stat_counter_s {
-            total: 0,
-            count: 0,
-        },
-        commit_calls: mi_stat_counter_s {
-            total: 0,
-            count: 0,
-        },
-        reset_calls: mi_stat_counter_s {
-            total: 0,
-            count: 0,
-        },
-        purge_calls: mi_stat_counter_s {
-            total: 0,
-            count: 0,
-        },
-        page_no_retire: mi_stat_counter_s {
-            total: 0,
-            count: 0,
-        },
-        searches: mi_stat_counter_s {
-            total: 0,
-            count: 0,
-        },
-        normal_count: mi_stat_counter_s {
-            total: 0,
-            count: 0,
-        },
-        huge_count: mi_stat_counter_s {
-            total: 0,
-            count: 0,
-        },
-        arena_count: mi_stat_counter_s {
-            total: 0,
-            count: 0,
-        },
-        arena_crossover_count: mi_stat_counter_s {
-            total: 0,
-            count: 0,
-        },
-        arena_rollback_count: mi_stat_counter_s {
-            total: 0,
-            count: 0,
-        },
-        guarded_alloc_count: mi_stat_counter_s {
-            total: 0,
-            count: 0,
-        },
+        pages_extended: mi_stat_counter_s { total: 0, count: 0 },
+        mmap_calls: mi_stat_counter_s { total: 0, count: 0 },
+        commit_calls: mi_stat_counter_s { total: 0, count: 0 },
+        reset_calls: mi_stat_counter_s { total: 0, count: 0 },
+        purge_calls: mi_stat_counter_s { total: 0, count: 0 },
+        page_no_retire: mi_stat_counter_s { total: 0, count: 0 },
+        searches: mi_stat_counter_s { total: 0, count: 0 },
+        normal_count: mi_stat_counter_s { total: 0, count: 0 },
+        huge_count: mi_stat_counter_s { total: 0, count: 0 },
+        arena_count: mi_stat_counter_s { total: 0, count: 0 },
+        arena_crossover_count: mi_stat_counter_s { total: 0, count: 0 },
+        arena_rollback_count: mi_stat_counter_s { total: 0, count: 0 },
+        guarded_alloc_count: mi_stat_counter_s { total: 0, count: 0 },
         normal_bins: [mi_stat_count_s {
             allocated: 0,
             freed: 0,
@@ -10947,34 +10257,34 @@ pub unsafe extern "C" fn mi_heap_guarded_set_sample_rate(
     mut heap: *mut mi_heap_t,
     mut sample_rate: size_t,
     mut seed: size_t,
-) {}
+) {
+}
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_heap_guarded_set_size_bound(
     mut heap: *mut mi_heap_t,
     mut min: size_t,
     mut max: size_t,
-) {}
+) {
+}
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_heap_guarded_init(mut heap: *mut mi_heap_t) {}
 unsafe extern "C" fn mi_heap_main_init() {
     if _mi_heap_main.cookie == 0 as libc::c_int as uintptr_t {
         _mi_heap_main.thread_id = _mi_thread_id();
         _mi_heap_main.cookie = 1 as libc::c_int as uintptr_t;
-        _mi_random_init(&mut _mi_heap_main.random);
-        _mi_heap_main.cookie = _mi_heap_random_next(&mut _mi_heap_main);
-        _mi_heap_main
-            .keys[0 as libc::c_int as usize] = _mi_heap_random_next(&mut _mi_heap_main);
-        _mi_heap_main
-            .keys[1 as libc::c_int as usize] = _mi_heap_random_next(&mut _mi_heap_main);
-        mi_lock_init(&mut mi_subproc_default.abandoned_os_lock);
-        mi_lock_init(&mut mi_subproc_default.abandoned_os_visit_lock);
-        _mi_heap_guarded_init(&mut _mi_heap_main);
+        _mi_random_init(&raw mut _mi_heap_main.random);
+        _mi_heap_main.cookie = _mi_heap_random_next(&raw mut _mi_heap_main);
+        _mi_heap_main.keys[0 as libc::c_int as usize] = _mi_heap_random_next(&raw mut _mi_heap_main);
+        _mi_heap_main.keys[1 as libc::c_int as usize] = _mi_heap_random_next(&raw mut _mi_heap_main);
+        mi_lock_init(&raw mut mi_subproc_default.abandoned_os_lock);
+        mi_lock_init(&raw mut mi_subproc_default.abandoned_os_visit_lock);
+        _mi_heap_guarded_init(&raw mut _mi_heap_main);
     }
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_heap_main_get() -> *mut mi_heap_t {
     mi_heap_main_init();
-    return &mut _mi_heap_main;
+    return &raw mut _mi_heap_main;
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_subproc_main() -> mi_subproc_id_t {
@@ -10997,11 +10307,9 @@ pub unsafe extern "C" fn mi_subproc_new() -> mi_subproc_id_t {
     return subproc as mi_subproc_id_t;
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn _mi_subproc_from_id(
-    mut subproc_id: mi_subproc_id_t,
-) -> *mut mi_subproc_t {
+pub unsafe extern "C" fn _mi_subproc_from_id(mut subproc_id: mi_subproc_id_t) -> *mut mi_subproc_t {
     return if subproc_id.is_null() {
-        &mut mi_subproc_default
+        &raw mut mi_subproc_default
     } else {
         subproc_id as *mut mi_subproc_t
     };
@@ -11036,39 +10344,37 @@ pub unsafe extern "C" fn mi_subproc_add_current_thread(mut subproc_id: mi_subpro
     if heap.is_null() {
         return;
     }
-    if (*(*heap).tld).segments.subproc == &mut mi_subproc_default as *mut mi_subproc_t
-    {} else {
+    if (*(*heap).tld).segments.subproc == &raw mut mi_subproc_default as *mut mi_subproc_t {
+    } else {
         _mi_assert_fail(
             b"heap->tld->segments.subproc == &mi_subproc_default\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5616 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 30],
-                &[libc::c_char; 30],
-            >(b"mi_subproc_add_current_thread\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 30], &[libc::c_char; 30]>(
+                b"mi_subproc_add_current_thread\0",
+            ))
+            .as_ptr(),
         );
     };
-    if (*(*heap).tld).segments.subproc != &mut mi_subproc_default as *mut mi_subproc_t {
+    if (*(*heap).tld).segments.subproc != &raw mut mi_subproc_default as *mut mi_subproc_t {
         return;
     }
     (*(*heap).tld).segments.subproc = _mi_subproc_from_id(subproc_id);
 }
-static mut td_cache: [*mut mi_thread_data_t; 32] = [0 as *const mi_thread_data_t
-    as *mut mi_thread_data_t; 32];
+static mut td_cache: [*mut mi_thread_data_t; 32] =
+    [0 as *const mi_thread_data_t as *mut mi_thread_data_t; 32];
 unsafe extern "C" fn mi_thread_data_zalloc() -> *mut mi_thread_data_t {
     let mut is_zero: bool = 0 as libc::c_int != 0;
     let mut td: *mut mi_thread_data_t = 0 as *mut mi_thread_data_t;
     let mut i: libc::c_int = 0 as libc::c_int;
     while i < 32 as libc::c_int {
         td = ::core::intrinsics::atomic_load_relaxed(
-            &mut *td_cache.as_mut_ptr().offset(i as isize) as *mut *mut mi_thread_data_t,
+            &mut *(*(&raw mut td_cache)).as_mut_ptr().offset(i as isize) as *mut *mut mi_thread_data_t,
         );
         if !td.is_null() {
             td = ::core::intrinsics::atomic_xchg_acqrel(
-                &mut *td_cache.as_mut_ptr().offset(i as isize)
-                    as *mut *mut mi_thread_data_t,
+                &mut *(*(&raw mut td_cache)).as_mut_ptr().offset(i as isize) as *mut *mut mi_thread_data_t,
                 0 as *mut mi_thread_data_t,
             );
             if !td.is_null() {
@@ -11094,19 +10400,19 @@ unsafe extern "C" fn mi_thread_data_zalloc() -> *mut mi_thread_data_t {
         td = _mi_os_alloc(
             ::core::mem::size_of::<mi_thread_data_t>() as libc::c_ulong,
             &mut memid,
-            &mut _mi_stats_main,
+            &raw mut _mi_stats_main,
         ) as *mut mi_thread_data_t;
         if td.is_null() {
             td = _mi_os_alloc(
                 ::core::mem::size_of::<mi_thread_data_t>() as libc::c_ulong,
                 &mut memid,
-                &mut _mi_stats_main,
+                &raw mut _mi_stats_main,
             ) as *mut mi_thread_data_t;
             if td.is_null() {
                 _mi_error_message(
                     12 as libc::c_int,
-                    b"unable to allocate thread local heap metadata (%zu bytes)\n\0"
-                        as *const u8 as *const libc::c_char,
+                    b"unable to allocate thread local heap metadata (%zu bytes)\n\0" as *const u8
+                        as *const libc::c_char,
                     ::core::mem::size_of::<mi_thread_data_t>() as libc::c_ulong,
                 );
             }
@@ -11125,13 +10431,12 @@ unsafe extern "C" fn mi_thread_data_free(mut tdfree: *mut mi_thread_data_t) {
     let mut i: libc::c_int = 0 as libc::c_int;
     while i < 32 as libc::c_int {
         let mut td: *mut mi_thread_data_t = ::core::intrinsics::atomic_load_relaxed(
-            &mut *td_cache.as_mut_ptr().offset(i as isize) as *mut *mut mi_thread_data_t,
+            &mut *(*(&raw mut td_cache)).as_mut_ptr().offset(i as isize) as *mut *mut mi_thread_data_t,
         );
         if td.is_null() {
             let mut expected: *mut mi_thread_data_t = 0 as *mut mi_thread_data_t;
             let fresh27 = ::core::intrinsics::atomic_cxchgweak_acqrel_acquire(
-                &mut *td_cache.as_mut_ptr().offset(i as isize)
-                    as *mut *mut mi_thread_data_t,
+                &mut *(*(&raw mut td_cache)).as_mut_ptr().offset(i as isize) as *mut *mut mi_thread_data_t,
                 *(&mut expected as *mut *mut mi_thread_data_t),
                 tdfree,
             );
@@ -11147,7 +10452,7 @@ unsafe extern "C" fn mi_thread_data_free(mut tdfree: *mut mi_thread_data_t) {
         tdfree as *mut libc::c_void,
         ::core::mem::size_of::<mi_thread_data_t>() as libc::c_ulong,
         (*tdfree).memid,
-        &mut _mi_stats_main,
+        &raw mut _mi_stats_main,
     );
 }
 #[unsafe(no_mangle)]
@@ -11155,12 +10460,11 @@ pub unsafe extern "C" fn _mi_thread_data_collect() {
     let mut i: libc::c_int = 0 as libc::c_int;
     while i < 32 as libc::c_int {
         let mut td: *mut mi_thread_data_t = ::core::intrinsics::atomic_load_relaxed(
-            &mut *td_cache.as_mut_ptr().offset(i as isize) as *mut *mut mi_thread_data_t,
+            &mut *(*(&raw mut td_cache)).as_mut_ptr().offset(i as isize) as *mut *mut mi_thread_data_t,
         );
         if !td.is_null() {
             td = ::core::intrinsics::atomic_xchg_acqrel(
-                &mut *td_cache.as_mut_ptr().offset(i as isize)
-                    as *mut *mut mi_thread_data_t,
+                &mut *(*(&raw mut td_cache)).as_mut_ptr().offset(i as isize) as *mut *mut mi_thread_data_t,
                 0 as *mut mi_thread_data_t,
             );
             if !td.is_null() {
@@ -11168,7 +10472,7 @@ pub unsafe extern "C" fn _mi_thread_data_collect() {
                     td as *mut libc::c_void,
                     ::core::mem::size_of::<mi_thread_data_t>() as libc::c_ulong,
                     (*td).memid,
-                    &mut _mi_stats_main,
+                    &raw mut _mi_stats_main,
                 );
             }
         }
@@ -11182,7 +10486,7 @@ unsafe extern "C" fn _mi_thread_heap_init() -> bool {
     }
     if _mi_is_main_thread() {
         mi_heap_main_init();
-        _mi_heap_set_default_direct(&mut _mi_heap_main);
+        _mi_heap_set_default_direct(&raw mut _mi_heap_main);
     } else {
         let mut td: *mut mi_thread_data_t = mi_thread_data_zalloc();
         if td.is_null() {
@@ -11203,17 +10507,14 @@ unsafe extern "C" fn _mi_thread_heap_init() -> bool {
     return 0 as libc::c_int != 0;
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn _mi_tld_init(
-    mut tld: *mut mi_tld_t,
-    mut bheap: *mut mi_heap_t,
-) {
+pub unsafe extern "C" fn _mi_tld_init(mut tld: *mut mi_tld_t, mut bheap: *mut mi_heap_t) {
     _mi_memzero_aligned(
         tld as *mut libc::c_void,
         ::core::mem::size_of::<mi_tld_t>() as libc::c_ulong,
     );
     (*tld).heap_backing = bheap;
     (*tld).heaps = 0 as *mut mi_heap_t;
-    (*tld).segments.subproc = &mut mi_subproc_default;
+    (*tld).segments.subproc = &raw mut mi_subproc_default;
     (*tld).segments.stats = &mut (*tld).stats;
     (*tld).segments.os = &mut (*tld).os;
     (*tld).os.stats = &mut (*tld).stats;
@@ -11222,13 +10523,11 @@ unsafe extern "C" fn _mi_thread_heap_done(mut heap: *mut mi_heap_t) -> bool {
     if !mi_heap_is_initialized(heap) {
         return 1 as libc::c_int != 0;
     }
-    _mi_heap_set_default_direct(
-        if _mi_is_main_thread() as libc::c_int != 0 {
-            &mut _mi_heap_main
-        } else {
-            &raw mut _mi_heap_empty
-        },
-    );
+    _mi_heap_set_default_direct(if _mi_is_main_thread() as libc::c_int != 0 {
+        &raw mut _mi_heap_main
+    } else {
+        &raw mut _mi_heap_empty
+    });
     heap = (*(*heap).tld).heap_backing;
     if !mi_heap_is_initialized(heap) {
         return 0 as libc::c_int != 0;
@@ -11237,65 +10536,60 @@ unsafe extern "C" fn _mi_thread_heap_done(mut heap: *mut mi_heap_t) -> bool {
     while !curr.is_null() {
         let mut next: *mut mi_heap_t = (*curr).next;
         if curr != heap {
-            if !mi_heap_is_backing(curr) {} else {
+            if !mi_heap_is_backing(curr) {
+            } else {
                 _mi_assert_fail(
                     b"!mi_heap_is_backing(curr)\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     5716 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 21],
-                        &[libc::c_char; 21],
-                    >(b"_mi_thread_heap_done\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(
+                        b"_mi_thread_heap_done\0",
+                    ))
+                    .as_ptr(),
                 );
             };
             mi_heap_delete(curr);
         }
         curr = next;
     }
-    if (*(*heap).tld).heaps == heap && ((*heap).next).is_null() {} else {
+    if (*(*heap).tld).heaps == heap && ((*heap).next).is_null() {
+    } else {
         _mi_assert_fail(
-            b"heap->tld->heaps == heap && heap->next == NULL\0" as *const u8
-                as *const libc::c_char,
+            b"heap->tld->heaps == heap && heap->next == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5721 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 21],
-                &[libc::c_char; 21],
-            >(b"_mi_thread_heap_done\0"))
+            (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(b"_mi_thread_heap_done\0"))
                 .as_ptr(),
         );
     };
-    if mi_heap_is_backing(heap) as libc::c_int != 0 {} else {
+    if mi_heap_is_backing(heap) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_heap_is_backing(heap)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5722 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 21],
-                &[libc::c_char; 21],
-            >(b"_mi_thread_heap_done\0"))
+            (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(b"_mi_thread_heap_done\0"))
                 .as_ptr(),
         );
     };
-    if heap != &mut _mi_heap_main as *mut mi_heap_t {
+    if heap != &raw mut _mi_heap_main as *mut mi_heap_t {
         _mi_heap_collect_abandon(heap);
     }
     _mi_stats_done(&mut (*(*heap).tld).stats);
-    if heap != &mut _mi_heap_main as *mut mi_heap_t {
+    if heap != &raw mut _mi_heap_main as *mut mi_heap_t {
         if (*(*heap).tld).segments.count == 0 as libc::c_int as size_t
             || (*heap).thread_id != _mi_thread_id()
-        {} else {
+        {
+        } else {
             _mi_assert_fail(
                 b"heap->tld->segments.count == 0 || heap->thread_id != _mi_thread_id()\0"
                     as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 5728 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 21],
-                    &[libc::c_char; 21],
-                >(b"_mi_thread_heap_done\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(
+                    b"_mi_thread_heap_done\0",
+                ))
+                .as_ptr(),
             );
         };
         mi_thread_data_free(heap as *mut mi_thread_data_t);
@@ -11309,7 +10603,7 @@ unsafe extern "C" fn mi_process_setup_auto_thread_done() {
     }
     tls_initialized = 1 as libc::c_int != 0;
     _mi_prim_thread_init_auto_done();
-    _mi_heap_set_default_direct(&mut _mi_heap_main);
+    _mi_heap_set_default_direct(&raw mut _mi_heap_main);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_is_main_thread() -> bool {
@@ -11319,7 +10613,7 @@ pub unsafe extern "C" fn _mi_is_main_thread() -> bool {
 static mut thread_count: size_t = 1 as libc::c_int as libc::c_ulong;
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_current_thread_count() -> size_t {
-    return ::core::intrinsics::atomic_load_relaxed(&mut thread_count);
+    return ::core::intrinsics::atomic_load_relaxed(&raw mut thread_count);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_thread_init() {
@@ -11327,11 +10621,8 @@ pub unsafe extern "C" fn mi_thread_init() {
     if _mi_thread_heap_init() {
         return;
     }
-    _mi_stat_increase(&mut _mi_stats_main.threads, 1 as libc::c_int as size_t);
-    ::core::intrinsics::atomic_xadd_relaxed(
-        &mut thread_count,
-        1 as libc::c_int as uintptr_t,
-    );
+    _mi_stat_increase(&raw mut _mi_stats_main.threads, 1 as libc::c_int as size_t);
+    ::core::intrinsics::atomic_xadd_relaxed(&raw mut thread_count, 1 as libc::c_int as uintptr_t);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_thread_done() {
@@ -11348,11 +10639,8 @@ pub unsafe extern "C" fn _mi_thread_done(mut heap: *mut mi_heap_t) {
     if !mi_heap_is_initialized(heap) {
         return;
     }
-    ::core::intrinsics::atomic_xsub_relaxed(
-        &mut thread_count,
-        1 as libc::c_int as uintptr_t,
-    );
-    _mi_stat_decrease(&mut _mi_stats_main.threads, 1 as libc::c_int as size_t);
+    ::core::intrinsics::atomic_xsub_relaxed(&raw mut thread_count, 1 as libc::c_int as uintptr_t);
+    _mi_stat_decrease(&raw mut _mi_stats_main.threads, 1 as libc::c_int as size_t);
     if (*heap).thread_id != _mi_thread_id() {
         return;
     }
@@ -11362,16 +10650,16 @@ pub unsafe extern "C" fn _mi_thread_done(mut heap: *mut mi_heap_t) {
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_heap_set_default_direct(mut heap: *mut mi_heap_t) {
-    if !heap.is_null() {} else {
+    if !heap.is_null() {
+    } else {
         _mi_assert_fail(
             b"heap != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5778 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 28],
-                &[libc::c_char; 28],
-            >(b"_mi_heap_set_default_direct\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 28], &[libc::c_char; 28]>(
+                b"_mi_heap_set_default_direct\0",
+            ))
+            .as_ptr(),
         );
     };
     _mi_heap_default = heap;
@@ -11387,15 +10675,13 @@ pub unsafe extern "C" fn _mi_preloading() -> bool {
 pub unsafe extern "C" fn _mi_process_load() {
     mi_heap_main_init();
     os_preloading = 0 as libc::c_int != 0;
-    if _mi_is_main_thread() as libc::c_int != 0 {} else {
+    if _mi_is_main_thread() as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"_mi_is_main_thread()\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             5800 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 17],
-                &[libc::c_char; 17],
-            >(b"_mi_process_load\0"))
+            (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"_mi_process_load\0"))
                 .as_ptr(),
         );
     };
@@ -11403,9 +10689,7 @@ pub unsafe extern "C" fn _mi_process_load() {
     mi_process_setup_auto_thread_done();
     mi_process_init();
     if _mi_is_redirected() {
-        _mi_verbose_message(
-            b"malloc is redirected.\n\0" as *const u8 as *const libc::c_char,
-        );
+        _mi_verbose_message(b"malloc is redirected.\n\0" as *const u8 as *const libc::c_char);
     }
     let mut msg: *const libc::c_char = 0 as *const libc::c_char;
     _mi_allocator_init(&mut msg);
@@ -11415,14 +10699,14 @@ pub unsafe extern "C" fn _mi_process_load() {
     {
         _mi_fputs(None, 0 as *mut libc::c_void, 0 as *const libc::c_char, msg);
     }
-    _mi_random_reinit_if_weak(&mut _mi_heap_main.random);
+    _mi_random_reinit_if_weak(&raw mut _mi_heap_main.random);
 }
 unsafe extern "C" fn mi_detect_cpu_features() {}
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_process_init() {
     static mut process_init: mi_atomic_once_t = 0;
     mi_heap_main_init();
-    if !mi_atomic_once(&mut process_init) {
+    if !mi_atomic_once(&raw mut process_init) {
         return;
     }
     _mi_process_is_initialized = 1 as libc::c_int != 0;
@@ -11454,9 +10738,7 @@ pub unsafe extern "C" fn mi_process_init() {
             0 as libc::c_int as libc::c_long,
             (128 as libc::c_int * 1024 as libc::c_int) as libc::c_long,
         ) as size_t;
-        let mut reserve_at: libc::c_long = mi_option_get(
-            mi_option_reserve_huge_os_pages_at,
-        );
+        let mut reserve_at: libc::c_long = mi_option_get(mi_option_reserve_huge_os_pages_at);
         if reserve_at != -(1 as libc::c_int) as libc::c_long {
             mi_reserve_huge_os_pages_at(
                 pages,
@@ -11475,8 +10757,8 @@ pub unsafe extern "C" fn mi_process_init() {
         let mut ksize: libc::c_long = mi_option_get(mi_option_reserve_os_memory);
         if ksize > 0 as libc::c_int as libc::c_long {
             mi_reserve_os_memory(
-                (ksize as size_t as libc::c_ulonglong)
-                    .wrapping_mul(1024 as libc::c_ulonglong) as size_t,
+                (ksize as size_t as libc::c_ulonglong).wrapping_mul(1024 as libc::c_ulonglong)
+                    as size_t,
                 1 as libc::c_int != 0,
                 1 as libc::c_int != 0,
             );
@@ -11499,9 +10781,7 @@ pub unsafe extern "C" fn _mi_process_done() {
         mi_collect(1 as libc::c_int != 0);
         _mi_heap_unsafe_destroy_all();
         _mi_arena_unsafe_destroy_all(
-            &mut (*(*(_mi_heap_main_get as unsafe extern "C" fn() -> *mut mi_heap_t)())
-                .tld)
-                .stats,
+            &mut (*(*(_mi_heap_main_get as unsafe extern "C" fn() -> *mut mi_heap_t)()).tld).stats,
         );
     }
     if mi_option_is_enabled(mi_option_show_stats) as libc::c_int != 0
@@ -11519,9 +10799,9 @@ pub unsafe extern "C" fn _mi_process_done() {
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_toupper(mut c: libc::c_char) -> libc::c_char {
     if c as libc::c_int >= 'a' as i32 && c as libc::c_int <= 'z' as i32 {
-        return (c as libc::c_int - 'a' as i32 + 'A' as i32) as libc::c_char
+        return (c as libc::c_int - 'a' as i32 + 'A' as i32) as libc::c_char;
     } else {
-        return c
+        return c;
     };
 }
 #[unsafe(no_mangle)]
@@ -11533,7 +10813,8 @@ pub unsafe extern "C" fn _mi_strnicmp(
     if n == 0 as libc::c_int as size_t {
         return 0 as libc::c_int;
     }
-    while *s as libc::c_int != 0 as libc::c_int && *t as libc::c_int != 0 as libc::c_int
+    while *s as libc::c_int != 0 as libc::c_int
+        && *t as libc::c_int != 0 as libc::c_int
         && n > 0 as libc::c_int as size_t
     {
         if _mi_toupper(*s) as libc::c_int != _mi_toupper(*t) as libc::c_int {
@@ -11561,9 +10842,7 @@ pub unsafe extern "C" fn _mi_strlcpy(
     if dest.is_null() || src.is_null() || dest_size == 0 as libc::c_int as size_t {
         return;
     }
-    while *src as libc::c_int != 0 as libc::c_int
-        && dest_size > 1 as libc::c_int as size_t
-    {
+    while *src as libc::c_int != 0 as libc::c_int && dest_size > 1 as libc::c_int as size_t {
         let fresh28 = src;
         src = src.offset(1);
         let fresh29 = dest;
@@ -11583,9 +10862,7 @@ pub unsafe extern "C" fn _mi_strlcat(
     if dest.is_null() || src.is_null() || dest_size == 0 as libc::c_int as size_t {
         return;
     }
-    while *dest as libc::c_int != 0 as libc::c_int
-        && dest_size > 1 as libc::c_int as size_t
-    {
+    while *dest as libc::c_int != 0 as libc::c_int && dest_size > 1 as libc::c_int as size_t {
         dest = dest.offset(1);
         dest;
         dest_size = dest_size.wrapping_sub(1);
@@ -11606,10 +10883,7 @@ pub unsafe extern "C" fn _mi_strlen(mut s: *const libc::c_char) -> size_t {
     return len;
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn _mi_strnlen(
-    mut s: *const libc::c_char,
-    mut max_len: size_t,
-) -> size_t {
+pub unsafe extern "C" fn _mi_strnlen(mut s: *const libc::c_char, mut max_len: size_t) -> size_t {
     if s.is_null() {
         return 0 as libc::c_int as size_t;
     }
@@ -11693,10 +10967,8 @@ unsafe extern "C" fn mi_out_alignright(
     }
     let mut i: size_t = 1 as libc::c_int as size_t;
     while i <= len {
-        *start
-            .offset(
-                len.wrapping_add(extra).wrapping_sub(i) as isize,
-            ) = *start.offset(len.wrapping_sub(i) as isize);
+        *start.offset(len.wrapping_add(extra).wrapping_sub(i) as isize) =
+            *start.offset(len.wrapping_sub(i) as isize);
         i = i.wrapping_add(1);
         i;
     }
@@ -11714,7 +10986,8 @@ unsafe extern "C" fn mi_out_num(
     mut out: *mut *mut libc::c_char,
     mut end: *mut libc::c_char,
 ) {
-    if x == 0 as libc::c_int as uintmax_t || base == 0 as libc::c_int as size_t
+    if x == 0 as libc::c_int as uintmax_t
+        || base == 0 as libc::c_int as size_t
         || base > 16 as libc::c_int as size_t
     {
         if prefix as libc::c_int != 0 as libc::c_int {
@@ -11743,13 +11016,9 @@ unsafe extern "C" fn mi_out_num(
         let mut i: size_t = 0 as libc::c_int as size_t;
         while i < len / 2 as libc::c_int as size_t {
             let mut c: libc::c_char = *start
-                .offset(
-                    len.wrapping_sub(i).wrapping_sub(1 as libc::c_int as size_t) as isize,
-                );
-            *start
-                .offset(
-                    len.wrapping_sub(i).wrapping_sub(1 as libc::c_int as size_t) as isize,
-                ) = *start.offset(i as isize);
+                .offset(len.wrapping_sub(i).wrapping_sub(1 as libc::c_int as size_t) as isize);
+            *start.offset(len.wrapping_sub(i).wrapping_sub(1 as libc::c_int as size_t) as isize) =
+                *start.offset(i as isize);
             *start.offset(i as isize) = c;
             i = i.wrapping_add(1);
             i;
@@ -11766,12 +11035,10 @@ pub unsafe extern "C" fn _mi_vsnprintf(
     if buf.is_null() || bufsize == 0 as libc::c_int as size_t || fmt.is_null() {
         return;
     }
-    *buf
-        .offset(
-            bufsize.wrapping_sub(1 as libc::c_int as size_t) as isize,
-        ) = 0 as libc::c_int as libc::c_char;
-    let end: *mut libc::c_char = buf
-        .offset(bufsize.wrapping_sub(1 as libc::c_int as size_t) as isize);
+    *buf.offset(bufsize.wrapping_sub(1 as libc::c_int as size_t) as isize) =
+        0 as libc::c_int as libc::c_char;
+    let end: *mut libc::c_char =
+        buf.offset(bufsize.wrapping_sub(1 as libc::c_int as size_t) as isize);
     let mut in_0: *const libc::c_char = fmt;
     let mut out: *mut libc::c_char = buf;
     while !(out >= end) {
@@ -11784,7 +11051,8 @@ pub unsafe extern "C" fn _mi_vsnprintf(
         in_0;
         if c as libc::c_int != '%' as i32 {
             if c as libc::c_int >= ' ' as i32 && c as libc::c_int <= '~' as i32
-                || c as libc::c_int == '\n' as i32 || c as libc::c_int == '\r' as i32
+                || c as libc::c_int == '\n' as i32
+                || c as libc::c_int == '\r' as i32
                 || c as libc::c_int == '\t' as i32
             {
                 mi_outc(c, &mut out, end);
@@ -11850,7 +11118,8 @@ pub unsafe extern "C" fn _mi_vsnprintf(
                     break;
                 }
             }
-            if c as libc::c_int == 'z' as i32 || c as libc::c_int == 't' as i32
+            if c as libc::c_int == 'z' as i32
+                || c as libc::c_int == 't' as i32
                 || c as libc::c_int == 'L' as i32
             {
                 numtype = c;
@@ -11882,7 +11151,8 @@ pub unsafe extern "C" fn _mi_vsnprintf(
             if c as libc::c_int == 's' as i32 {
                 let mut s: *const libc::c_char = args.arg::<*const libc::c_char>();
                 mi_outs(s, &mut out, end);
-            } else if c as libc::c_int == 'p' as i32 || c as libc::c_int == 'x' as i32
+            } else if c as libc::c_int == 'p' as i32
+                || c as libc::c_int == 'x' as i32
                 || c as libc::c_int == 'u' as i32
             {
                 let mut x: uintmax_t = 0 as libc::c_int as uintmax_t;
@@ -11912,20 +11182,19 @@ pub unsafe extern "C" fn _mi_vsnprintf(
                     && (c as libc::c_int == 'x' as i32 || c as libc::c_int == 'p' as i32)
                 {
                     if c as libc::c_int == 'p' as i32 {
-                        width = (2 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                (if x <= 4294967295 as libc::c_uint as uintmax_t {
-                                    4 as libc::c_int as libc::c_ulong
+                        width = (2 as libc::c_int as libc::c_ulong).wrapping_mul(
+                            (if x <= 4294967295 as libc::c_uint as uintmax_t {
+                                4 as libc::c_int as libc::c_ulong
+                            } else {
+                                (if x >> 16 as libc::c_int
+                                    <= 4294967295 as libc::c_uint as uintmax_t
+                                {
+                                    6 as libc::c_int as libc::c_ulong
                                 } else {
-                                    (if x >> 16 as libc::c_int
-                                        <= 4294967295 as libc::c_uint as uintmax_t
-                                    {
-                                        6 as libc::c_int as libc::c_ulong
-                                    } else {
-                                        ::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong
-                                    })
-                                }),
-                            );
+                                    ::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong
+                                })
+                            }),
+                        );
                     }
                     if width == 0 as libc::c_int as size_t {
                         width = 2 as libc::c_int as size_t;
@@ -11934,8 +11203,7 @@ pub unsafe extern "C" fn _mi_vsnprintf(
                 }
                 mi_out_num(
                     x,
-                    (if c as libc::c_int == 'x' as i32 || c as libc::c_int == 'p' as i32
-                    {
+                    (if c as libc::c_int == 'x' as i32 || c as libc::c_int == 'p' as i32 {
                         16 as libc::c_int
                     } else {
                         10 as libc::c_int
@@ -11961,8 +11229,7 @@ pub unsafe extern "C" fn _mi_vsnprintf(
                 if x_0 < 0 as libc::c_int as intmax_t {
                     pre = '-' as i32 as libc::c_char;
                     if x_0
-                        > -(9223372036854775807 as libc::c_long)
-                            - 1 as libc::c_int as libc::c_long
+                        > -(9223372036854775807 as libc::c_long) - 1 as libc::c_int as libc::c_long
                     {
                         x_0 = -x_0;
                     }
@@ -11980,27 +11247,23 @@ pub unsafe extern "C" fn _mi_vsnprintf(
                 mi_outc('%' as i32 as libc::c_char, &mut out, end);
                 mi_outc(c, &mut out, end);
             }
-            if out <= end {} else {
+            if out <= end {
+            } else {
                 _mi_assert_fail(
                     b"out <= end\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     6084 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 14],
-                        &[libc::c_char; 14],
-                    >(b"_mi_vsnprintf\0"))
+                    (*::core::mem::transmute::<&[u8; 14], &[libc::c_char; 14]>(b"_mi_vsnprintf\0"))
                         .as_ptr(),
                 );
             };
-            if out >= start {} else {
+            if out >= start {
+            } else {
                 _mi_assert_fail(
                     b"out >= start\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     6085 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 14],
-                        &[libc::c_char; 14],
-                    >(b"_mi_vsnprintf\0"))
+                    (*::core::mem::transmute::<&[u8; 14], &[libc::c_char; 14]>(b"_mi_vsnprintf\0"))
                         .as_ptr(),
                 );
             };
@@ -12013,15 +11276,13 @@ pub unsafe extern "C" fn _mi_vsnprintf(
             }
         }
     }
-    if out <= end {} else {
+    if out <= end {
+    } else {
         _mi_assert_fail(
             b"out <= end\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6095 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 14],
-                &[libc::c_char; 14],
-            >(b"_mi_vsnprintf\0"))
+            (*::core::mem::transmute::<&[u8; 14], &[libc::c_char; 14]>(b"_mi_vsnprintf\0"))
                 .as_ptr(),
         );
     };
@@ -12052,10 +11313,8 @@ static mut options: [mi_option_desc_t; 36] = [mi_option_desc_s {
     legacy_name: 0 as *const libc::c_char,
 }; 36];
 unsafe extern "C" fn mi_option_has_size_in_kib(mut option: mi_option_t) -> bool {
-    return option as libc::c_uint
-        == mi_option_reserve_os_memory as libc::c_int as libc::c_uint
-        || option as libc::c_uint
-            == mi_option_arena_reserve as libc::c_int as libc::c_uint;
+    return option as libc::c_uint == mi_option_reserve_os_memory as libc::c_int as libc::c_uint
+        || option as libc::c_uint == mi_option_arena_reserve as libc::c_int as libc::c_uint;
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_options_init() {
@@ -12064,9 +11323,8 @@ pub unsafe extern "C" fn _mi_options_init() {
     while i < _mi_option_last as libc::c_int {
         let mut option: mi_option_t = i as mi_option_t;
         let mut l: libc::c_long = mi_option_get(option);
-        let mut desc: *mut mi_option_desc_t = &mut *options
-            .as_mut_ptr()
-            .offset(option as isize) as *mut mi_option_desc_t;
+        let mut desc: *mut mi_option_desc_t =
+            (&raw mut options[option as usize]) as *mut mi_option_desc_t;
         _mi_verbose_message(
             b"option '%s': %ld %s\n\0" as *const u8 as *const libc::c_char,
             (*desc).name,
@@ -12087,31 +11345,25 @@ pub unsafe extern "C" fn _mi_options_init() {
 pub unsafe extern "C" fn _mi_option_get_fast(mut option: mi_option_t) -> libc::c_long {
     if option as libc::c_uint >= 0 as libc::c_int as libc::c_uint
         && (option as libc::c_uint) < _mi_option_last as libc::c_int as libc::c_uint
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
-            b"option >= 0 && option < _mi_option_last\0" as *const u8
-                as *const libc::c_char,
+            b"option >= 0 && option < _mi_option_last\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6245 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"_mi_option_get_fast\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"_mi_option_get_fast\0"))
                 .as_ptr(),
         );
     };
-    let mut desc: *mut mi_option_desc_t = &mut *options
-        .as_mut_ptr()
-        .offset(option as isize) as *mut mi_option_desc_t;
-    if (*desc).option as libc::c_uint == option as libc::c_uint {} else {
+    let mut desc: *mut mi_option_desc_t =
+        (&raw mut options[option as usize]) as *mut mi_option_desc_t;
+    if (*desc).option as libc::c_uint == option as libc::c_uint {
+    } else {
         _mi_assert_fail(
             b"desc->option == option\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6247 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"_mi_option_get_fast\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"_mi_option_get_fast\0"))
                 .as_ptr(),
         );
     };
@@ -12121,16 +11373,13 @@ pub unsafe extern "C" fn _mi_option_get_fast(mut option: mi_option_t) -> libc::c
 pub unsafe extern "C" fn mi_option_get(mut option: mi_option_t) -> libc::c_long {
     if option as libc::c_uint >= 0 as libc::c_int as libc::c_uint
         && (option as libc::c_uint) < _mi_option_last as libc::c_int as libc::c_uint
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
-            b"option >= 0 && option < _mi_option_last\0" as *const u8
-                as *const libc::c_char,
+            b"option >= 0 && option < _mi_option_last\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6251 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 14],
-                &[libc::c_char; 14],
-            >(b"mi_option_get\0"))
+            (*::core::mem::transmute::<&[u8; 14], &[libc::c_char; 14]>(b"mi_option_get\0"))
                 .as_ptr(),
         );
     };
@@ -12139,23 +11388,21 @@ pub unsafe extern "C" fn mi_option_get(mut option: mi_option_t) -> libc::c_long 
     {
         return 0 as libc::c_int as libc::c_long;
     }
-    let mut desc: *mut mi_option_desc_t = &mut *options
-        .as_mut_ptr()
-        .offset(option as isize) as *mut mi_option_desc_t;
-    if (*desc).option as libc::c_uint == option as libc::c_uint {} else {
+    let mut desc: *mut mi_option_desc_t =
+        (&raw mut options[option as usize]) as *mut mi_option_desc_t;
+    if (*desc).option as libc::c_uint == option as libc::c_uint {
+    } else {
         _mi_assert_fail(
             b"desc->option == option\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6254 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 14],
-                &[libc::c_char; 14],
-            >(b"mi_option_get\0"))
+            (*::core::mem::transmute::<&[u8; 14], &[libc::c_char; 14]>(b"mi_option_get\0"))
                 .as_ptr(),
         );
     };
-    if ((*desc).init as libc::c_uint == UNINIT as libc::c_int as libc::c_uint)
-        as libc::c_int as libc::c_long != 0
+    if ((*desc).init as libc::c_uint == UNINIT as libc::c_int as libc::c_uint) as libc::c_int
+        as libc::c_long
+        != 0
     {
         mi_option_init(desc);
     }
@@ -12168,7 +11415,13 @@ pub unsafe extern "C" fn mi_option_get_clamp(
     mut max: libc::c_long,
 ) -> libc::c_long {
     let mut x: libc::c_long = mi_option_get(option);
-    return if x < min { min } else if x > max { max } else { x };
+    return if x < min {
+        min
+    } else if x > max {
+        max
+    } else {
+        x
+    };
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_option_get_size(mut option: mi_option_t) -> size_t {
@@ -12179,28 +11432,22 @@ pub unsafe extern "C" fn mi_option_get_size(mut option: mi_option_t) -> size_t {
         x as size_t
     };
     if mi_option_has_size_in_kib(option) {
-        size = (size as libc::c_ulonglong).wrapping_mul(1024 as libc::c_ulonglong)
-            as size_t as size_t;
+        size =
+            (size as libc::c_ulonglong).wrapping_mul(1024 as libc::c_ulonglong) as size_t as size_t;
     }
     return size;
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn mi_option_set(
-    mut option: mi_option_t,
-    mut value: libc::c_long,
-) {
+pub unsafe extern "C" fn mi_option_set(mut option: mi_option_t, mut value: libc::c_long) {
     if option as libc::c_uint >= 0 as libc::c_int as libc::c_uint
         && (option as libc::c_uint) < _mi_option_last as libc::c_int as libc::c_uint
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
-            b"option >= 0 && option < _mi_option_last\0" as *const u8
-                as *const libc::c_char,
+            b"option >= 0 && option < _mi_option_last\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6273 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 14],
-                &[libc::c_char; 14],
-            >(b"mi_option_set\0"))
+            (*::core::mem::transmute::<&[u8; 14], &[libc::c_char; 14]>(b"mi_option_set\0"))
                 .as_ptr(),
         );
     };
@@ -12209,52 +11456,41 @@ pub unsafe extern "C" fn mi_option_set(
     {
         return;
     }
-    let mut desc: *mut mi_option_desc_t = &mut *options
-        .as_mut_ptr()
-        .offset(option as isize) as *mut mi_option_desc_t;
-    if (*desc).option as libc::c_uint == option as libc::c_uint {} else {
+    let mut desc: *mut mi_option_desc_t =
+        (&raw mut options[option as usize]) as *mut mi_option_desc_t;
+    if (*desc).option as libc::c_uint == option as libc::c_uint {
+    } else {
         _mi_assert_fail(
             b"desc->option == option\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6276 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 14],
-                &[libc::c_char; 14],
-            >(b"mi_option_set\0"))
+            (*::core::mem::transmute::<&[u8; 14], &[libc::c_char; 14]>(b"mi_option_set\0"))
                 .as_ptr(),
         );
     };
     (*desc).value = value;
     (*desc).init = INITIALIZED;
-    if (*desc).option as libc::c_uint
-        == mi_option_guarded_min as libc::c_int as libc::c_uint
+    if (*desc).option as libc::c_uint == mi_option_guarded_min as libc::c_int as libc::c_uint
         && _mi_option_get_fast(mi_option_guarded_max) < value
     {
         mi_option_set(mi_option_guarded_max, value);
-    } else if (*desc).option as libc::c_uint
-        == mi_option_guarded_max as libc::c_int as libc::c_uint
+    } else if (*desc).option as libc::c_uint == mi_option_guarded_max as libc::c_int as libc::c_uint
         && _mi_option_get_fast(mi_option_guarded_min) > value
     {
         mi_option_set(mi_option_guarded_min, value);
     }
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn mi_option_set_default(
-    mut option: mi_option_t,
-    mut value: libc::c_long,
-) {
+pub unsafe extern "C" fn mi_option_set_default(mut option: mi_option_t, mut value: libc::c_long) {
     if option as libc::c_uint >= 0 as libc::c_int as libc::c_uint
         && (option as libc::c_uint) < _mi_option_last as libc::c_int as libc::c_uint
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
-            b"option >= 0 && option < _mi_option_last\0" as *const u8
-                as *const libc::c_char,
+            b"option >= 0 && option < _mi_option_last\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6287 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"mi_option_set_default\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"mi_option_set_default\0"))
                 .as_ptr(),
         );
     };
@@ -12263,9 +11499,8 @@ pub unsafe extern "C" fn mi_option_set_default(
     {
         return;
     }
-    let mut desc: *mut mi_option_desc_t = &mut *options
-        .as_mut_ptr()
-        .offset(option as isize) as *mut mi_option_desc_t;
+    let mut desc: *mut mi_option_desc_t =
+        (&raw mut options[option as usize]) as *mut mi_option_desc_t;
     if (*desc).init as libc::c_uint != INITIALIZED as libc::c_int as libc::c_uint {
         (*desc).value = value;
     }
@@ -12275,25 +11510,25 @@ pub unsafe extern "C" fn mi_option_is_enabled(mut option: mi_option_t) -> bool {
     return mi_option_get(option) != 0 as libc::c_int as libc::c_long;
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn mi_option_set_enabled(
-    mut option: mi_option_t,
-    mut enable: bool,
-) {
+pub unsafe extern "C" fn mi_option_set_enabled(mut option: mi_option_t, mut enable: bool) {
     mi_option_set(
         option,
-        (if enable as libc::c_int != 0 { 1 as libc::c_int } else { 0 as libc::c_int })
-            as libc::c_long,
+        (if enable as libc::c_int != 0 {
+            1 as libc::c_int
+        } else {
+            0 as libc::c_int
+        }) as libc::c_long,
     );
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn mi_option_set_enabled_default(
-    mut option: mi_option_t,
-    mut enable: bool,
-) {
+pub unsafe extern "C" fn mi_option_set_enabled_default(mut option: mi_option_t, mut enable: bool) {
     mi_option_set_default(
         option,
-        (if enable as libc::c_int != 0 { 1 as libc::c_int } else { 0 as libc::c_int })
-            as libc::c_long,
+        (if enable as libc::c_int != 0 {
+            1 as libc::c_int
+        } else {
+            0 as libc::c_int
+        }) as libc::c_long,
     );
 }
 #[unsafe(no_mangle)]
@@ -12304,26 +11539,18 @@ pub unsafe extern "C" fn mi_option_enable(mut option: mi_option_t) {
 pub unsafe extern "C" fn mi_option_disable(mut option: mi_option_t) {
     mi_option_set_enabled(option, 0 as libc::c_int != 0);
 }
-unsafe extern "C" fn mi_out_stderr(
-    mut msg: *const libc::c_char,
-    mut arg: *mut libc::c_void,
-) {
-    if !msg.is_null()
-        && *msg.offset(0 as libc::c_int as isize) as libc::c_int != 0 as libc::c_int
-    {
+unsafe extern "C" fn mi_out_stderr(mut msg: *const libc::c_char, mut arg: *mut libc::c_void) {
+    if !msg.is_null() && *msg.offset(0 as libc::c_int as isize) as libc::c_int != 0 as libc::c_int {
         _mi_prim_out_stderr(msg);
     }
 }
 static mut out_buf: [libc::c_char; 16385] = [0; 16385];
 static mut out_len: size_t = 0;
-unsafe extern "C" fn mi_out_buf(
-    mut msg: *const libc::c_char,
-    mut arg: *mut libc::c_void,
-) {
+unsafe extern "C" fn mi_out_buf(mut msg: *const libc::c_char, mut arg: *mut libc::c_void) {
     if msg.is_null() {
         return;
     }
-    if ::core::intrinsics::atomic_load_relaxed(&mut out_len as *mut size_t)
+    if ::core::intrinsics::atomic_load_relaxed(&raw mut out_len as *mut size_t)
         >= (16 as libc::c_int * 1024 as libc::c_int) as size_t
     {
         return;
@@ -12332,7 +11559,7 @@ unsafe extern "C" fn mi_out_buf(
     if n == 0 as libc::c_int as size_t {
         return;
     }
-    let mut start: size_t = ::core::intrinsics::atomic_xadd_acqrel(&mut out_len, n);
+    let mut start: size_t = ::core::intrinsics::atomic_xadd_acqrel(&raw mut out_len, n);
     if start >= (16 as libc::c_int * 1024 as libc::c_int) as size_t {
         return;
     }
@@ -12342,14 +11569,13 @@ unsafe extern "C" fn mi_out_buf(
             .wrapping_sub(1 as libc::c_int as size_t);
     }
     _mi_memcpy(
-        &mut *out_buf.as_mut_ptr().offset(start as isize) as *mut libc::c_char
-            as *mut libc::c_void,
+        &mut *(*(&raw mut out_buf)).as_mut_ptr().offset(start as isize) as *mut libc::c_char as *mut libc::c_void,
         msg as *const libc::c_void,
         n,
     );
 }
 unsafe extern "C" fn mi_out_buf_flush(
-    mut out: Option::<mi_output_fun>,
+    mut out: Option<mi_output_fun>,
     mut no_more_buf: bool,
     mut arg: *mut libc::c_void,
 ) {
@@ -12357,7 +11583,7 @@ unsafe extern "C" fn mi_out_buf_flush(
         return;
     }
     let mut count: size_t = ::core::intrinsics::atomic_xadd_acqrel(
-        &mut out_len,
+        &raw mut out_len,
         if no_more_buf as libc::c_int != 0 {
             (16 as libc::c_int * 1024 as libc::c_int) as size_t
         } else {
@@ -12368,83 +11594,68 @@ unsafe extern "C" fn mi_out_buf_flush(
         count = (16 as libc::c_int * 1024 as libc::c_int) as size_t;
     }
     out_buf[count as usize] = 0 as libc::c_int as libc::c_char;
-    out.expect("non-null function pointer")(out_buf.as_mut_ptr(), arg);
+    out.expect("non-null function pointer")((*(&raw mut out_buf)).as_mut_ptr(), arg);
     if !no_more_buf {
         out_buf[count as usize] = '\n' as i32 as libc::c_char;
     }
 }
-unsafe extern "C" fn mi_out_buf_stderr(
-    mut msg: *const libc::c_char,
-    mut arg: *mut libc::c_void,
-) {
+unsafe extern "C" fn mi_out_buf_stderr(mut msg: *const libc::c_char, mut arg: *mut libc::c_void) {
     mi_out_stderr(msg, arg);
     mi_out_buf(msg, arg);
 }
-static mut mi_out_default: Option::<mi_output_fun> = None;
+static mut mi_out_default: Option<mi_output_fun> = None;
 static mut mi_out_arg: *mut libc::c_void = 0 as *const libc::c_void as *mut libc::c_void;
-unsafe extern "C" fn mi_out_get_default(
-    mut parg: *mut *mut libc::c_void,
-) -> Option::<mi_output_fun> {
+unsafe extern "C" fn mi_out_get_default(mut parg: *mut *mut libc::c_void) -> Option<mi_output_fun> {
     if !parg.is_null() {
-        *parg = ::core::intrinsics::atomic_load_acquire(&mut mi_out_arg);
+        *parg = ::core::intrinsics::atomic_load_acquire(&raw mut mi_out_arg);
     }
-    let mut out: Option::<mi_output_fun> = mi_out_default;
+    let mut out: Option<mi_output_fun> = mi_out_default;
     return if out.is_none() {
-        Some(
-            mi_out_buf
-                as unsafe extern "C" fn(*const libc::c_char, *mut libc::c_void) -> (),
-        )
+        Some(mi_out_buf as unsafe extern "C" fn(*const libc::c_char, *mut libc::c_void) -> ())
     } else {
         out
     };
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_register_output(
-    mut out: Option::<mi_output_fun>,
+    mut out: Option<mi_output_fun>,
     mut arg: *mut libc::c_void,
 ) {
     ::core::ptr::write_volatile(
-        &mut mi_out_default as *mut Option::<mi_output_fun>,
+        &raw mut mi_out_default as *mut Option<mi_output_fun>,
         if out.is_none() {
             Some(
-                mi_out_stderr
-                    as unsafe extern "C" fn(*const libc::c_char, *mut libc::c_void) -> (),
+                mi_out_stderr as unsafe extern "C" fn(*const libc::c_char, *mut libc::c_void) -> (),
             )
         } else {
             out
         },
     );
-    ::core::intrinsics::atomic_store_release(&mut mi_out_arg, arg);
+    ::core::intrinsics::atomic_store_release(&raw mut mi_out_arg, arg);
     if out.is_some() {
         mi_out_buf_flush(out, 1 as libc::c_int != 0, arg);
     }
 }
 unsafe extern "C" fn mi_add_stderr_output() {
-    if mi_out_default.is_none() {} else {
+    if (*(&raw mut mi_out_default)).is_none() {
+    } else {
         _mi_assert_fail(
             b"mi_out_default == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6360 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 21],
-                &[libc::c_char; 21],
-            >(b"mi_add_stderr_output\0"))
+            (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(b"mi_add_stderr_output\0"))
                 .as_ptr(),
         );
     };
     mi_out_buf_flush(
-        Some(
-            mi_out_stderr
-                as unsafe extern "C" fn(*const libc::c_char, *mut libc::c_void) -> (),
-        ),
+        Some(mi_out_stderr as unsafe extern "C" fn(*const libc::c_char, *mut libc::c_void) -> ()),
         0 as libc::c_int != 0,
         0 as *mut libc::c_void,
     );
     ::core::ptr::write_volatile(
-        &mut mi_out_default as *mut Option::<mi_output_fun>,
+        &raw mut mi_out_default as *mut Option<mi_output_fun>,
         Some(
-            mi_out_buf_stderr
-                as unsafe extern "C" fn(*const libc::c_char, *mut libc::c_void) -> (),
+            mi_out_buf_stderr as unsafe extern "C" fn(*const libc::c_char, *mut libc::c_void) -> (),
         ),
     );
 }
@@ -12472,15 +11683,15 @@ unsafe extern "C" fn mi_recurse_exit() {
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_fputs(
-    mut out: Option::<mi_output_fun>,
+    mut out: Option<mi_output_fun>,
     mut arg: *mut libc::c_void,
     mut prefix: *const libc::c_char,
     mut message: *const libc::c_char,
 ) {
     if out.is_none()
-        || ::core::mem::transmute::<Option::<mi_output_fun>, *mut libc::c_void>(out)
+        || ::core::mem::transmute::<Option<mi_output_fun>, *mut libc::c_void>(out)
             == stdout as *mut libc::c_void
-        || ::core::mem::transmute::<Option::<mi_output_fun>, *mut libc::c_void>(out)
+        || ::core::mem::transmute::<Option<mi_output_fun>, *mut libc::c_void>(out)
             == stderr as *mut libc::c_void
     {
         if !mi_recurse_enter() {
@@ -12500,7 +11711,7 @@ pub unsafe extern "C" fn _mi_fputs(
     };
 }
 unsafe extern "C" fn mi_vfprintf(
-    mut out: Option::<mi_output_fun>,
+    mut out: Option<mi_output_fun>,
     mut arg: *mut libc::c_void,
     mut prefix: *const libc::c_char,
     mut fmt: *const libc::c_char,
@@ -12525,7 +11736,7 @@ unsafe extern "C" fn mi_vfprintf(
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_fprintf(
-    mut out: Option::<mi_output_fun>,
+    mut out: Option<mi_output_fun>,
     mut arg: *mut libc::c_void,
     mut fmt: *const libc::c_char,
     mut args: ...
@@ -12535,15 +11746,15 @@ pub unsafe extern "C" fn _mi_fprintf(
     mi_vfprintf(out, arg, 0 as *const libc::c_char, fmt, args_0.as_va_list());
 }
 unsafe extern "C" fn mi_vfprintf_thread(
-    mut out: Option::<mi_output_fun>,
+    mut out: Option<mi_output_fun>,
     mut arg: *mut libc::c_void,
     mut prefix: *const libc::c_char,
     mut fmt: *const libc::c_char,
     mut args: ::core::ffi::VaList,
 ) {
     if !prefix.is_null()
-        && _mi_strnlen(prefix, 33 as libc::c_int as size_t)
-            <= 32 as libc::c_int as size_t && !_mi_is_main_thread()
+        && _mi_strnlen(prefix, 33 as libc::c_int as size_t) <= 32 as libc::c_int as size_t
+        && !_mi_is_main_thread()
     {
         let mut tprefix: [libc::c_char; 64] = [0; 64];
         _mi_snprintf(
@@ -12574,10 +11785,7 @@ pub unsafe extern "C" fn _mi_trace_message(mut fmt: *const libc::c_char, mut arg
     );
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn _mi_verbose_message(
-    mut fmt: *const libc::c_char,
-    mut args: ...
-) {
+pub unsafe extern "C" fn _mi_verbose_message(mut fmt: *const libc::c_char, mut args: ...) {
     if !mi_option_is_enabled(mi_option_verbose) {
         return;
     }
@@ -12601,9 +11809,10 @@ unsafe extern "C" fn mi_show_error_message(
         }
         if mi_max_error_count >= 0 as libc::c_int as libc::c_long
             && ::core::intrinsics::atomic_xadd_acqrel(
-                &mut error_count as *mut size_t,
+                &raw mut error_count as *mut size_t,
                 1 as libc::c_int as uintptr_t,
-            ) as libc::c_long > mi_max_error_count
+            ) as libc::c_long
+                > mi_max_error_count
         {
             return;
         }
@@ -12617,19 +11826,17 @@ unsafe extern "C" fn mi_show_error_message(
     );
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn _mi_warning_message(
-    mut fmt: *const libc::c_char,
-    mut args: ...
-) {
+pub unsafe extern "C" fn _mi_warning_message(mut fmt: *const libc::c_char, mut args: ...) {
     if !mi_option_is_enabled(mi_option_verbose) {
         if !mi_option_is_enabled(mi_option_show_errors) {
             return;
         }
         if mi_max_warning_count >= 0 as libc::c_int as libc::c_long
             && ::core::intrinsics::atomic_xadd_acqrel(
-                &mut warning_count as *mut size_t,
+                &raw mut warning_count as *mut size_t,
                 1 as libc::c_int as uintptr_t,
-            ) as libc::c_long > mi_max_warning_count
+            ) as libc::c_long
+                > mi_max_warning_count
         {
             return;
         }
@@ -12654,18 +11861,21 @@ pub unsafe extern "C" fn _mi_assert_fail(
     _mi_fprintf(
         None,
         0 as *mut libc::c_void,
-        b"mimalloc: assertion failed: at \"%s\":%u, %s\n  assertion: \"%s\"\n\0"
-            as *const u8 as *const libc::c_char,
+        b"mimalloc: assertion failed: at \"%s\":%u, %s\n  assertion: \"%s\"\n\0" as *const u8
+            as *const libc::c_char,
         fname,
         line,
-        if func.is_null() { b"\0" as *const u8 as *const libc::c_char } else { func },
+        if func.is_null() {
+            b"\0" as *const u8 as *const libc::c_char
+        } else {
+            func
+        },
         assertion,
     );
     abort();
 }
-static mut mi_error_handler: Option::<mi_error_fun> = None;
-static mut mi_error_arg: *mut libc::c_void = 0 as *const libc::c_void
-    as *mut libc::c_void;
+static mut mi_error_handler: Option<mi_error_fun> = None;
+static mut mi_error_arg: *mut libc::c_void = 0 as *const libc::c_void as *mut libc::c_void;
 unsafe extern "C" fn mi_error_default(mut err: libc::c_int) {
     if err == 14 as libc::c_int {
         abort();
@@ -12673,14 +11883,11 @@ unsafe extern "C" fn mi_error_default(mut err: libc::c_int) {
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_register_error(
-    mut fun: Option::<mi_error_fun>,
+    mut fun: Option<mi_error_fun>,
     mut arg: *mut libc::c_void,
 ) {
-    ::core::ptr::write_volatile(
-        &mut mi_error_handler as *mut Option::<mi_error_fun>,
-        fun,
-    );
-    ::core::intrinsics::atomic_store_release(&mut mi_error_arg, arg);
+    ::core::ptr::write_volatile(&raw mut mi_error_handler as *mut Option<mi_error_fun>, fun);
+    ::core::intrinsics::atomic_store_release(&raw mut mi_error_arg, arg);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_error_message(
@@ -12691,11 +11898,11 @@ pub unsafe extern "C" fn _mi_error_message(
     let mut args_0: ::core::ffi::VaListImpl;
     args_0 = args.clone();
     mi_show_error_message(fmt, args_0.as_va_list());
-    if mi_error_handler.is_some() {
-        mi_error_handler
-            .expect(
-                "non-null function pointer",
-            )(err, ::core::intrinsics::atomic_load_acquire(&mut mi_error_arg));
+    if (*(&raw mut mi_error_handler)).is_some() {
+        mi_error_handler.expect("non-null function pointer")(
+            err,
+            ::core::intrinsics::atomic_load_acquire(&raw mut mi_error_arg),
+        );
     } else {
         mi_error_default(err);
     };
@@ -12761,7 +11968,7 @@ unsafe extern "C" fn mi_option_init(mut desc: *mut mi_option_desc_t) {
                 b"1;TRUE;YES;ON\0" as *const u8 as *const libc::c_char,
                 buf.as_mut_ptr(),
             ))
-                .is_null()
+            .is_null()
         {
             (*desc).value = 1 as libc::c_int as libc::c_long;
             (*desc).init = INITIALIZED;
@@ -12769,17 +11976,13 @@ unsafe extern "C" fn mi_option_init(mut desc: *mut mi_option_desc_t) {
             b"0;FALSE;NO;OFF\0" as *const u8 as *const libc::c_char,
             buf.as_mut_ptr(),
         ))
-            .is_null()
+        .is_null()
         {
             (*desc).value = 0 as libc::c_int as libc::c_long;
             (*desc).init = INITIALIZED;
         } else {
             let mut end: *mut libc::c_char = buf.as_mut_ptr();
-            let mut value: libc::c_long = strtol(
-                buf.as_mut_ptr(),
-                &mut end,
-                10 as libc::c_int,
-            );
+            let mut value: libc::c_long = strtol(buf.as_mut_ptr(), &mut end, 10 as libc::c_int);
             if mi_option_has_size_in_kib((*desc).option) {
                 let mut size: size_t = if value < 0 as libc::c_int as libc::c_long {
                     0 as libc::c_int as size_t
@@ -12791,18 +11994,15 @@ unsafe extern "C" fn mi_option_init(mut desc: *mut mi_option_desc_t) {
                     end = end.offset(1);
                     end;
                 } else if *end as libc::c_int == 'M' as i32 {
-                    overflow = mi_mul_overflow(
-                        size,
-                        1024 as libc::c_ulonglong as size_t,
-                        &mut size,
-                    );
+                    overflow =
+                        mi_mul_overflow(size, 1024 as libc::c_ulonglong as size_t, &mut size);
                     end = end.offset(1);
                     end;
                 } else if *end as libc::c_int == 'G' as i32 {
                     overflow = mi_mul_overflow(
                         size,
-                        (1024 as libc::c_ulonglong)
-                            .wrapping_mul(1024 as libc::c_ulonglong) as size_t,
+                        (1024 as libc::c_ulonglong).wrapping_mul(1024 as libc::c_ulonglong)
+                            as size_t,
                         &mut size,
                     );
                     end = end.offset(1);
@@ -12812,7 +12012,8 @@ unsafe extern "C" fn mi_option_init(mut desc: *mut mi_option_desc_t) {
                         size,
                         (1024 as libc::c_ulonglong)
                             .wrapping_mul(1024 as libc::c_ulonglong)
-                            .wrapping_mul(1024 as libc::c_ulonglong) as size_t,
+                            .wrapping_mul(1024 as libc::c_ulonglong)
+                            as size_t,
                         &mut size,
                     );
                     end = end.offset(1);
@@ -12821,11 +12022,11 @@ unsafe extern "C" fn mi_option_init(mut desc: *mut mi_option_desc_t) {
                     size = (size as libc::c_ulonglong)
                         .wrapping_add(1024 as libc::c_ulonglong)
                         .wrapping_sub(1 as libc::c_int as libc::c_ulonglong)
-                        .wrapping_div(1024 as libc::c_ulonglong) as size_t;
+                        .wrapping_div(1024 as libc::c_ulonglong)
+                        as size_t;
                 }
                 if *end.offset(0 as libc::c_int as isize) as libc::c_int == 'I' as i32
-                    && *end.offset(1 as libc::c_int as isize) as libc::c_int
-                        == 'B' as i32
+                    && *end.offset(1 as libc::c_int as isize) as libc::c_int == 'B' as i32
                 {
                     end = end.offset(2 as libc::c_int as isize);
                 } else if *end as libc::c_int == 'B' as i32 {
@@ -12836,7 +12037,8 @@ unsafe extern "C" fn mi_option_init(mut desc: *mut mi_option_desc_t) {
                     || size > 9223372036854775807 as libc::c_long as size_t
                 {
                     size = (9223372036854775807 as libc::c_long as libc::c_ulonglong)
-                        .wrapping_div(1024 as libc::c_ulonglong) as size_t;
+                        .wrapping_div(1024 as libc::c_ulonglong)
+                        as size_t;
                 }
                 value = if size > 9223372036854775807 as libc::c_long as size_t {
                     9223372036854775807 as libc::c_long
@@ -12854,30 +12056,27 @@ unsafe extern "C" fn mi_option_init(mut desc: *mut mi_option_desc_t) {
                 {
                     (*desc).value = 1 as libc::c_int as libc::c_long;
                     _mi_warning_message(
-                        b"environment option mimalloc_%s has an invalid value.\n\0"
-                            as *const u8 as *const libc::c_char,
+                        b"environment option mimalloc_%s has an invalid value.\n\0" as *const u8
+                            as *const libc::c_char,
                         (*desc).name,
                     );
                     (*desc).value = 0 as libc::c_int as libc::c_long;
                 } else {
                     _mi_warning_message(
-                        b"environment option mimalloc_%s has an invalid value.\n\0"
-                            as *const u8 as *const libc::c_char,
+                        b"environment option mimalloc_%s has an invalid value.\n\0" as *const u8
+                            as *const libc::c_char,
                         (*desc).name,
                     );
                 }
             }
         }
-        if (*desc).init as libc::c_uint != UNINIT as libc::c_int as libc::c_uint
-        {} else {
+        if (*desc).init as libc::c_uint != UNINIT as libc::c_int as libc::c_uint {
+        } else {
             _mi_assert_fail(
                 b"desc->init != UNINIT\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 6560 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 15],
-                    &[libc::c_char; 15],
-                >(b"mi_option_init\0"))
+                (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"mi_option_init\0"))
                     .as_ptr(),
             );
         };
@@ -12916,10 +12115,7 @@ pub unsafe extern "C" fn _mi_os_large_page_size() -> size_t {
     };
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn _mi_os_use_large_page(
-    mut size: size_t,
-    mut alignment: size_t,
-) -> bool {
+pub unsafe extern "C" fn _mi_os_use_large_page(mut size: size_t, mut alignment: size_t) -> bool {
     if mi_os_mem_config.large_page_size == 0 as libc::c_int as size_t
         || !mi_option_is_enabled(mi_option_allow_large_os_pages)
     {
@@ -12932,44 +12128,36 @@ pub unsafe extern "C" fn _mi_os_use_large_page(
 pub unsafe extern "C" fn _mi_os_good_alloc_size(mut size: size_t) -> size_t {
     let mut align_size: size_t = 0;
     if (size as libc::c_ulonglong)
-        < (512 as libc::c_int as libc::c_ulonglong)
-            .wrapping_mul(1024 as libc::c_ulonglong)
+        < (512 as libc::c_int as libc::c_ulonglong).wrapping_mul(1024 as libc::c_ulonglong)
     {
         align_size = _mi_os_page_size();
     } else if (size as libc::c_ulonglong)
         < (2 as libc::c_int as libc::c_ulonglong)
-            .wrapping_mul(
-                (1024 as libc::c_ulonglong).wrapping_mul(1024 as libc::c_ulonglong),
-            )
+            .wrapping_mul((1024 as libc::c_ulonglong).wrapping_mul(1024 as libc::c_ulonglong))
     {
         align_size = (64 as libc::c_int as libc::c_ulonglong)
             .wrapping_mul(1024 as libc::c_ulonglong) as size_t;
     } else if (size as libc::c_ulonglong)
         < (8 as libc::c_int as libc::c_ulonglong)
-            .wrapping_mul(
-                (1024 as libc::c_ulonglong).wrapping_mul(1024 as libc::c_ulonglong),
-            )
+            .wrapping_mul((1024 as libc::c_ulonglong).wrapping_mul(1024 as libc::c_ulonglong))
     {
         align_size = (256 as libc::c_int as libc::c_ulonglong)
             .wrapping_mul(1024 as libc::c_ulonglong) as size_t;
     } else if (size as libc::c_ulonglong)
         < (32 as libc::c_int as libc::c_ulonglong)
-            .wrapping_mul(
-                (1024 as libc::c_ulonglong).wrapping_mul(1024 as libc::c_ulonglong),
-            )
+            .wrapping_mul((1024 as libc::c_ulonglong).wrapping_mul(1024 as libc::c_ulonglong))
     {
         align_size = (1 as libc::c_int as libc::c_ulonglong)
-            .wrapping_mul(
-                (1024 as libc::c_ulonglong).wrapping_mul(1024 as libc::c_ulonglong),
-            ) as size_t;
+            .wrapping_mul((1024 as libc::c_ulonglong).wrapping_mul(1024 as libc::c_ulonglong))
+            as size_t;
     } else {
         align_size = (4 as libc::c_int as libc::c_ulonglong)
-            .wrapping_mul(
-                (1024 as libc::c_ulonglong).wrapping_mul(1024 as libc::c_ulonglong),
-            ) as size_t;
+            .wrapping_mul((1024 as libc::c_ulonglong).wrapping_mul(1024 as libc::c_ulonglong))
+            as size_t;
     }
-    if (size >= (18446744073709551615 as libc::c_ulong).wrapping_sub(align_size))
-        as libc::c_int as libc::c_long != 0
+    if (size >= (18446744073709551615 as libc::c_ulong).wrapping_sub(align_size)) as libc::c_int
+        as libc::c_long
+        != 0
     {
         return size;
     }
@@ -12977,30 +12165,25 @@ pub unsafe extern "C" fn _mi_os_good_alloc_size(mut size: size_t) -> size_t {
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_os_init() {
-    _mi_prim_mem_init(&mut mi_os_mem_config);
+    _mi_prim_mem_init(&raw mut mi_os_mem_config);
 }
 #[inline]
-unsafe extern "C" fn _mi_align_down(
-    mut sz: uintptr_t,
-    mut alignment: size_t,
-) -> uintptr_t {
-    if alignment != 0 as libc::c_int as size_t {} else {
+unsafe extern "C" fn _mi_align_down(mut sz: uintptr_t, mut alignment: size_t) -> uintptr_t {
+    if alignment != 0 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"alignment != 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6622 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 15],
-                &[libc::c_char; 15],
-            >(b"_mi_align_down\0"))
+            (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"_mi_align_down\0"))
                 .as_ptr(),
         );
     };
     let mut mask: uintptr_t = alignment.wrapping_sub(1 as libc::c_int as size_t);
     if alignment & mask == 0 as libc::c_int as libc::c_ulong {
-        return sz & !mask
+        return sz & !mask;
     } else {
-        return sz.wrapping_div(alignment).wrapping_mul(alignment)
+        return sz.wrapping_div(alignment).wrapping_mul(alignment);
     };
 }
 unsafe extern "C" fn mi_align_down_ptr(
@@ -13018,8 +12201,7 @@ pub unsafe extern "C" fn _mi_os_get_aligned_hint(
     if try_alignment <= 1 as libc::c_int as size_t
         || try_alignment as libc::c_ulonglong
             > (1 as libc::c_ulonglong)
-                << 3 as libc::c_int
-                    + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
+                << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
     {
         return 0 as *mut libc::c_void;
     }
@@ -13029,36 +12211,32 @@ pub unsafe extern "C" fn _mi_os_get_aligned_hint(
     size = _mi_align_up(
         size,
         ((1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))) as size_t,
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+            as size_t,
     );
     if size as libc::c_ulonglong
-        > (1 as libc::c_int as libc::c_ulonglong)
-            .wrapping_mul(
-                (1024 as libc::c_ulonglong)
-                    .wrapping_mul(1024 as libc::c_ulonglong)
-                    .wrapping_mul(1024 as libc::c_ulonglong),
-            )
+        > (1 as libc::c_int as libc::c_ulonglong).wrapping_mul(
+            (1024 as libc::c_ulonglong)
+                .wrapping_mul(1024 as libc::c_ulonglong)
+                .wrapping_mul(1024 as libc::c_ulonglong),
+        )
     {
         return 0 as *mut libc::c_void;
     }
-    let mut hint: uintptr_t = ::core::intrinsics::atomic_xadd_acqrel(
-        &mut aligned_base,
-        size,
-    );
+    let mut hint: uintptr_t = ::core::intrinsics::atomic_xadd_acqrel(&raw mut aligned_base, size);
     if hint == 0 as libc::c_int as uintptr_t
         || hint > (30 as libc::c_int as uintptr_t) << 40 as libc::c_int
     {
         let mut init: uintptr_t = (2 as libc::c_int as uintptr_t) << 40 as libc::c_int;
         let mut expected: uintptr_t = hint.wrapping_add(size);
         let fresh33 = ::core::intrinsics::atomic_cxchg_acqrel_acquire(
-            &mut aligned_base,
+            &raw mut aligned_base,
             *&mut expected,
             init,
         );
         *&mut expected = fresh33.0;
         fresh33.1;
-        hint = ::core::intrinsics::atomic_xadd_acqrel(&mut aligned_base, size);
+        hint = ::core::intrinsics::atomic_xadd_acqrel(&raw mut aligned_base, size);
     }
     if hint.wrapping_rem(try_alignment) != 0 as libc::c_int as libc::c_ulong {
         return 0 as *mut libc::c_void;
@@ -13071,16 +12249,14 @@ unsafe extern "C" fn mi_os_prim_free(
     mut still_committed: bool,
     mut tld_stats: *mut mi_stats_t,
 ) {
-    let mut stats: *mut mi_stats_t = &mut _mi_stats_main;
-    if size % _mi_os_page_size() == 0 as libc::c_int as size_t {} else {
+    let mut stats: *mut mi_stats_t = &raw mut _mi_stats_main;
+    if size % _mi_os_page_size() == 0 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"(size % _mi_os_page_size()) == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6672 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 16],
-                &[libc::c_char; 16],
-            >(b"mi_os_prim_free\0"))
+            (*::core::mem::transmute::<&[u8; 16], &[libc::c_char; 16]>(b"mi_os_prim_free\0"))
                 .as_ptr(),
         );
     };
@@ -13112,58 +12288,56 @@ pub unsafe extern "C" fn _mi_os_free_ex(
     mut stats: *mut mi_stats_t,
 ) {
     if stats.is_null() {
-        stats = &mut _mi_stats_main;
+        stats = &raw mut _mi_stats_main;
     }
     if mi_memkind_is_os(memid.memkind) {
         let mut csize: size_t = _mi_os_good_alloc_size(size);
         let mut base: *mut libc::c_void = addr;
         if !(memid.mem.os.base).is_null() {
-            if memid.mem.os.base <= addr {} else {
+            if memid.mem.os.base <= addr {
+            } else {
                 _mi_assert_fail(
                     b"memid.mem.os.base <= addr\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     6687 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 15],
-                        &[libc::c_char; 15],
-                    >(b"_mi_os_free_ex\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(
+                        b"_mi_os_free_ex\0",
+                    ))
+                    .as_ptr(),
                 );
             };
-            if (memid.mem.os.base as *mut uint8_t)
-                .offset(memid.mem.os.alignment as isize) >= addr as *mut uint8_t
-            {} else {
+            if (memid.mem.os.base as *mut uint8_t).offset(memid.mem.os.alignment as isize)
+                >= addr as *mut uint8_t
+            {
+            } else {
                 _mi_assert_fail(
                     b"(uint8_t*)memid.mem.os.base + memid.mem.os.alignment >= (uint8_t*)addr\0"
                         as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     6688 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 15],
-                        &[libc::c_char; 15],
-                    >(b"_mi_os_free_ex\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(
+                        b"_mi_os_free_ex\0",
+                    ))
+                    .as_ptr(),
                 );
             };
             base = memid.mem.os.base;
-            csize = csize
-                .wrapping_add(
-                    (addr as *mut uint8_t).offset_from(memid.mem.os.base as *mut uint8_t)
-                        as libc::c_long as size_t,
-                );
+            csize = csize.wrapping_add(
+                (addr as *mut uint8_t).offset_from(memid.mem.os.base as *mut uint8_t)
+                    as libc::c_long as size_t,
+            );
         }
-        if memid.memkind as libc::c_uint == MI_MEM_OS_HUGE as libc::c_int as libc::c_uint
-        {
-            if memid.is_pinned as libc::c_int != 0 {} else {
+        if memid.memkind as libc::c_uint == MI_MEM_OS_HUGE as libc::c_int as libc::c_uint {
+            if memid.is_pinned as libc::c_int != 0 {
+            } else {
                 _mi_assert_fail(
                     b"memid.is_pinned\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     6693 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 15],
-                        &[libc::c_char; 15],
-                    >(b"_mi_os_free_ex\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(
+                        b"_mi_os_free_ex\0",
+                    ))
+                    .as_ptr(),
                 );
             };
             mi_os_free_huge_os_pages(base, csize, stats);
@@ -13171,16 +12345,13 @@ pub unsafe extern "C" fn _mi_os_free_ex(
             mi_os_prim_free(base, csize, still_committed, stats);
         }
     } else {
-        if (memid.memkind as libc::c_uint) < MI_MEM_OS as libc::c_int as libc::c_uint
-        {} else {
+        if (memid.memkind as libc::c_uint) < MI_MEM_OS as libc::c_int as libc::c_uint {
+        } else {
             _mi_assert_fail(
                 b"memid.memkind < MI_MEM_OS\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 6701 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 15],
-                    &[libc::c_char; 15],
-                >(b"_mi_os_free_ex\0"))
+                (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"_mi_os_free_ex\0"))
                     .as_ptr(),
             );
         };
@@ -13194,7 +12365,7 @@ pub unsafe extern "C" fn _mi_os_free(
     mut stats: *mut mi_stats_t,
 ) {
     if stats.is_null() {
-        stats = &mut _mi_stats_main;
+        stats = &raw mut _mi_stats_main;
     }
     _mi_os_free_ex(p, size, 1 as libc::c_int != 0, memid, stats);
 }
@@ -13208,42 +12379,34 @@ unsafe extern "C" fn mi_os_prim_alloc_at(
     mut is_zero: *mut bool,
     mut tld_stats: *mut mi_stats_t,
 ) -> *mut libc::c_void {
-    if size > 0 as libc::c_int as size_t
-        && size % _mi_os_page_size() == 0 as libc::c_int as size_t
-    {} else {
+    if size > 0 as libc::c_int as size_t && size % _mi_os_page_size() == 0 as libc::c_int as size_t
+    {
+    } else {
         _mi_assert_fail(
-            b"size > 0 && (size % _mi_os_page_size()) == 0\0" as *const u8
-                as *const libc::c_char,
+            b"size > 0 && (size % _mi_os_page_size()) == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6709 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"mi_os_prim_alloc_at\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"mi_os_prim_alloc_at\0"))
                 .as_ptr(),
         );
     };
-    if !is_zero.is_null() {} else {
+    if !is_zero.is_null() {
+    } else {
         _mi_assert_fail(
             b"is_zero != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6710 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"mi_os_prim_alloc_at\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"mi_os_prim_alloc_at\0"))
                 .as_ptr(),
         );
     };
-    if !is_large.is_null() {} else {
+    if !is_large.is_null() {
+    } else {
         _mi_assert_fail(
             b"is_large != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6711 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"mi_os_prim_alloc_at\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"mi_os_prim_alloc_at\0"))
                 .as_ptr(),
         );
     };
@@ -13281,7 +12444,7 @@ unsafe extern "C" fn mi_os_prim_alloc_at(
             allow_large as libc::c_int,
         );
     }
-    let mut stats: *mut mi_stats_t = &mut _mi_stats_main;
+    let mut stats: *mut mi_stats_t = &raw mut _mi_stats_main;
     _mi_stat_counter_increase(&mut (*stats).mmap_calls, 1 as libc::c_int as size_t);
     if !p.is_null() {
         _mi_stat_increase(&mut (*stats).reserved, size);
@@ -13324,68 +12487,66 @@ unsafe extern "C" fn mi_os_prim_alloc_aligned(
     if alignment >= _mi_os_page_size()
         && alignment & alignment.wrapping_sub(1 as libc::c_int as size_t)
             == 0 as libc::c_int as size_t
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"alignment >= _mi_os_page_size() && ((alignment & (alignment - 1)) == 0)\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6740 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 25],
-                &[libc::c_char; 25],
-            >(b"mi_os_prim_alloc_aligned\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                b"mi_os_prim_alloc_aligned\0",
+            ))
+            .as_ptr(),
         );
     };
-    if size > 0 as libc::c_int as size_t
-        && size % _mi_os_page_size() == 0 as libc::c_int as size_t
-    {} else {
+    if size > 0 as libc::c_int as size_t && size % _mi_os_page_size() == 0 as libc::c_int as size_t
+    {
+    } else {
         _mi_assert_fail(
-            b"size > 0 && (size % _mi_os_page_size()) == 0\0" as *const u8
-                as *const libc::c_char,
+            b"size > 0 && (size % _mi_os_page_size()) == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6741 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 25],
-                &[libc::c_char; 25],
-            >(b"mi_os_prim_alloc_aligned\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                b"mi_os_prim_alloc_aligned\0",
+            ))
+            .as_ptr(),
         );
     };
-    if !is_large.is_null() {} else {
+    if !is_large.is_null() {
+    } else {
         _mi_assert_fail(
             b"is_large != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6742 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 25],
-                &[libc::c_char; 25],
-            >(b"mi_os_prim_alloc_aligned\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                b"mi_os_prim_alloc_aligned\0",
+            ))
+            .as_ptr(),
         );
     };
-    if !is_zero.is_null() {} else {
+    if !is_zero.is_null() {
+    } else {
         _mi_assert_fail(
             b"is_zero != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6743 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 25],
-                &[libc::c_char; 25],
-            >(b"mi_os_prim_alloc_aligned\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                b"mi_os_prim_alloc_aligned\0",
+            ))
+            .as_ptr(),
         );
     };
-    if !base.is_null() {} else {
+    if !base.is_null() {
+    } else {
         _mi_assert_fail(
             b"base != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6744 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 25],
-                &[libc::c_char; 25],
-            >(b"mi_os_prim_alloc_aligned\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                b"mi_os_prim_alloc_aligned\0",
+            ))
+            .as_ptr(),
         );
     };
     if !commit {
@@ -13458,24 +12619,21 @@ unsafe extern "C" fn mi_os_prim_alloc_aligned(
                 return 0 as *mut libc::c_void;
             }
             let mut aligned_p: *mut libc::c_void = mi_align_up_ptr(p, alignment);
-            let mut pre_size: size_t = (aligned_p as *mut uint8_t)
-                .offset_from(p as *mut uint8_t) as libc::c_long as size_t;
+            let mut pre_size: size_t = (aligned_p as *mut uint8_t).offset_from(p as *mut uint8_t)
+                as libc::c_long as size_t;
             let mut mid_size: size_t = _mi_align_up(size, _mi_os_page_size());
-            let mut post_size: size_t = over_size
-                .wrapping_sub(pre_size)
-                .wrapping_sub(mid_size);
-            if pre_size < over_size && post_size < over_size && mid_size >= size
-            {} else {
+            let mut post_size: size_t = over_size.wrapping_sub(pre_size).wrapping_sub(mid_size);
+            if pre_size < over_size && post_size < over_size && mid_size >= size {
+            } else {
                 _mi_assert_fail(
                     b"pre_size < over_size&& post_size < over_size&& mid_size >= size\0"
                         as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     6776 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 25],
-                        &[libc::c_char; 25],
-                    >(b"mi_os_prim_alloc_aligned\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                        b"mi_os_prim_alloc_aligned\0",
+                    ))
+                    .as_ptr(),
                 );
             };
             if pre_size > 0 as libc::c_int as size_t {
@@ -13483,8 +12641,7 @@ unsafe extern "C" fn mi_os_prim_alloc_aligned(
             }
             if post_size > 0 as libc::c_int as size_t {
                 mi_os_prim_free(
-                    (aligned_p as *mut uint8_t).offset(mid_size as isize)
-                        as *mut libc::c_void,
+                    (aligned_p as *mut uint8_t).offset(mid_size as isize) as *mut libc::c_void,
                     post_size,
                     commit,
                     stats,
@@ -13495,20 +12652,20 @@ unsafe extern "C" fn mi_os_prim_alloc_aligned(
         }
     }
     if p.is_null()
-        || !p.is_null() && !(*base).is_null()
-            && (p as uintptr_t).wrapping_rem(alignment)
-                == 0 as libc::c_int as libc::c_ulong
-    {} else {
+        || !p.is_null()
+            && !(*base).is_null()
+            && (p as uintptr_t).wrapping_rem(alignment) == 0 as libc::c_int as libc::c_ulong
+    {
+    } else {
         _mi_assert_fail(
             b"p == NULL || (p != NULL && *base != NULL && ((uintptr_t)p % alignment) == 0)\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6783 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 25],
-                &[libc::c_char; 25],
-            >(b"mi_os_prim_alloc_aligned\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                b"mi_os_prim_alloc_aligned\0",
+            ))
+            .as_ptr(),
         );
     };
     return p;
@@ -13524,7 +12681,7 @@ pub unsafe extern "C" fn _mi_os_alloc(
         return 0 as *mut libc::c_void;
     }
     if stats.is_null() {
-        stats = &mut _mi_stats_main;
+        stats = &raw mut _mi_stats_main;
     }
     size = _mi_os_good_alloc_size(size);
     let mut os_is_large: bool = 0 as libc::c_int != 0;
@@ -13552,16 +12709,13 @@ pub unsafe extern "C" fn _mi_os_alloc_aligned(
     mut memid: *mut mi_memid_t,
     mut stats: *mut mi_stats_t,
 ) -> *mut libc::c_void {
-    Some(
-        _mi_os_get_aligned_hint
-            as unsafe extern "C" fn(size_t, size_t) -> *mut libc::c_void,
-    );
+    Some(_mi_os_get_aligned_hint as unsafe extern "C" fn(size_t, size_t) -> *mut libc::c_void);
     *memid = _mi_memid_none();
     if size == 0 as libc::c_int as size_t {
         return 0 as *mut libc::c_void;
     }
     if stats.is_null() {
-        stats = &mut _mi_stats_main;
+        stats = &raw mut _mi_stats_main;
     }
     size = _mi_os_good_alloc_size(size);
     alignment = _mi_align_up(alignment, _mi_os_page_size());
@@ -13597,89 +12751,81 @@ pub unsafe extern "C" fn _mi_os_alloc_aligned_at_offset(
 ) -> *mut libc::c_void {
     if offset as libc::c_ulonglong
         <= (1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
-    {} else {
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
+    {
+    } else {
         _mi_assert_fail(
             b"offset <= MI_SEGMENT_SIZE\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6819 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 31],
-                &[libc::c_char; 31],
-            >(b"_mi_os_alloc_aligned_at_offset\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 31], &[libc::c_char; 31]>(
+                b"_mi_os_alloc_aligned_at_offset\0",
+            ))
+            .as_ptr(),
         );
     };
-    if offset <= size {} else {
+    if offset <= size {
+    } else {
         _mi_assert_fail(
             b"offset <= size\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6820 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 31],
-                &[libc::c_char; 31],
-            >(b"_mi_os_alloc_aligned_at_offset\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 31], &[libc::c_char; 31]>(
+                b"_mi_os_alloc_aligned_at_offset\0",
+            ))
+            .as_ptr(),
         );
     };
-    if alignment % _mi_os_page_size() == 0 as libc::c_int as size_t {} else {
+    if alignment % _mi_os_page_size() == 0 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
-            b"(alignment % _mi_os_page_size()) == 0\0" as *const u8
-                as *const libc::c_char,
+            b"(alignment % _mi_os_page_size()) == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6821 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 31],
-                &[libc::c_char; 31],
-            >(b"_mi_os_alloc_aligned_at_offset\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 31], &[libc::c_char; 31]>(
+                b"_mi_os_alloc_aligned_at_offset\0",
+            ))
+            .as_ptr(),
         );
     };
     *memid = _mi_memid_none();
     if stats.is_null() {
-        stats = &mut _mi_stats_main;
+        stats = &raw mut _mi_stats_main;
     }
     if offset as libc::c_ulonglong
         > (1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
     {
         return 0 as *mut libc::c_void;
     }
     if offset == 0 as libc::c_int as size_t {
-        return _mi_os_alloc_aligned(size, alignment, commit, allow_large, memid, stats)
+        return _mi_os_alloc_aligned(size, alignment, commit, allow_large, memid, stats);
     } else {
         let extra: size_t = (_mi_align_up(offset, alignment)).wrapping_sub(offset);
         let oversize: size_t = size.wrapping_add(extra);
-        let start: *mut libc::c_void = _mi_os_alloc_aligned(
-            oversize,
-            alignment,
-            commit,
-            allow_large,
-            memid,
-            stats,
-        );
+        let start: *mut libc::c_void =
+            _mi_os_alloc_aligned(oversize, alignment, commit, allow_large, memid, stats);
         if start.is_null() {
             return 0 as *mut libc::c_void;
         }
-        let p: *mut libc::c_void = (start as *mut uint8_t).offset(extra as isize)
-            as *mut libc::c_void;
+        let p: *mut libc::c_void =
+            (start as *mut uint8_t).offset(extra as isize) as *mut libc::c_void;
         if _mi_is_aligned(
             (p as *mut uint8_t).offset(offset as isize) as *mut libc::c_void,
             alignment,
-        ) as libc::c_int != 0
-        {} else {
+        ) as libc::c_int
+            != 0
+        {
+        } else {
             _mi_assert_fail(
                 b"_mi_is_aligned((uint8_t*)p + offset, alignment)\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 6834 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 31],
-                    &[libc::c_char; 31],
-                >(b"_mi_os_alloc_aligned_at_offset\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 31], &[libc::c_char; 31]>(
+                    b"_mi_os_alloc_aligned_at_offset\0",
+                ))
+                .as_ptr(),
             );
         };
         if commit as libc::c_int != 0 && extra > _mi_os_page_size() {
@@ -13694,16 +12840,16 @@ unsafe extern "C" fn mi_os_page_align_areax(
     mut size: size_t,
     mut newsize: *mut size_t,
 ) -> *mut libc::c_void {
-    if !addr.is_null() && size > 0 as libc::c_int as size_t {} else {
+    if !addr.is_null() && size > 0 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"addr != NULL && size > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6842 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 23],
-                &[libc::c_char; 23],
-            >(b"mi_os_page_align_areax\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
+                b"mi_os_page_align_areax\0",
+            ))
+            .as_ptr(),
         );
     };
     if !newsize.is_null() {
@@ -13728,24 +12874,24 @@ unsafe extern "C" fn mi_os_page_align_areax(
             _mi_os_page_size(),
         )
     };
-    let mut diff: ptrdiff_t = (end as *mut uint8_t).offset_from(start as *mut uint8_t)
-        as libc::c_long;
+    let mut diff: ptrdiff_t =
+        (end as *mut uint8_t).offset_from(start as *mut uint8_t) as libc::c_long;
     if diff <= 0 as libc::c_int as ptrdiff_t {
         return 0 as *mut libc::c_void;
     }
     if conservative as libc::c_int != 0 && diff as size_t <= size
         || !conservative && diff as size_t >= size
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"(conservative && (size_t)diff <= size) || (!conservative && (size_t)diff >= size)\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6851 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 23],
-                &[libc::c_char; 23],
-            >(b"mi_os_page_align_areax\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
+                b"mi_os_page_align_areax\0",
+            ))
+            .as_ptr(),
         );
     };
     if !newsize.is_null() {
@@ -13767,19 +12913,15 @@ pub unsafe extern "C" fn _mi_os_commit(
     mut is_zero: *mut bool,
     mut tld_stats: *mut mi_stats_t,
 ) -> bool {
-    let mut stats: *mut mi_stats_t = &mut _mi_stats_main;
+    let mut stats: *mut mi_stats_t = &raw mut _mi_stats_main;
     if !is_zero.is_null() {
         *is_zero = 0 as libc::c_int != 0;
     }
     _mi_stat_increase(&mut (*stats).committed, size);
     _mi_stat_counter_increase(&mut (*stats).commit_calls, 1 as libc::c_int as size_t);
     let mut csize: size_t = 0;
-    let mut start: *mut libc::c_void = mi_os_page_align_areax(
-        0 as libc::c_int != 0,
-        addr,
-        size,
-        &mut csize,
-    );
+    let mut start: *mut libc::c_void =
+        mi_os_page_align_areax(0 as libc::c_int != 0, addr, size, &mut csize);
     if csize == 0 as libc::c_int as size_t {
         return 1 as libc::c_int != 0;
     }
@@ -13807,26 +12949,20 @@ unsafe extern "C" fn mi_os_decommit_ex(
     mut needs_recommit: *mut bool,
     mut tld_stats: *mut mi_stats_t,
 ) -> bool {
-    let mut stats: *mut mi_stats_t = &mut _mi_stats_main;
-    if !needs_recommit.is_null() {} else {
+    let mut stats: *mut mi_stats_t = &raw mut _mi_stats_main;
+    if !needs_recommit.is_null() {
+    } else {
         _mi_assert_fail(
             b"needs_recommit!=NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6886 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 18],
-                &[libc::c_char; 18],
-            >(b"mi_os_decommit_ex\0"))
+            (*::core::mem::transmute::<&[u8; 18], &[libc::c_char; 18]>(b"mi_os_decommit_ex\0"))
                 .as_ptr(),
         );
     };
     _mi_stat_decrease(&mut (*stats).committed, size);
     let mut csize: size_t = 0;
-    let mut start: *mut libc::c_void = mi_os_page_align_area_conservative(
-        addr,
-        size,
-        &mut csize,
-    );
+    let mut start: *mut libc::c_void = mi_os_page_align_area_conservative(addr, size, &mut csize);
     if csize == 0 as libc::c_int as size_t {
         return 1 as libc::c_int != 0;
     }
@@ -13842,15 +12978,13 @@ unsafe extern "C" fn mi_os_decommit_ex(
             csize,
         );
     }
-    if err == 0 as libc::c_int {} else {
+    if err == 0 as libc::c_int {
+    } else {
         _mi_assert_fail(
             b"err == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             6896 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 18],
-                &[libc::c_char; 18],
-            >(b"mi_os_decommit_ex\0"))
+            (*::core::mem::transmute::<&[u8; 18], &[libc::c_char; 18]>(b"mi_os_decommit_ex\0"))
                 .as_ptr(),
         );
     };
@@ -13872,11 +13006,7 @@ pub unsafe extern "C" fn _mi_os_reset(
     mut stats: *mut mi_stats_t,
 ) -> bool {
     let mut csize: size_t = 0;
-    let mut start: *mut libc::c_void = mi_os_page_align_area_conservative(
-        addr,
-        size,
-        &mut csize,
-    );
+    let mut start: *mut libc::c_void = mi_os_page_align_area_conservative(addr, size, &mut csize);
     if csize == 0 as libc::c_int as size_t {
         return 1 as libc::c_int != 0;
     }
@@ -13908,9 +13038,7 @@ pub unsafe extern "C" fn _mi_os_purge_ex(
     }
     _mi_stat_counter_increase(&mut (*stats).purge_calls, 1 as libc::c_int as size_t);
     _mi_stat_increase(&mut (*stats).purged, size);
-    if mi_option_is_enabled(mi_option_purge_decommits) as libc::c_int != 0
-        && !_mi_preloading()
-    {
+    if mi_option_is_enabled(mi_option_purge_decommits) as libc::c_int != 0 && !_mi_preloading() {
         let mut needs_recommit: bool = 1 as libc::c_int != 0;
         mi_os_decommit_ex(p, size, &mut needs_recommit, stats);
         return needs_recommit;
@@ -13935,11 +13063,7 @@ unsafe extern "C" fn mi_os_protectx(
     mut protect: bool,
 ) -> bool {
     let mut csize: size_t = 0 as libc::c_int as size_t;
-    let mut start: *mut libc::c_void = mi_os_page_align_area_conservative(
-        addr,
-        size,
-        &mut csize,
-    );
+    let mut start: *mut libc::c_void = mi_os_page_align_area_conservative(addr, size, &mut csize);
     if csize == 0 as libc::c_int as size_t {
         return 0 as libc::c_int != 0;
     }
@@ -13962,17 +13086,11 @@ unsafe extern "C" fn mi_os_protectx(
     return err == 0 as libc::c_int;
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn _mi_os_protect(
-    mut addr: *mut libc::c_void,
-    mut size: size_t,
-) -> bool {
+pub unsafe extern "C" fn _mi_os_protect(mut addr: *mut libc::c_void, mut size: size_t) -> bool {
     return mi_os_protectx(addr, size, 1 as libc::c_int != 0);
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn _mi_os_unprotect(
-    mut addr: *mut libc::c_void,
-    mut size: size_t,
-) -> bool {
+pub unsafe extern "C" fn _mi_os_unprotect(mut addr: *mut libc::c_void, mut size: size_t) -> bool {
     return mi_os_protectx(addr, size, 0 as libc::c_int != 0);
 }
 static mut mi_huge_start: uintptr_t = 0;
@@ -13983,43 +13101,38 @@ unsafe extern "C" fn mi_os_claim_huge_pages(
     if !total_size.is_null() {
         *total_size = 0 as libc::c_int as size_t;
     }
-    let size: size_t = (pages as libc::c_ulonglong)
-        .wrapping_mul(
-            (1024 as libc::c_ulonglong)
-                .wrapping_mul(1024 as libc::c_ulonglong)
-                .wrapping_mul(1024 as libc::c_ulonglong),
-        ) as size_t;
+    let size: size_t = (pages as libc::c_ulonglong).wrapping_mul(
+        (1024 as libc::c_ulonglong)
+            .wrapping_mul(1024 as libc::c_ulonglong)
+            .wrapping_mul(1024 as libc::c_ulonglong),
+    ) as size_t;
     let mut start: uintptr_t = 0 as libc::c_int as uintptr_t;
     let mut end: uintptr_t = 0 as libc::c_int as uintptr_t;
-    let mut huge_start: uintptr_t = ::core::intrinsics::atomic_load_relaxed(
-        &mut mi_huge_start,
-    );
+    let mut huge_start: uintptr_t = ::core::intrinsics::atomic_load_relaxed(&raw mut mi_huge_start);
     loop {
         start = huge_start;
         if start == 0 as libc::c_int as uintptr_t {
             start = (32 as libc::c_int as uintptr_t) << 40 as libc::c_int;
         }
         end = start.wrapping_add(size);
-        if (end as libc::c_ulonglong)
-            .wrapping_rem(
-                (1 as libc::c_ulonglong)
-                    << 3 as libc::c_int
-                        + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)),
-            ) == 0 as libc::c_int as libc::c_ulonglong
-        {} else {
+        if (end as libc::c_ulonglong).wrapping_rem(
+            (1 as libc::c_ulonglong)
+                << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)),
+        ) == 0 as libc::c_int as libc::c_ulonglong
+        {
+        } else {
             _mi_assert_fail(
                 b"end % MI_SEGMENT_SIZE == 0\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 6975 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 23],
-                    &[libc::c_char; 23],
-                >(b"mi_os_claim_huge_pages\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
+                    b"mi_os_claim_huge_pages\0",
+                ))
+                .as_ptr(),
             );
         };
         let fresh34 = ::core::intrinsics::atomic_cxchg_acqrel_acquire(
-            &mut mi_huge_start as *mut uintptr_t,
+            &raw mut mi_huge_start as *mut uintptr_t,
             *(&mut huge_start as *mut uintptr_t),
             end,
         );
@@ -14059,15 +13172,13 @@ pub unsafe extern "C" fn _mi_os_alloc_huge_os_pages(
     let mut all_zero: bool = 1 as libc::c_int != 0;
     while page < pages {
         let mut is_zero: bool = 0 as libc::c_int != 0;
-        let mut addr: *mut libc::c_void = start
-            .offset(
-                (page as libc::c_ulonglong)
-                    .wrapping_mul(
-                        (1024 as libc::c_ulonglong)
-                            .wrapping_mul(1024 as libc::c_ulonglong)
-                            .wrapping_mul(1024 as libc::c_ulonglong),
-                    ) as isize,
-            ) as *mut libc::c_void;
+        let mut addr: *mut libc::c_void = start.offset(
+            (page as libc::c_ulonglong).wrapping_mul(
+                (1024 as libc::c_ulonglong)
+                    .wrapping_mul(1024 as libc::c_ulonglong)
+                    .wrapping_mul(1024 as libc::c_ulonglong),
+            ) as isize,
+        ) as *mut libc::c_void;
         let mut p: *mut libc::c_void = 0 as *mut libc::c_void;
         let mut err: libc::c_int = _mi_prim_alloc_huge_os_pages(
             addr,
@@ -14096,8 +13207,8 @@ pub unsafe extern "C" fn _mi_os_alloc_huge_os_pages(
         } else if p != addr {
             if !p.is_null() {
                 _mi_warning_message(
-                    b"could not allocate contiguous huge OS page %zu at %p\n\0"
-                        as *const u8 as *const libc::c_char,
+                    b"could not allocate contiguous huge OS page %zu at %p\n\0" as *const u8
+                        as *const libc::c_char,
                     page,
                     addr,
                 );
@@ -14107,7 +13218,7 @@ pub unsafe extern "C" fn _mi_os_alloc_huge_os_pages(
                         .wrapping_mul(1024 as libc::c_ulonglong)
                         .wrapping_mul(1024 as libc::c_ulonglong) as size_t,
                     1 as libc::c_int != 0,
-                    &mut _mi_stats_main,
+                    &raw mut _mi_stats_main,
                 );
             }
             break;
@@ -14115,13 +13226,13 @@ pub unsafe extern "C" fn _mi_os_alloc_huge_os_pages(
             page = page.wrapping_add(1);
             page;
             _mi_stat_increase(
-                &mut _mi_stats_main.committed,
+                &raw mut _mi_stats_main.committed,
                 (1024 as libc::c_ulonglong)
                     .wrapping_mul(1024 as libc::c_ulonglong)
                     .wrapping_mul(1024 as libc::c_ulonglong) as size_t,
             );
             _mi_stat_increase(
-                &mut _mi_stats_main.reserved,
+                &raw mut _mi_stats_main.reserved,
                 (1024 as libc::c_ulonglong)
                     .wrapping_mul(1024 as libc::c_ulonglong)
                     .wrapping_mul(1024 as libc::c_ulonglong) as size_t,
@@ -14132,8 +13243,8 @@ pub unsafe extern "C" fn _mi_os_alloc_huge_os_pages(
             let mut elapsed: mi_msecs_t = _mi_clock_end(start_t);
             if page >= 1 as libc::c_int as size_t {
                 let mut estimate: mi_msecs_t = (elapsed as size_t
-                    / page.wrapping_add(1 as libc::c_int as size_t) * pages)
-                    as mi_msecs_t;
+                    / page.wrapping_add(1 as libc::c_int as size_t)
+                    * pages) as mi_msecs_t;
                 if estimate > 2 as libc::c_int as mi_msecs_t * max_msecs {
                     elapsed = max_msecs + 1 as libc::c_int as mi_msecs_t;
                 }
@@ -14142,76 +13253,73 @@ pub unsafe extern "C" fn _mi_os_alloc_huge_os_pages(
                 continue;
             }
             _mi_warning_message(
-                b"huge OS page allocation timed out (after allocating %zu page(s))\n\0"
-                    as *const u8 as *const libc::c_char,
+                b"huge OS page allocation timed out (after allocating %zu page(s))\n\0" as *const u8
+                    as *const libc::c_char,
                 page,
             );
             break;
         }
     }
-    if (page as libc::c_ulonglong)
-        .wrapping_mul(
-            (1024 as libc::c_ulonglong)
-                .wrapping_mul(1024 as libc::c_ulonglong)
-                .wrapping_mul(1024 as libc::c_ulonglong),
-        ) <= size as libc::c_ulonglong
-    {} else {
+    if (page as libc::c_ulonglong).wrapping_mul(
+        (1024 as libc::c_ulonglong)
+            .wrapping_mul(1024 as libc::c_ulonglong)
+            .wrapping_mul(1024 as libc::c_ulonglong),
+    ) <= size as libc::c_ulonglong
+    {
+    } else {
         _mi_assert_fail(
             b"page*MI_HUGE_OS_PAGE_SIZE <= size\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7031 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 27],
-                &[libc::c_char; 27],
-            >(b"_mi_os_alloc_huge_os_pages\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
+                b"_mi_os_alloc_huge_os_pages\0",
+            ))
+            .as_ptr(),
         );
     };
     if !pages_reserved.is_null() {
         *pages_reserved = page;
     }
     if !psize.is_null() {
-        *psize = (page as libc::c_ulonglong)
-            .wrapping_mul(
-                (1024 as libc::c_ulonglong)
-                    .wrapping_mul(1024 as libc::c_ulonglong)
-                    .wrapping_mul(1024 as libc::c_ulonglong),
-            ) as size_t;
+        *psize = (page as libc::c_ulonglong).wrapping_mul(
+            (1024 as libc::c_ulonglong)
+                .wrapping_mul(1024 as libc::c_ulonglong)
+                .wrapping_mul(1024 as libc::c_ulonglong),
+        ) as size_t;
     }
     if page != 0 as libc::c_int as size_t {
-        if !start.is_null() {} else {
+        if !start.is_null() {
+        } else {
             _mi_assert_fail(
                 b"start != NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 7035 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 27],
-                    &[libc::c_char; 27],
-                >(b"_mi_os_alloc_huge_os_pages\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
+                    b"_mi_os_alloc_huge_os_pages\0",
+                ))
+                .as_ptr(),
             );
         };
-        *memid = _mi_memid_create_os(
-            1 as libc::c_int != 0,
-            all_zero,
-            1 as libc::c_int != 0,
-        );
+        *memid = _mi_memid_create_os(1 as libc::c_int != 0, all_zero, 1 as libc::c_int != 0);
         (*memid).memkind = MI_MEM_OS_HUGE;
-        if (*memid).is_pinned as libc::c_int != 0 {} else {
+        if (*memid).is_pinned as libc::c_int != 0 {
+        } else {
             _mi_assert_fail(
                 b"memid->is_pinned\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 7038 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 27],
-                    &[libc::c_char; 27],
-                >(b"_mi_os_alloc_huge_os_pages\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
+                    b"_mi_os_alloc_huge_os_pages\0",
+                ))
+                .as_ptr(),
             );
         };
     }
-    return (if page == 0 as libc::c_int as size_t { 0 as *mut uint8_t } else { start })
-        as *mut libc::c_void;
+    return (if page == 0 as libc::c_int as size_t {
+        0 as *mut uint8_t
+    } else {
+        start
+    }) as *mut libc::c_void;
 }
 unsafe extern "C" fn mi_os_free_huge_os_pages(
     mut p: *mut libc::c_void,
@@ -14235,27 +13343,23 @@ unsafe extern "C" fn mi_os_free_huge_os_pages(
             1 as libc::c_int != 0,
             stats,
         );
-        size = (size as libc::c_ulonglong)
-            .wrapping_sub(
-                (1024 as libc::c_ulonglong)
-                    .wrapping_mul(1024 as libc::c_ulonglong)
-                    .wrapping_mul(1024 as libc::c_ulonglong),
-            ) as size_t as size_t;
-        base = base
-            .offset(
-                (1024 as libc::c_ulonglong)
-                    .wrapping_mul(1024 as libc::c_ulonglong)
-                    .wrapping_mul(1024 as libc::c_ulonglong) as isize,
-            );
+        size = (size as libc::c_ulonglong).wrapping_sub(
+            (1024 as libc::c_ulonglong)
+                .wrapping_mul(1024 as libc::c_ulonglong)
+                .wrapping_mul(1024 as libc::c_ulonglong),
+        ) as size_t as size_t;
+        base = base.offset(
+            (1024 as libc::c_ulonglong)
+                .wrapping_mul(1024 as libc::c_ulonglong)
+                .wrapping_mul(1024 as libc::c_ulonglong) as isize,
+        );
     }
 }
 #[unsafe(no_mangle)]
 pub static mut _mi_numa_node_count: size_t = 0;
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_os_numa_node_count_get() -> size_t {
-    let mut count: size_t = ::core::intrinsics::atomic_load_acquire(
-        &mut _mi_numa_node_count,
-    );
+    let mut count: size_t = ::core::intrinsics::atomic_load_acquire(&raw mut _mi_numa_node_count);
     if count <= 0 as libc::c_int as size_t {
         let mut ncount: libc::c_long = mi_option_get(mi_option_use_numa_nodes);
         if ncount > 0 as libc::c_int as libc::c_long {
@@ -14266,7 +13370,7 @@ pub unsafe extern "C" fn _mi_os_numa_node_count_get() -> size_t {
                 count = 1 as libc::c_int as size_t;
             }
         }
-        ::core::intrinsics::atomic_store_release(&mut _mi_numa_node_count, count);
+        ::core::intrinsics::atomic_store_release(&raw mut _mi_numa_node_count, count);
         _mi_verbose_message(
             b"using %zd numa regions\n\0" as *const u8 as *const libc::c_char,
             count,
@@ -14290,19 +13394,17 @@ pub unsafe extern "C" fn _mi_os_numa_node_get(mut tld: *mut mi_os_tld_t) -> libc
 unsafe extern "C" fn mi_page_queue_is_huge(mut pq: *const mi_page_queue_t) -> bool {
     return (*pq).block_size as libc::c_ulonglong
         == ((1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
             .wrapping_div(2 as libc::c_int as libc::c_ulonglong)
             .wrapping_add(
-                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong as libc::c_ulonglong,
+                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong as libc::c_ulonglong
             );
 }
 #[inline]
 unsafe extern "C" fn mi_page_queue_is_full(mut pq: *const mi_page_queue_t) -> bool {
     return (*pq).block_size as libc::c_ulonglong
         == ((1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
             .wrapping_div(2 as libc::c_int as libc::c_ulonglong)
             .wrapping_add(
                 (2 as libc::c_int as libc::c_ulong)
@@ -14314,8 +13416,7 @@ unsafe extern "C" fn mi_page_queue_is_full(mut pq: *const mi_page_queue_t) -> bo
 unsafe extern "C" fn mi_page_queue_is_special(mut pq: *const mi_page_queue_t) -> bool {
     return (*pq).block_size as libc::c_ulonglong
         > ((1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
             .wrapping_div(2 as libc::c_int as libc::c_ulonglong);
 }
 #[inline]
@@ -14325,12 +13426,11 @@ unsafe extern "C" fn mi_bin(mut size: size_t) -> uint8_t {
     if wsize <= 1 as libc::c_int as size_t {
         bin = 1 as libc::c_int as uint8_t;
     } else if wsize <= 8 as libc::c_int as size_t {
-        bin = (wsize.wrapping_add(1 as libc::c_int as size_t)
-            & !(1 as libc::c_int) as size_t) as uint8_t;
+        bin = (wsize.wrapping_add(1 as libc::c_int as size_t) & !(1 as libc::c_int) as size_t)
+            as uint8_t;
     } else if wsize as libc::c_ulonglong
         > ((1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
             .wrapping_div(2 as libc::c_int as libc::c_ulonglong)
             .wrapping_div(((1 as libc::c_int) << 3 as libc::c_int) as libc::c_ulonglong)
     {
@@ -14340,27 +13440,26 @@ unsafe extern "C" fn mi_bin(mut size: size_t) -> uint8_t {
         wsize;
         let mut b: uint8_t = mi_bsr(wsize) as uint8_t;
         bin = (((b as libc::c_int) << 2 as libc::c_int)
-            + (wsize >> b as libc::c_int - 2 as libc::c_int
-                & 0x3 as libc::c_int as size_t) as uint8_t as libc::c_int
+            + (wsize >> b as libc::c_int - 2 as libc::c_int & 0x3 as libc::c_int as size_t)
+                as uint8_t as libc::c_int
             - 3 as libc::c_int) as uint8_t;
-        if (bin as libc::c_uint) < 73 as libc::c_uint {} else {
+        if (bin as libc::c_uint) < 73 as libc::c_uint {
+        } else {
             _mi_assert_fail(
                 b"bin < MI_BIN_HUGE\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 7129 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<&[u8; 7], &[libc::c_char; 7]>(b"mi_bin\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 7], &[libc::c_char; 7]>(b"mi_bin\0")).as_ptr(),
             );
         };
     }
-    if bin as libc::c_int > 0 as libc::c_int && bin as libc::c_uint <= 73 as libc::c_uint
-    {} else {
+    if bin as libc::c_int > 0 as libc::c_int && bin as libc::c_uint <= 73 as libc::c_uint {
+    } else {
         _mi_assert_fail(
             b"bin > 0 && bin <= MI_BIN_HUGE\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7131 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<&[u8; 7], &[libc::c_char; 7]>(b"mi_bin\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 7], &[libc::c_char; 7]>(b"mi_bin\0")).as_ptr(),
         );
     };
     return bin;
@@ -14377,67 +13476,61 @@ pub unsafe extern "C" fn _mi_bin_size(mut bin: uint8_t) -> size_t {
 pub unsafe extern "C" fn mi_good_size(mut size: size_t) -> size_t {
     if size as libc::c_ulonglong
         <= ((1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
             .wrapping_div(2 as libc::c_int as libc::c_ulonglong)
     {
-        return _mi_bin_size(
-            mi_bin(
-                size
-                    .wrapping_add(
-                        ::core::mem::size_of::<mi_padding_t>() as libc::c_ulong,
-                    ),
-            ),
-        )
+        return _mi_bin_size(mi_bin(
+            size.wrapping_add(::core::mem::size_of::<mi_padding_t>() as libc::c_ulong),
+        ));
     } else {
         return _mi_align_up(
             size.wrapping_add(::core::mem::size_of::<mi_padding_t>() as libc::c_ulong),
             _mi_os_page_size(),
-        )
+        );
     };
 }
 unsafe extern "C" fn mi_page_queue_contains(
     mut queue: *mut mi_page_queue_t,
     mut page: *const mi_page_t,
 ) -> bool {
-    if !page.is_null() {} else {
+    if !page.is_null() {
+    } else {
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7150 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 23],
-                &[libc::c_char; 23],
-            >(b"mi_page_queue_contains\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
+                b"mi_page_queue_contains\0",
+            ))
+            .as_ptr(),
         );
     };
     let mut list: *mut mi_page_t = (*queue).first;
     while !list.is_null() {
-        if ((*list).next).is_null() || (*(*list).next).prev == list {} else {
+        if ((*list).next).is_null() || (*(*list).next).prev == list {
+        } else {
             _mi_assert_fail(
                 b"list->next == NULL || list->next->prev == list\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 7153 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 23],
-                    &[libc::c_char; 23],
-                >(b"mi_page_queue_contains\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
+                    b"mi_page_queue_contains\0",
+                ))
+                .as_ptr(),
             );
         };
-        if ((*list).prev).is_null() || (*(*list).prev).next == list {} else {
+        if ((*list).prev).is_null() || (*(*list).prev).next == list {
+        } else {
             _mi_assert_fail(
                 b"list->prev == NULL || list->prev->next == list\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 7154 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 23],
-                    &[libc::c_char; 23],
-                >(b"mi_page_queue_contains\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
+                    b"mi_page_queue_contains\0",
+                ))
+                .as_ptr(),
             );
         };
         if list == page as *mut mi_page_t {
@@ -14452,29 +13545,23 @@ unsafe extern "C" fn mi_heap_contains_queue(
     mut pq: *const mi_page_queue_t,
 ) -> bool {
     return pq
-        >= &*((*heap).pages).as_ptr().offset(0 as libc::c_int as isize)
-            as *const mi_page_queue_t
+        >= &*((*heap).pages).as_ptr().offset(0 as libc::c_int as isize) as *const mi_page_queue_t
         && pq
-            <= &*((*heap).pages)
-                .as_ptr()
-                .offset(
-                    (73 as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
-                        as isize,
-                ) as *const mi_page_queue_t;
+            <= &*((*heap).pages).as_ptr().offset(
+                (73 as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as isize,
+            ) as *const mi_page_queue_t;
 }
 unsafe extern "C" fn mi_heap_page_queue_of(
     mut heap: *mut mi_heap_t,
     mut page: *const mi_page_t,
 ) -> *mut mi_page_queue_t {
-    if !heap.is_null() {} else {
+    if !heap.is_null() {
+    } else {
         _mi_assert_fail(
             b"heap!=NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7167 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"mi_heap_page_queue_of\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"mi_heap_page_queue_of\0"))
                 .as_ptr(),
         );
     };
@@ -14485,29 +13572,25 @@ unsafe extern "C" fn mi_heap_page_queue_of(
     } else {
         mi_bin(mi_page_block_size(page)) as libc::c_uint
     }) as uint8_t;
-    if bin as libc::c_uint
-        <= (73 as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
-    {} else {
+    if bin as libc::c_uint <= (73 as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) {
+    } else {
         _mi_assert_fail(
             b"bin <= MI_BIN_FULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7169 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"mi_heap_page_queue_of\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"mi_heap_page_queue_of\0"))
                 .as_ptr(),
         );
     };
-    let mut pq: *mut mi_page_queue_t = &mut *((*heap).pages)
-        .as_mut_ptr()
-        .offset(bin as isize) as *mut mi_page_queue_t;
+    let mut pq: *mut mi_page_queue_t =
+        &mut *((*heap).pages).as_mut_ptr().offset(bin as isize) as *mut mi_page_queue_t;
     if mi_page_block_size(page) == (*pq).block_size
         || mi_page_is_huge(page) as libc::c_int != 0
             && mi_page_queue_is_huge(pq) as libc::c_int != 0
         || mi_page_is_in_full(page) as libc::c_int != 0
             && mi_page_queue_is_full(pq) as libc::c_int != 0
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"(mi_page_block_size(page) == pq->block_size) || (mi_page_is_huge(page) && mi_page_queue_is_huge(pq)) || (mi_page_is_in_full(page) && mi_page_queue_is_full(pq))\0"
                 as *const u8 as *const libc::c_char,
@@ -14522,9 +13605,7 @@ unsafe extern "C" fn mi_heap_page_queue_of(
     };
     return pq;
 }
-unsafe extern "C" fn mi_page_queue_of(
-    mut page: *const mi_page_t,
-) -> *mut mi_page_queue_t {
+unsafe extern "C" fn mi_page_queue_of(mut page: *const mi_page_t) -> *mut mi_page_queue_t {
     let mut heap: *mut mi_heap_t = mi_page_heap(page);
     let mut pq: *mut mi_page_queue_t = mi_heap_page_queue_of(heap, page);
     return pq;
@@ -14534,16 +13615,16 @@ unsafe extern "C" fn mi_heap_queue_first_update(
     mut heap: *mut mi_heap_t,
     mut pq: *const mi_page_queue_t,
 ) {
-    if mi_heap_contains_queue(heap, pq) as libc::c_int != 0 {} else {
+    if mi_heap_contains_queue(heap, pq) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_heap_contains_queue(heap,pq)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7183 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 27],
-                &[libc::c_char; 27],
-            >(b"mi_heap_queue_first_update\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
+                b"mi_heap_queue_first_update\0",
+            ))
+            .as_ptr(),
         );
     };
     let mut size: size_t = (*pq).block_size;
@@ -14570,28 +13651,29 @@ unsafe extern "C" fn mi_heap_queue_first_update(
         let mut prev: *const mi_page_queue_t = pq.offset(-(1 as libc::c_int as isize));
         while bin as libc::c_int == mi_bin((*prev).block_size) as libc::c_int
             && prev
-                > &mut *((*heap).pages).as_mut_ptr().offset(0 as libc::c_int as isize)
-                    as *mut mi_page_queue_t as *const mi_page_queue_t
+                > &mut *((*heap).pages)
+                    .as_mut_ptr()
+                    .offset(0 as libc::c_int as isize) as *mut mi_page_queue_t
+                    as *const mi_page_queue_t
         {
             prev = prev.offset(-1);
             prev;
         }
-        start = (1 as libc::c_int as size_t)
-            .wrapping_add(_mi_wsize_from_size((*prev).block_size));
+        start = (1 as libc::c_int as size_t).wrapping_add(_mi_wsize_from_size((*prev).block_size));
         if start > idx {
             start = idx;
         }
     }
-    if start <= idx {} else {
+    if start <= idx {
+    } else {
         _mi_assert_fail(
             b"start <= idx\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7204 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 27],
-                &[libc::c_char; 27],
-            >(b"mi_heap_queue_first_update\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
+                b"mi_heap_queue_first_update\0",
+            ))
+            .as_ptr(),
         );
     };
     let mut sz: size_t = start;
@@ -14606,15 +13688,13 @@ unsafe extern "C" fn mi_page_queue_remove(
     mut queue: *mut mi_page_queue_t,
     mut page: *mut mi_page_t,
 ) {
-    if !page.is_null() {} else {
+    if !page.is_null() {
+    } else {
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7210 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 21],
-                &[libc::c_char; 21],
-            >(b"mi_page_queue_remove\0"))
+            (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(b"mi_page_queue_remove\0"))
                 .as_ptr(),
         );
     };
@@ -14623,7 +13703,8 @@ unsafe extern "C" fn mi_page_queue_remove(
             && mi_page_queue_is_huge(queue) as libc::c_int != 0
         || mi_page_is_in_full(page) as libc::c_int != 0
             && mi_page_queue_is_full(queue) as libc::c_int != 0
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"mi_page_block_size(page) == queue->block_size || (mi_page_is_huge(page) && mi_page_queue_is_huge(queue)) || (mi_page_is_in_full(page) && mi_page_queue_is_full(queue))\0"
                 as *const u8 as *const libc::c_char,
@@ -14648,17 +13729,16 @@ unsafe extern "C" fn mi_page_queue_remove(
     }
     if page == (*queue).first {
         (*queue).first = (*page).next;
-        if mi_heap_contains_queue(heap, queue) as libc::c_int != 0 {} else {
+        if mi_heap_contains_queue(heap, queue) as libc::c_int != 0 {
+        } else {
             _mi_assert_fail(
-                b"mi_heap_contains_queue(heap, queue)\0" as *const u8
-                    as *const libc::c_char,
+                b"mi_heap_contains_queue(heap, queue)\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 7221 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 21],
-                    &[libc::c_char; 21],
-                >(b"mi_page_queue_remove\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(
+                    b"mi_page_queue_remove\0",
+                ))
+                .as_ptr(),
             );
         };
         mi_heap_queue_first_update(heap, queue);
@@ -14674,28 +13754,23 @@ unsafe extern "C" fn mi_page_queue_push(
     mut queue: *mut mi_page_queue_t,
     mut page: *mut mi_page_t,
 ) {
-    if mi_page_heap(page) == heap {} else {
+    if mi_page_heap(page) == heap {
+    } else {
         _mi_assert_fail(
             b"mi_page_heap(page) == heap\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7230 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 19],
-                &[libc::c_char; 19],
-            >(b"mi_page_queue_push\0"))
+            (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(b"mi_page_queue_push\0"))
                 .as_ptr(),
         );
     };
-    if !mi_page_queue_contains(queue, page) {} else {
+    if !mi_page_queue_contains(queue, page) {
+    } else {
         _mi_assert_fail(
-            b"!mi_page_queue_contains(queue, page)\0" as *const u8
-                as *const libc::c_char,
+            b"!mi_page_queue_contains(queue, page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7231 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 19],
-                &[libc::c_char; 19],
-            >(b"mi_page_queue_push\0"))
+            (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(b"mi_page_queue_push\0"))
                 .as_ptr(),
         );
     };
@@ -14704,7 +13779,8 @@ unsafe extern "C" fn mi_page_queue_push(
             && mi_page_queue_is_huge(queue) as libc::c_int != 0
         || mi_page_is_in_full(page) as libc::c_int != 0
             && mi_page_queue_is_full(queue) as libc::c_int != 0
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"mi_page_block_size(page) == queue->block_size || (mi_page_is_huge(page) && mi_page_queue_is_huge(queue)) || (mi_page_is_in_full(page) && mi_page_queue_is_full(queue))\0"
                 as *const u8 as *const libc::c_char,
@@ -14721,16 +13797,16 @@ unsafe extern "C" fn mi_page_queue_push(
     (*page).next = (*queue).first;
     (*page).prev = 0 as *mut mi_page_s;
     if !((*queue).first).is_null() {
-        if ((*(*queue).first).prev).is_null() {} else {
+        if ((*(*queue).first).prev).is_null() {
+        } else {
             _mi_assert_fail(
                 b"queue->first->prev == NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 7242 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 19],
-                    &[libc::c_char; 19],
-                >(b"mi_page_queue_push\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(
+                    b"mi_page_queue_push\0",
+                ))
+                .as_ptr(),
             );
         };
         (*(*queue).first).prev = page;
@@ -14748,28 +13824,28 @@ unsafe extern "C" fn mi_page_queue_move_to_front(
     mut queue: *mut mi_page_queue_t,
     mut page: *mut mi_page_t,
 ) {
-    if mi_page_heap(page) == heap {} else {
+    if mi_page_heap(page) == heap {
+    } else {
         _mi_assert_fail(
             b"mi_page_heap(page) == heap\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7253 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 28],
-                &[libc::c_char; 28],
-            >(b"mi_page_queue_move_to_front\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 28], &[libc::c_char; 28]>(
+                b"mi_page_queue_move_to_front\0",
+            ))
+            .as_ptr(),
         );
     };
-    if mi_page_queue_contains(queue, page) as libc::c_int != 0 {} else {
+    if mi_page_queue_contains(queue, page) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_page_queue_contains(queue, page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7254 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 28],
-                &[libc::c_char; 28],
-            >(b"mi_page_queue_move_to_front\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 28], &[libc::c_char; 28]>(
+                b"mi_page_queue_move_to_front\0",
+            ))
+            .as_ptr(),
         );
     };
     if (*queue).first == page {
@@ -14777,16 +13853,16 @@ unsafe extern "C" fn mi_page_queue_move_to_front(
     }
     mi_page_queue_remove(queue, page);
     mi_page_queue_push(heap, queue, page);
-    if (*queue).first == page {} else {
+    if (*queue).first == page {
+    } else {
         _mi_assert_fail(
             b"queue->first == page\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7258 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 28],
-                &[libc::c_char; 28],
-            >(b"mi_page_queue_move_to_front\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 28], &[libc::c_char; 28]>(
+                b"mi_page_queue_move_to_front\0",
+            ))
+            .as_ptr(),
         );
     };
 }
@@ -14796,16 +13872,16 @@ unsafe extern "C" fn mi_page_queue_enqueue_from_ex(
     mut enqueue_at_end: bool,
     mut page: *mut mi_page_t,
 ) {
-    if !page.is_null() {} else {
+    if !page.is_null() {
+    } else {
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7261 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 30],
-                &[libc::c_char; 30],
-            >(b"mi_page_queue_enqueue_from_ex\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 30], &[libc::c_char; 30]>(
+                b"mi_page_queue_enqueue_from_ex\0",
+            ))
+            .as_ptr(),
         );
     };
     let bsize: size_t = mi_page_block_size(page);
@@ -14816,7 +13892,8 @@ unsafe extern "C" fn mi_page_queue_enqueue_from_ex(
             && mi_page_queue_is_huge(to) as libc::c_int != 0
         || mi_page_is_huge(page) as libc::c_int != 0
             && mi_page_queue_is_full(to) as libc::c_int != 0
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"(bsize == to->block_size && bsize == from->block_size) || (bsize == to->block_size && mi_page_queue_is_full(from)) || (bsize == from->block_size && mi_page_queue_is_full(to)) || (mi_page_is_huge(page) && mi_page_queue_is_huge(to)) || (mi_page_is_huge(page) && mi_page_queue_is_full(to))\0"
                 as *const u8 as *const libc::c_char,
@@ -14841,17 +13918,16 @@ unsafe extern "C" fn mi_page_queue_enqueue_from_ex(
     }
     if page == (*from).first {
         (*from).first = (*page).next;
-        if mi_heap_contains_queue(heap, from) as libc::c_int != 0 {} else {
+        if mi_heap_contains_queue(heap, from) as libc::c_int != 0 {
+        } else {
             _mi_assert_fail(
-                b"mi_heap_contains_queue(heap, from)\0" as *const u8
-                    as *const libc::c_char,
+                b"mi_heap_contains_queue(heap, from)\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 7277 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 30],
-                    &[libc::c_char; 30],
-                >(b"mi_page_queue_enqueue_from_ex\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 30], &[libc::c_char; 30]>(
+                    b"mi_page_queue_enqueue_from_ex\0",
+                ))
+                .as_ptr(),
             );
         };
         mi_heap_queue_first_update(heap, from);
@@ -14860,17 +13936,16 @@ unsafe extern "C" fn mi_page_queue_enqueue_from_ex(
         (*page).prev = (*to).last;
         (*page).next = 0 as *mut mi_page_s;
         if !((*to).last).is_null() {
-            if heap == mi_page_heap((*to).last) {} else {
+            if heap == mi_page_heap((*to).last) {
+            } else {
                 _mi_assert_fail(
-                    b"heap == mi_page_heap(to->last)\0" as *const u8
-                        as *const libc::c_char,
+                    b"heap == mi_page_heap(to->last)\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     7284 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 30],
-                        &[libc::c_char; 30],
-                    >(b"mi_page_queue_enqueue_from_ex\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 30], &[libc::c_char; 30]>(
+                        b"mi_page_queue_enqueue_from_ex\0",
+                    ))
+                    .as_ptr(),
                 );
             };
             (*(*to).last).next = page;
@@ -14881,16 +13956,16 @@ unsafe extern "C" fn mi_page_queue_enqueue_from_ex(
             mi_heap_queue_first_update(heap, to);
         }
     } else if !((*to).first).is_null() {
-        if heap == mi_page_heap((*to).first) {} else {
+        if heap == mi_page_heap((*to).first) {
+        } else {
             _mi_assert_fail(
                 b"heap == mi_page_heap(to->first)\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 7296 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 30],
-                    &[libc::c_char; 30],
-                >(b"mi_page_queue_enqueue_from_ex\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 30], &[libc::c_char; 30]>(
+                    b"mi_page_queue_enqueue_from_ex\0",
+                ))
+                .as_ptr(),
             );
         };
         let mut next: *mut mi_page_t = (*(*to).first).next;
@@ -14931,28 +14006,23 @@ pub unsafe extern "C" fn _mi_page_queue_append(
     mut pq: *mut mi_page_queue_t,
     mut append: *mut mi_page_queue_t,
 ) -> size_t {
-    if mi_heap_contains_queue(heap, pq) as libc::c_int != 0 {} else {
+    if mi_heap_contains_queue(heap, pq) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_heap_contains_queue(heap,pq)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7325 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"_mi_page_queue_append\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"_mi_page_queue_append\0"))
                 .as_ptr(),
         );
     };
-    if (*pq).block_size == (*append).block_size {} else {
+    if (*pq).block_size == (*append).block_size {
+    } else {
         _mi_assert_fail(
-            b"pq->block_size == append->block_size\0" as *const u8
-                as *const libc::c_char,
+            b"pq->block_size == append->block_size\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7326 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"_mi_page_queue_append\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"_mi_page_queue_append\0"))
                 .as_ptr(),
         );
     };
@@ -14969,44 +14039,44 @@ pub unsafe extern "C" fn _mi_page_queue_append(
         page = (*page).next;
     }
     if ((*pq).last).is_null() {
-        if ((*pq).first).is_null() {} else {
+        if ((*pq).first).is_null() {
+        } else {
             _mi_assert_fail(
                 b"pq->first==NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 7335 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 22],
-                    &[libc::c_char; 22],
-                >(b"_mi_page_queue_append\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(
+                    b"_mi_page_queue_append\0",
+                ))
+                .as_ptr(),
             );
         };
         (*pq).first = (*append).first;
         (*pq).last = (*append).last;
         mi_heap_queue_first_update(heap, pq);
     } else {
-        if !((*pq).last).is_null() {} else {
+        if !((*pq).last).is_null() {
+        } else {
             _mi_assert_fail(
                 b"pq->last!=NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 7341 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 22],
-                    &[libc::c_char; 22],
-                >(b"_mi_page_queue_append\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(
+                    b"_mi_page_queue_append\0",
+                ))
+                .as_ptr(),
             );
         };
-        if !((*append).first).is_null() {} else {
+        if !((*append).first).is_null() {
+        } else {
             _mi_assert_fail(
                 b"append->first!=NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 7342 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 22],
-                    &[libc::c_char; 22],
-                >(b"_mi_page_queue_append\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(
+                    b"_mi_page_queue_append\0",
+                ))
+                .as_ptr(),
             );
         };
         (*(*pq).last).next = (*append).first;
@@ -15022,32 +14092,27 @@ unsafe extern "C" fn mi_page_block_at(
     mut block_size: size_t,
     mut i: size_t,
 ) -> *mut mi_block_t {
-    if !page.is_null() {} else {
+    if !page.is_null() {
+    } else {
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7352 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 17],
-                &[libc::c_char; 17],
-            >(b"mi_page_block_at\0"))
+            (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"mi_page_block_at\0"))
                 .as_ptr(),
         );
     };
-    if i <= (*page).reserved as size_t {} else {
+    if i <= (*page).reserved as size_t {
+    } else {
         _mi_assert_fail(
             b"i <= page->reserved\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7353 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 17],
-                &[libc::c_char; 17],
-            >(b"mi_page_block_at\0"))
+            (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"mi_page_block_at\0"))
                 .as_ptr(),
         );
     };
-    return (page_start as *mut uint8_t).offset((i * block_size) as isize)
-        as *mut mi_block_t;
+    return (page_start as *mut uint8_t).offset((i * block_size) as isize) as *mut mi_block_t;
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_page_use_delayed_free(
@@ -15073,9 +14138,9 @@ pub unsafe extern "C" fn _mi_page_try_use_delayed_free(
         tfree = ::core::intrinsics::atomic_load_acquire(&mut (*page).xthread_free);
         tfreex = mi_tf_set_delayed(tfree, delay);
         old_delay = mi_tf_delayed(tfree);
-        if (old_delay as libc::c_uint
-            == MI_DELAYED_FREEING as libc::c_int as libc::c_uint) as libc::c_int
-            as libc::c_long != 0
+        if (old_delay as libc::c_uint == MI_DELAYED_FREEING as libc::c_int as libc::c_uint)
+            as libc::c_int as libc::c_long
+            != 0
         {
             if yield_count >= 4 as libc::c_int as size_t {
                 return 0 as libc::c_int != 0;
@@ -15088,24 +14153,20 @@ pub unsafe extern "C" fn _mi_page_try_use_delayed_free(
                 break;
             }
             if !override_never
-                && old_delay as libc::c_uint
-                    == MI_NEVER_DELAYED_FREE as libc::c_int as libc::c_uint
+                && old_delay as libc::c_uint == MI_NEVER_DELAYED_FREE as libc::c_int as libc::c_uint
             {
                 break;
             }
         }
-        if !(old_delay as libc::c_uint
-            == MI_DELAYED_FREEING as libc::c_int as libc::c_uint
-            || {
-                let fresh36 = ::core::intrinsics::atomic_cxchgweak_release_relaxed(
-                    &mut (*page).xthread_free as *mut mi_thread_free_t,
-                    *(&mut tfree as *mut mi_thread_free_t),
-                    tfreex,
-                );
-                *(&mut tfree as *mut mi_thread_free_t) = fresh36.0;
-                !fresh36.1
-            })
-        {
+        if !(old_delay as libc::c_uint == MI_DELAYED_FREEING as libc::c_int as libc::c_uint || {
+            let fresh36 = ::core::intrinsics::atomic_cxchgweak_release_relaxed(
+                &mut (*page).xthread_free as *mut mi_thread_free_t,
+                *(&mut tfree as *mut mi_thread_free_t),
+                tfreex,
+            );
+            *(&mut tfree as *mut mi_thread_free_t) = fresh36.0;
+            !fresh36.1
+        }) {
             break;
         }
     }
@@ -15114,9 +14175,8 @@ pub unsafe extern "C" fn _mi_page_try_use_delayed_free(
 unsafe extern "C" fn _mi_page_thread_free_collect(mut page: *mut mi_page_t) {
     let mut head: *mut mi_block_t = 0 as *mut mi_block_t;
     let mut tfreex: mi_thread_free_t = 0;
-    let mut tfree: mi_thread_free_t = ::core::intrinsics::atomic_load_relaxed(
-        &mut (*page).xthread_free,
-    );
+    let mut tfree: mi_thread_free_t =
+        ::core::intrinsics::atomic_load_relaxed(&mut (*page).xthread_free);
     loop {
         head = mi_tf_block(tfree);
         tfreex = mi_tf_set_block(tfree, 0 as *mut mi_block_t);
@@ -15155,24 +14215,17 @@ unsafe extern "C" fn _mi_page_thread_free_collect(mut page: *mut mi_page_t) {
     }
     mi_block_set_next(page, tail, (*page).local_free);
     (*page).local_free = head;
-    (*page)
-        .used = ((*page).used as libc::c_int - count as uint16_t as libc::c_int)
-        as uint16_t;
+    (*page).used = ((*page).used as libc::c_int - count as uint16_t as libc::c_int) as uint16_t;
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn _mi_page_free_collect(
-    mut page: *mut mi_page_t,
-    mut force: bool,
-) {
-    if !page.is_null() {} else {
+pub unsafe extern "C" fn _mi_page_free_collect(mut page: *mut mi_page_t, mut force: bool) {
+    if !page.is_null() {
+    } else {
         _mi_assert_fail(
             b"page!=NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7491 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"_mi_page_free_collect\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"_mi_page_free_collect\0"))
                 .as_ptr(),
         );
     };
@@ -15200,48 +14253,39 @@ pub unsafe extern "C" fn _mi_page_free_collect(
             (*page).set_free_is_zero(0 as libc::c_int as uint8_t);
         }
     }
-    if !force || ((*page).local_free).is_null() {} else {
+    if !force || ((*page).local_free).is_null() {
+    } else {
         _mi_assert_fail(
             b"!force || page->local_free == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7513 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"_mi_page_free_collect\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"_mi_page_free_collect\0"))
                 .as_ptr(),
         );
     };
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn _mi_page_reclaim(
-    mut heap: *mut mi_heap_t,
-    mut page: *mut mi_page_t,
-) {
-    if mi_page_heap(page) == heap {} else {
+pub unsafe extern "C" fn _mi_page_reclaim(mut heap: *mut mi_heap_t, mut page: *mut mi_page_t) {
+    if mi_page_heap(page) == heap {
+    } else {
         _mi_assert_fail(
             b"mi_page_heap(page) == heap\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7517 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 17],
-                &[libc::c_char; 17],
-            >(b"_mi_page_reclaim\0"))
+            (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"_mi_page_reclaim\0"))
                 .as_ptr(),
         );
     };
     if mi_page_thread_free_flag(page) as libc::c_uint
         != MI_NEVER_DELAYED_FREE as libc::c_int as libc::c_uint
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"mi_page_thread_free_flag(page) != MI_NEVER_DELAYED_FREE\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7518 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 17],
-                &[libc::c_char; 17],
-            >(b"_mi_page_reclaim\0"))
+            (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"_mi_page_reclaim\0"))
                 .as_ptr(),
         );
     };
@@ -15254,38 +14298,34 @@ unsafe extern "C" fn mi_page_fresh_alloc(
     mut block_size: size_t,
     mut page_alignment: size_t,
 ) -> *mut mi_page_t {
-    if !pq.is_null() {} else {
+    if !pq.is_null() {
+    } else {
         _mi_assert_fail(
             b"pq != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7528 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"mi_page_fresh_alloc\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"mi_page_fresh_alloc\0"))
                 .as_ptr(),
         );
     };
-    if mi_heap_contains_queue(heap, pq) as libc::c_int != 0 {} else {
+    if mi_heap_contains_queue(heap, pq) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_heap_contains_queue(heap, pq)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7529 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"mi_page_fresh_alloc\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"mi_page_fresh_alloc\0"))
                 .as_ptr(),
         );
     };
     if page_alignment > 0 as libc::c_int as size_t
         || block_size as libc::c_ulonglong
             > ((1 as libc::c_ulonglong)
-                << 3 as libc::c_int
-                    + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+                << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
                 .wrapping_div(2 as libc::c_int as libc::c_ulonglong)
         || block_size == (*pq).block_size
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"page_alignment > 0 || block_size > MI_LARGE_OBJ_SIZE_MAX || block_size == pq->block_size\0"
                 as *const u8 as *const libc::c_char,
@@ -15308,35 +14348,29 @@ unsafe extern "C" fn mi_page_fresh_alloc(
     if page.is_null() {
         return 0 as *mut mi_page_t;
     }
-    if !pq.is_null() || mi_page_block_size(page) >= block_size {} else {
+    if !pq.is_null() || mi_page_block_size(page) >= block_size {
+    } else {
         _mi_assert_fail(
             b"pq!=NULL || mi_page_block_size(page) >= block_size\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7539 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"mi_page_fresh_alloc\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"mi_page_fresh_alloc\0"))
                 .as_ptr(),
         );
     };
-    let full_block_size: size_t = if pq.is_null()
-        || mi_page_is_huge(page) as libc::c_int != 0
-    {
+    let full_block_size: size_t = if pq.is_null() || mi_page_is_huge(page) as libc::c_int != 0 {
         mi_page_block_size(page)
     } else {
         block_size
     };
-    if full_block_size >= block_size {} else {
+    if full_block_size >= block_size {
+    } else {
         _mi_assert_fail(
             b"full_block_size >= block_size\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7541 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"mi_page_fresh_alloc\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"mi_page_fresh_alloc\0"))
                 .as_ptr(),
         );
     };
@@ -15351,50 +14385,39 @@ unsafe extern "C" fn mi_page_fresh(
     mut heap: *mut mi_heap_t,
     mut pq: *mut mi_page_queue_t,
 ) -> *mut mi_page_t {
-    if mi_heap_contains_queue(heap, pq) as libc::c_int != 0 {} else {
+    if mi_heap_contains_queue(heap, pq) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_heap_contains_queue(heap, pq)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7549 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 14],
-                &[libc::c_char; 14],
-            >(b"mi_page_fresh\0"))
+            (*::core::mem::transmute::<&[u8; 14], &[libc::c_char; 14]>(b"mi_page_fresh\0"))
                 .as_ptr(),
         );
     };
-    let mut page: *mut mi_page_t = mi_page_fresh_alloc(
-        heap,
-        pq,
-        (*pq).block_size,
-        0 as libc::c_int as size_t,
-    );
+    let mut page: *mut mi_page_t =
+        mi_page_fresh_alloc(heap, pq, (*pq).block_size, 0 as libc::c_int as size_t);
     if page.is_null() {
         return 0 as *mut mi_page_t;
     }
-    if (*pq).block_size == mi_page_block_size(page) {} else {
+    if (*pq).block_size == mi_page_block_size(page) {
+    } else {
         _mi_assert_fail(
-            b"pq->block_size==mi_page_block_size(page)\0" as *const u8
-                as *const libc::c_char,
+            b"pq->block_size==mi_page_block_size(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7552 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 14],
-                &[libc::c_char; 14],
-            >(b"mi_page_fresh\0"))
+            (*::core::mem::transmute::<&[u8; 14], &[libc::c_char; 14]>(b"mi_page_fresh\0"))
                 .as_ptr(),
         );
     };
-    if pq == mi_page_queue(heap, mi_page_block_size(page)) {} else {
+    if pq == mi_page_queue(heap, mi_page_block_size(page)) {
+    } else {
         _mi_assert_fail(
             b"pq==mi_page_queue(heap, mi_page_block_size(page))\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7553 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 14],
-                &[libc::c_char; 14],
-            >(b"mi_page_fresh\0"))
+            (*::core::mem::transmute::<&[u8; 14], &[libc::c_char; 14]>(b"mi_page_fresh\0"))
                 .as_ptr(),
         );
     };
@@ -15407,23 +14430,18 @@ pub unsafe extern "C" fn _mi_heap_delayed_free_all(mut heap: *mut mi_heap_t) {
     }
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn _mi_heap_delayed_free_partial(
-    mut heap: *mut mi_heap_t,
-) -> bool {
-    let mut block: *mut mi_block_t = ::core::intrinsics::atomic_load_relaxed(
-        &mut (*heap).thread_delayed_free,
-    );
-    while !block.is_null()
-        && {
-            let fresh38 = ::core::intrinsics::atomic_cxchgweak_acqrel_acquire(
-                &mut (*heap).thread_delayed_free as *mut *mut mi_block_t,
-                *(&mut block as *mut *mut mi_block_t),
-                0 as *mut mi_block_t,
-            );
-            *(&mut block as *mut *mut mi_block_t) = fresh38.0;
-            !fresh38.1
-        }
-    {}
+pub unsafe extern "C" fn _mi_heap_delayed_free_partial(mut heap: *mut mi_heap_t) -> bool {
+    let mut block: *mut mi_block_t =
+        ::core::intrinsics::atomic_load_relaxed(&mut (*heap).thread_delayed_free);
+    while !block.is_null() && {
+        let fresh38 = ::core::intrinsics::atomic_cxchgweak_acqrel_acquire(
+            &mut (*heap).thread_delayed_free as *mut *mut mi_block_t,
+            *(&mut block as *mut *mut mi_block_t),
+            0 as *mut mi_block_t,
+        );
+        *(&mut block as *mut *mut mi_block_t) = fresh38.0;
+        !fresh38.1
+    } {}
     let mut all_freed: bool = 1 as libc::c_int != 0;
     while !block.is_null() {
         let mut next: *mut mi_block_t = mi_block_nextx(
@@ -15433,9 +14451,8 @@ pub unsafe extern "C" fn _mi_heap_delayed_free_partial(
         );
         if !_mi_free_delayed_block(block) {
             all_freed = 0 as libc::c_int != 0;
-            let mut dfree: *mut mi_block_t = ::core::intrinsics::atomic_load_relaxed(
-                &mut (*heap).thread_delayed_free,
-            );
+            let mut dfree: *mut mi_block_t =
+                ::core::intrinsics::atomic_load_relaxed(&mut (*heap).thread_delayed_free);
             loop {
                 mi_block_set_nextx(
                     heap as *const libc::c_void,
@@ -15460,27 +14477,23 @@ pub unsafe extern "C" fn _mi_heap_delayed_free_partial(
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_page_unfull(mut page: *mut mi_page_t) {
-    if !page.is_null() {} else {
+    if !page.is_null() {
+    } else {
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7579 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 16],
-                &[libc::c_char; 16],
-            >(b"_mi_page_unfull\0"))
+            (*::core::mem::transmute::<&[u8; 16], &[libc::c_char; 16]>(b"_mi_page_unfull\0"))
                 .as_ptr(),
         );
     };
-    if mi_page_is_in_full(page) as libc::c_int != 0 {} else {
+    if mi_page_is_in_full(page) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_page_is_in_full(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7581 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 16],
-                &[libc::c_char; 16],
-            >(b"_mi_page_unfull\0"))
+            (*::core::mem::transmute::<&[u8; 16], &[libc::c_char; 16]>(b"_mi_page_unfull\0"))
                 .as_ptr(),
         );
     };
@@ -15490,51 +14503,41 @@ pub unsafe extern "C" fn _mi_page_unfull(mut page: *mut mi_page_t) {
     let mut heap: *mut mi_heap_t = mi_page_heap(page);
     let mut pqfull: *mut mi_page_queue_t = &mut *((*heap).pages)
         .as_mut_ptr()
-        .offset(
-            (73 as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as isize,
-        ) as *mut mi_page_queue_t;
+        .offset((73 as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as isize)
+        as *mut mi_page_queue_t;
     mi_page_set_in_full(page, 0 as libc::c_int != 0);
     let mut pq: *mut mi_page_queue_t = mi_heap_page_queue_of(heap, page);
     mi_page_set_in_full(page, 1 as libc::c_int != 0);
     mi_page_queue_enqueue_from_full(pq, pqfull, page);
 }
-unsafe extern "C" fn mi_page_to_full(
-    mut page: *mut mi_page_t,
-    mut pq: *mut mi_page_queue_t,
-) {
-    if pq == mi_page_queue_of(page) {} else {
+unsafe extern "C" fn mi_page_to_full(mut page: *mut mi_page_t, mut pq: *mut mi_page_queue_t) {
+    if pq == mi_page_queue_of(page) {
+    } else {
         _mi_assert_fail(
             b"pq == mi_page_queue_of(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7591 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 16],
-                &[libc::c_char; 16],
-            >(b"mi_page_to_full\0"))
+            (*::core::mem::transmute::<&[u8; 16], &[libc::c_char; 16]>(b"mi_page_to_full\0"))
                 .as_ptr(),
         );
     };
-    if !mi_page_immediate_available(page) {} else {
+    if !mi_page_immediate_available(page) {
+    } else {
         _mi_assert_fail(
             b"!mi_page_immediate_available(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7592 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 16],
-                &[libc::c_char; 16],
-            >(b"mi_page_to_full\0"))
+            (*::core::mem::transmute::<&[u8; 16], &[libc::c_char; 16]>(b"mi_page_to_full\0"))
                 .as_ptr(),
         );
     };
-    if !mi_page_is_in_full(page) {} else {
+    if !mi_page_is_in_full(page) {
+    } else {
         _mi_assert_fail(
             b"!mi_page_is_in_full(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7593 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 16],
-                &[libc::c_char; 16],
-            >(b"mi_page_to_full\0"))
+            (*::core::mem::transmute::<&[u8; 16], &[libc::c_char; 16]>(b"mi_page_to_full\0"))
                 .as_ptr(),
         );
     };
@@ -15542,57 +14545,44 @@ unsafe extern "C" fn mi_page_to_full(
         return;
     }
     mi_page_queue_enqueue_from(
-        &mut *((*(mi_page_heap
-            as unsafe extern "C" fn(*const mi_page_t) -> *mut mi_heap_t)(page))
+        &mut *((*(mi_page_heap as unsafe extern "C" fn(*const mi_page_t) -> *mut mi_heap_t)(page))
             .pages)
             .as_mut_ptr()
-            .offset(
-                (73 as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
-                    as isize,
-            ),
+            .offset((73 as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as isize),
         pq,
         page,
     );
     _mi_page_free_collect(page, 0 as libc::c_int != 0);
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn _mi_page_abandon(
-    mut page: *mut mi_page_t,
-    mut pq: *mut mi_page_queue_t,
-) {
-    if !page.is_null() {} else {
+pub unsafe extern "C" fn _mi_page_abandon(mut page: *mut mi_page_t, mut pq: *mut mi_page_queue_t) {
+    if !page.is_null() {
+    } else {
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7599 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 17],
-                &[libc::c_char; 17],
-            >(b"_mi_page_abandon\0"))
+            (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"_mi_page_abandon\0"))
                 .as_ptr(),
         );
     };
-    if pq == mi_page_queue_of(page) {} else {
+    if pq == mi_page_queue_of(page) {
+    } else {
         _mi_assert_fail(
             b"pq == mi_page_queue_of(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7601 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 17],
-                &[libc::c_char; 17],
-            >(b"_mi_page_abandon\0"))
+            (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"_mi_page_abandon\0"))
                 .as_ptr(),
         );
     };
-    if !(mi_page_heap(page)).is_null() {} else {
+    if !(mi_page_heap(page)).is_null() {
+    } else {
         _mi_assert_fail(
             b"mi_page_heap(page) != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7602 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 17],
-                &[libc::c_char; 17],
-            >(b"_mi_page_abandon\0"))
+            (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"_mi_page_abandon\0"))
                 .as_ptr(),
         );
     };
@@ -15601,31 +14591,27 @@ pub unsafe extern "C" fn _mi_page_abandon(
     mi_page_queue_remove(pq, page);
     if mi_page_thread_free_flag(page) as libc::c_uint
         == MI_NEVER_DELAYED_FREE as libc::c_int as libc::c_uint
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"mi_page_thread_free_flag(page)==MI_NEVER_DELAYED_FREE\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7606 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 17],
-                &[libc::c_char; 17],
-            >(b"_mi_page_abandon\0"))
+            (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"_mi_page_abandon\0"))
                 .as_ptr(),
         );
     };
     mi_page_set_heap(page, 0 as *mut mi_heap_t);
     let mut block: *mut mi_block_t = (*pheap).thread_delayed_free;
     while !block.is_null() {
-        if _mi_ptr_page(block as *mut libc::c_void) != page {} else {
+        if _mi_ptr_page(block as *mut libc::c_void) != page {
+        } else {
             _mi_assert_fail(
                 b"_mi_ptr_page(block) != page\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 7610 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 17],
-                    &[libc::c_char; 17],
-                >(b"_mi_page_abandon\0"))
+                (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"_mi_page_abandon\0"))
                     .as_ptr(),
             );
         };
@@ -15635,15 +14621,13 @@ pub unsafe extern "C" fn _mi_page_abandon(
             ((*pheap).keys).as_mut_ptr(),
         );
     }
-    if (mi_page_heap(page)).is_null() {} else {
+    if (mi_page_heap(page)).is_null() {
+    } else {
         _mi_assert_fail(
             b"mi_page_heap(page) == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7613 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 17],
-                &[libc::c_char; 17],
-            >(b"_mi_page_abandon\0"))
+            (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"_mi_page_abandon\0"))
                 .as_ptr(),
         );
     };
@@ -15670,89 +14654,77 @@ pub unsafe extern "C" fn _mi_page_free(
     mut pq: *mut mi_page_queue_t,
     mut force: bool,
 ) {
-    if !page.is_null() {} else {
+    if !page.is_null() {
+    } else {
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7630 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 14],
-                &[libc::c_char; 14],
-            >(b"_mi_page_free\0"))
+            (*::core::mem::transmute::<&[u8; 14], &[libc::c_char; 14]>(b"_mi_page_free\0"))
                 .as_ptr(),
         );
     };
-    if pq == mi_page_queue_of(page) {} else {
+    if pq == mi_page_queue_of(page) {
+    } else {
         _mi_assert_fail(
             b"pq == mi_page_queue_of(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7632 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 14],
-                &[libc::c_char; 14],
-            >(b"_mi_page_free\0"))
+            (*::core::mem::transmute::<&[u8; 14], &[libc::c_char; 14]>(b"_mi_page_free\0"))
                 .as_ptr(),
         );
     };
-    if mi_page_all_free(page) as libc::c_int != 0 {} else {
+    if mi_page_all_free(page) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_page_all_free(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7633 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 14],
-                &[libc::c_char; 14],
-            >(b"_mi_page_free\0"))
+            (*::core::mem::transmute::<&[u8; 14], &[libc::c_char; 14]>(b"_mi_page_free\0"))
                 .as_ptr(),
         );
     };
     if mi_page_thread_free_flag(page) as libc::c_uint
         != MI_DELAYED_FREEING as libc::c_int as libc::c_uint
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"mi_page_thread_free_flag(page)!=MI_DELAYED_FREEING\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7634 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 14],
-                &[libc::c_char; 14],
-            >(b"_mi_page_free\0"))
+            (*::core::mem::transmute::<&[u8; 14], &[libc::c_char; 14]>(b"_mi_page_free\0"))
                 .as_ptr(),
         );
     };
     mi_page_set_has_aligned(page, 0 as libc::c_int != 0);
-    let mut segments_tld: *mut mi_segments_tld_t = &mut (*(*(mi_page_heap
-        as unsafe extern "C" fn(*const mi_page_t) -> *mut mi_heap_t)(page))
-        .tld)
-        .segments;
+    let mut segments_tld: *mut mi_segments_tld_t =
+        &mut (*(*(mi_page_heap as unsafe extern "C" fn(*const mi_page_t) -> *mut mi_heap_t)(page))
+            .tld)
+            .segments;
     mi_page_queue_remove(pq, page);
     mi_page_set_heap(page, 0 as *mut mi_heap_t);
     _mi_segment_page_free(page, force, segments_tld);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_page_retire(mut page: *mut mi_page_t) {
-    if !page.is_null() {} else {
+    if !page.is_null() {
+    } else {
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7644 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 16],
-                &[libc::c_char; 16],
-            >(b"_mi_page_retire\0"))
+            (*::core::mem::transmute::<&[u8; 16], &[libc::c_char; 16]>(b"_mi_page_retire\0"))
                 .as_ptr(),
         );
     };
-    if mi_page_all_free(page) as libc::c_int != 0 {} else {
+    if mi_page_all_free(page) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_page_all_free(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7646 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 16],
-                &[libc::c_char; 16],
-            >(b"_mi_page_retire\0"))
+            (*::core::mem::transmute::<&[u8; 16], &[libc::c_char; 16]>(b"_mi_page_retire\0"))
                 .as_ptr(),
         );
     };
@@ -15762,50 +14734,47 @@ pub unsafe extern "C" fn _mi_page_retire(mut page: *mut mi_page_t) {
     if !mi_page_queue_is_special(pq) as libc::c_int as libc::c_long != 0 {
         if (*pq).last == page && (*pq).first == page {
             _mi_stat_counter_increase(
-                &mut _mi_stats_main.page_no_retire,
+                &raw mut _mi_stats_main.page_no_retire,
                 1 as libc::c_int as size_t,
             );
-            (*page)
-                .set_retire_expire(
-                    (if bsize as libc::c_ulonglong
-                        <= ((1 as libc::c_ulonglong)
-                            << 13 as libc::c_int + 3 as libc::c_int)
-                            .wrapping_div(4 as libc::c_int as libc::c_ulonglong)
-                    {
-                        16 as libc::c_int
-                    } else {
-                        16 as libc::c_int / 4 as libc::c_int
-                    }) as uint8_t,
-                );
+            (*page).set_retire_expire(
+                (if bsize as libc::c_ulonglong
+                    <= ((1 as libc::c_ulonglong) << 13 as libc::c_int + 3 as libc::c_int)
+                        .wrapping_div(4 as libc::c_int as libc::c_ulonglong)
+                {
+                    16 as libc::c_int
+                } else {
+                    16 as libc::c_int / 4 as libc::c_int
+                }) as uint8_t,
+            );
             let mut heap: *mut mi_heap_t = mi_page_heap(page);
-            if pq >= ((*heap).pages).as_mut_ptr() {} else {
+            if pq >= ((*heap).pages).as_mut_ptr() {
+            } else {
                 _mi_assert_fail(
                     b"pq >= heap->pages\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     7656 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 16],
-                        &[libc::c_char; 16],
-                    >(b"_mi_page_retire\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 16], &[libc::c_char; 16]>(
+                        b"_mi_page_retire\0",
+                    ))
+                    .as_ptr(),
                 );
             };
-            let index: size_t = pq.offset_from(((*heap).pages).as_mut_ptr())
-                as libc::c_long as size_t;
-            if index
-                < (73 as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
-                    as size_t && index < 73 as libc::c_uint as size_t
-            {} else {
+            let index: size_t =
+                pq.offset_from(((*heap).pages).as_mut_ptr()) as libc::c_long as size_t;
+            if index < (73 as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as size_t
+                && index < 73 as libc::c_uint as size_t
+            {
+            } else {
                 _mi_assert_fail(
                     b"index < MI_BIN_FULL && index < MI_BIN_HUGE\0" as *const u8
                         as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     7658 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 16],
-                        &[libc::c_char; 16],
-                    >(b"_mi_page_retire\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 16], &[libc::c_char; 16]>(
+                        b"_mi_page_retire\0",
+                    ))
+                    .as_ptr(),
                 );
             };
             if index < (*heap).page_retired_min {
@@ -15814,16 +14783,16 @@ pub unsafe extern "C" fn _mi_page_retire(mut page: *mut mi_page_t) {
             if index > (*heap).page_retired_max {
                 (*heap).page_retired_max = index;
             }
-            if mi_page_all_free(page) as libc::c_int != 0 {} else {
+            if mi_page_all_free(page) as libc::c_int != 0 {
+            } else {
                 _mi_assert_fail(
                     b"mi_page_all_free(page)\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     7661 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 16],
-                        &[libc::c_char; 16],
-                    >(b"_mi_page_retire\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 16], &[libc::c_char; 16]>(
+                        b"_mi_page_retire\0",
+                    ))
+                    .as_ptr(),
                 );
             };
             return;
@@ -15832,21 +14801,16 @@ pub unsafe extern "C" fn _mi_page_retire(mut page: *mut mi_page_t) {
     _mi_page_free(page, pq, 0 as libc::c_int != 0);
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn _mi_heap_collect_retired(
-    mut heap: *mut mi_heap_t,
-    mut force: bool,
-) {
-    let mut min: size_t = (73 as libc::c_uint)
-        .wrapping_add(1 as libc::c_int as libc::c_uint) as size_t;
+pub unsafe extern "C" fn _mi_heap_collect_retired(mut heap: *mut mi_heap_t, mut force: bool) {
+    let mut min: size_t =
+        (73 as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as size_t;
     let mut max: size_t = 0 as libc::c_int as size_t;
     let mut bin: size_t = (*heap).page_retired_min;
     while bin <= (*heap).page_retired_max {
-        let mut pq: *mut mi_page_queue_t = &mut *((*heap).pages)
-            .as_mut_ptr()
-            .offset(bin as isize) as *mut mi_page_queue_t;
+        let mut pq: *mut mi_page_queue_t =
+            &mut *((*heap).pages).as_mut_ptr().offset(bin as isize) as *mut mi_page_queue_t;
         let mut page: *mut mi_page_t = (*pq).first;
-        if !page.is_null() && (*page).retire_expire() as libc::c_int != 0 as libc::c_int
-        {
+        if !page.is_null() && (*page).retire_expire() as libc::c_int != 0 as libc::c_int {
             if mi_page_all_free(page) {
                 (*page).set_retire_expire((*page).retire_expire() - 1);
                 (*page).retire_expire();
@@ -15879,54 +14843,52 @@ unsafe extern "C" fn mi_page_free_list_extend_secure(
     extend: size_t,
     stats: *mut mi_stats_t,
 ) {
-    if ((*page).free).is_null() {} else {
+    if ((*page).free).is_null() {
+    } else {
         _mi_assert_fail(
             b"page->free == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7699 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 32],
-                &[libc::c_char; 32],
-            >(b"mi_page_free_list_extend_secure\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 32], &[libc::c_char; 32]>(
+                b"mi_page_free_list_extend_secure\0",
+            ))
+            .as_ptr(),
         );
     };
-    if ((*page).local_free).is_null() {} else {
+    if ((*page).local_free).is_null() {
+    } else {
         _mi_assert_fail(
             b"page->local_free == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7700 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 32],
-                &[libc::c_char; 32],
-            >(b"mi_page_free_list_extend_secure\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 32], &[libc::c_char; 32]>(
+                b"mi_page_free_list_extend_secure\0",
+            ))
+            .as_ptr(),
         );
     };
-    if ((*page).capacity as size_t).wrapping_add(extend) <= (*page).reserved as size_t
-    {} else {
+    if ((*page).capacity as size_t).wrapping_add(extend) <= (*page).reserved as size_t {
+    } else {
         _mi_assert_fail(
-            b"page->capacity + extend <= page->reserved\0" as *const u8
-                as *const libc::c_char,
+            b"page->capacity + extend <= page->reserved\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7702 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 32],
-                &[libc::c_char; 32],
-            >(b"mi_page_free_list_extend_secure\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 32], &[libc::c_char; 32]>(
+                b"mi_page_free_list_extend_secure\0",
+            ))
+            .as_ptr(),
         );
     };
-    if bsize == mi_page_block_size(page) {} else {
+    if bsize == mi_page_block_size(page) {
+    } else {
         _mi_assert_fail(
             b"bsize == mi_page_block_size(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7703 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 32],
-                &[libc::c_char; 32],
-            >(b"mi_page_free_list_extend_secure\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 32], &[libc::c_char; 32]>(
+                b"mi_page_free_list_extend_secure\0",
+            ))
+            .as_ptr(),
         );
     };
     let page_area: *mut libc::c_void = mi_page_start(page) as *mut libc::c_void;
@@ -15937,24 +14899,23 @@ unsafe extern "C" fn mi_page_free_list_extend_secure(
     }
     let slice_count: size_t = (1 as libc::c_uint as size_t) << shift;
     let slice_extend: size_t = extend / slice_count;
-    if slice_extend >= 1 as libc::c_int as size_t {} else {
+    if slice_extend >= 1 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"slice_extend >= 1\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7711 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 32],
-                &[libc::c_char; 32],
-            >(b"mi_page_free_list_extend_secure\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 32], &[libc::c_char; 32]>(
+                b"mi_page_free_list_extend_secure\0",
+            ))
+            .as_ptr(),
         );
     };
     let mut blocks: [*mut mi_block_t; 64] = [0 as *mut mi_block_t; 64];
     let mut counts: [size_t; 64] = [0; 64];
     let mut i: size_t = 0 as libc::c_int as size_t;
     while i < slice_count {
-        blocks[i
-            as usize] = mi_page_block_at(
+        blocks[i as usize] = mi_page_block_at(
             page,
             page_area,
             bsize,
@@ -15964,9 +14925,8 @@ unsafe extern "C" fn mi_page_free_list_extend_secure(
         i = i.wrapping_add(1);
         i;
     }
-    counts[slice_count.wrapping_sub(1 as libc::c_int as size_t)
-        as usize] = (counts[slice_count.wrapping_sub(1 as libc::c_int as size_t)
-        as usize])
+    counts[slice_count.wrapping_sub(1 as libc::c_int as size_t) as usize] = (counts
+        [slice_count.wrapping_sub(1 as libc::c_int as size_t) as usize])
         .wrapping_add(extend % slice_count);
     let r: uintptr_t = _mi_heap_random_next(heap);
     let mut current: size_t = r.wrapping_rem(slice_count);
@@ -15992,9 +14952,8 @@ unsafe extern "C" fn mi_page_free_list_extend_secure(
         counts[next as usize] = (counts[next as usize]).wrapping_sub(1);
         counts[next as usize];
         let block: *mut mi_block_t = blocks[current as usize];
-        blocks[current
-            as usize] = (block as *mut uint8_t).offset(bsize as isize)
-            as *mut mi_block_t;
+        blocks[current as usize] =
+            (block as *mut uint8_t).offset(bsize as isize) as *mut mi_block_t;
         mi_block_set_next(page, block, blocks[next as usize]);
         current = next;
         i_0 = i_0.wrapping_add(1);
@@ -16010,63 +14969,57 @@ unsafe extern "C" fn mi_page_free_list_extend(
     extend: size_t,
     stats: *mut mi_stats_t,
 ) {
-    if ((*page).free).is_null() {} else {
+    if ((*page).free).is_null() {
+    } else {
         _mi_assert_fail(
             b"page->free == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7745 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 25],
-                &[libc::c_char; 25],
-            >(b"mi_page_free_list_extend\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                b"mi_page_free_list_extend\0",
+            ))
+            .as_ptr(),
         );
     };
-    if ((*page).local_free).is_null() {} else {
+    if ((*page).local_free).is_null() {
+    } else {
         _mi_assert_fail(
             b"page->local_free == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7746 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 25],
-                &[libc::c_char; 25],
-            >(b"mi_page_free_list_extend\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                b"mi_page_free_list_extend\0",
+            ))
+            .as_ptr(),
         );
     };
-    if ((*page).capacity as size_t).wrapping_add(extend) <= (*page).reserved as size_t
-    {} else {
+    if ((*page).capacity as size_t).wrapping_add(extend) <= (*page).reserved as size_t {
+    } else {
         _mi_assert_fail(
-            b"page->capacity + extend <= page->reserved\0" as *const u8
-                as *const libc::c_char,
+            b"page->capacity + extend <= page->reserved\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7748 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 25],
-                &[libc::c_char; 25],
-            >(b"mi_page_free_list_extend\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                b"mi_page_free_list_extend\0",
+            ))
+            .as_ptr(),
         );
     };
-    if bsize == mi_page_block_size(page) {} else {
+    if bsize == mi_page_block_size(page) {
+    } else {
         _mi_assert_fail(
             b"bsize == mi_page_block_size(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7749 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 25],
-                &[libc::c_char; 25],
-            >(b"mi_page_free_list_extend\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                b"mi_page_free_list_extend\0",
+            ))
+            .as_ptr(),
         );
     };
     let page_area: *mut libc::c_void = mi_page_start(page) as *mut libc::c_void;
-    let start: *mut mi_block_t = mi_page_block_at(
-        page,
-        page_area,
-        bsize,
-        (*page).capacity as size_t,
-    );
+    let start: *mut mi_block_t =
+        mi_page_block_at(page, page_area, bsize, (*page).capacity as size_t);
     let last: *mut mi_block_t = mi_page_block_at(
         page,
         page_area,
@@ -16077,8 +15030,8 @@ unsafe extern "C" fn mi_page_free_list_extend(
     );
     let mut block: *mut mi_block_t = start;
     while block <= last {
-        let mut next: *mut mi_block_t = (block as *mut uint8_t).offset(bsize as isize)
-            as *mut mi_block_t;
+        let mut next: *mut mi_block_t =
+            (block as *mut uint8_t).offset(bsize as isize) as *mut mi_block_t;
         mi_block_set_next(page, block, next);
         block = next;
     }
@@ -16090,27 +15043,23 @@ unsafe extern "C" fn mi_page_extend_free(
     mut page: *mut mi_page_t,
     mut tld: *mut mi_tld_t,
 ) {
-    if ((*page).free).is_null() {} else {
+    if ((*page).free).is_null() {
+    } else {
         _mi_assert_fail(
             b"page->free == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7771 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"mi_page_extend_free\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"mi_page_extend_free\0"))
                 .as_ptr(),
         );
     };
-    if ((*page).local_free).is_null() {} else {
+    if ((*page).local_free).is_null() {
+    } else {
         _mi_assert_fail(
             b"page->local_free == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7772 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"mi_page_extend_free\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"mi_page_extend_free\0"))
                 .as_ptr(),
         );
     };
@@ -16122,28 +15071,21 @@ unsafe extern "C" fn mi_page_extend_free(
     }
     let mut page_size: size_t = 0;
     _mi_segment_page_start(_mi_page_segment(page), page, &mut page_size);
-    _mi_stat_counter_increase(
-        &mut (*tld).stats.pages_extended,
-        1 as libc::c_int as size_t,
-    );
+    _mi_stat_counter_increase(&mut (*tld).stats.pages_extended, 1 as libc::c_int as size_t);
     let bsize: size_t = mi_page_block_size(page);
-    let mut extend: size_t = ((*page).reserved as libc::c_int
-        - (*page).capacity as libc::c_int) as size_t;
-    if extend > 0 as libc::c_int as size_t {} else {
+    let mut extend: size_t =
+        ((*page).reserved as libc::c_int - (*page).capacity as libc::c_int) as size_t;
+    if extend > 0 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"extend > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7781 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"mi_page_extend_free\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"mi_page_extend_free\0"))
                 .as_ptr(),
         );
     };
-    let mut max_extend: size_t = if bsize
-        >= (4 as libc::c_int * 1024 as libc::c_int) as size_t
-    {
+    let mut max_extend: size_t = if bsize >= (4 as libc::c_int * 1024 as libc::c_int) as size_t {
         1 as libc::c_int as size_t
     } else {
         (4 as libc::c_int * 1024 as libc::c_int) as size_t / bsize
@@ -16151,15 +15093,13 @@ unsafe extern "C" fn mi_page_extend_free(
     if max_extend < 1 as libc::c_int as size_t {
         max_extend = 1 as libc::c_int as size_t;
     }
-    if max_extend > 0 as libc::c_int as size_t {} else {
+    if max_extend > 0 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"max_extend > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7784 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"mi_page_extend_free\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"mi_page_extend_free\0"))
                 .as_ptr(),
         );
     };
@@ -16168,28 +15108,24 @@ unsafe extern "C" fn mi_page_extend_free(
     }
     if extend > 0 as libc::c_int as size_t
         && extend.wrapping_add((*page).capacity as size_t) <= (*page).reserved as size_t
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"extend > 0 && extend + page->capacity <= page->reserved\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7788 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"mi_page_extend_free\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"mi_page_extend_free\0"))
                 .as_ptr(),
         );
     };
-    if extend < (1 as libc::c_ulong) << 16 as libc::c_int {} else {
+    if extend < (1 as libc::c_ulong) << 16 as libc::c_int {
+    } else {
         _mi_assert_fail(
             b"extend < (1UL<<16)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7789 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"mi_page_extend_free\0"))
+            (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"mi_page_extend_free\0"))
                 .as_ptr(),
         );
     };
@@ -16198,9 +15134,8 @@ unsafe extern "C" fn mi_page_extend_free(
     } else {
         mi_page_free_list_extend_secure(heap, page, bsize, extend, &mut (*tld).stats);
     }
-    (*page)
-        .capacity = ((*page).capacity as libc::c_int + extend as uint16_t as libc::c_int)
-        as uint16_t;
+    (*page).capacity =
+        ((*page).capacity as libc::c_int + extend as uint16_t as libc::c_int) as uint16_t;
     _mi_stat_increase(&mut (*tld).stats.page_committed, extend * bsize);
 }
 unsafe extern "C" fn mi_page_init(
@@ -16209,71 +15144,55 @@ unsafe extern "C" fn mi_page_init(
     mut block_size: size_t,
     mut tld: *mut mi_tld_t,
 ) {
-    if !page.is_null() {} else {
+    if !page.is_null() {
+    } else {
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7801 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"mi_page_init\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"mi_page_init\0")).as_ptr(),
         );
     };
     let mut segment: *mut mi_segment_t = _mi_page_segment(page);
-    if !segment.is_null() {} else {
+    if !segment.is_null() {
+    } else {
         _mi_assert_fail(
             b"segment != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7803 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"mi_page_init\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"mi_page_init\0")).as_ptr(),
         );
     };
-    if block_size > 0 as libc::c_int as size_t {} else {
+    if block_size > 0 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"block_size > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7804 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"mi_page_init\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"mi_page_init\0")).as_ptr(),
         );
     };
     mi_page_set_heap(page, heap);
     (*page).block_size = block_size;
     let mut page_size: size_t = 0;
     (*page).page_start = _mi_segment_page_start(segment, page, &mut page_size);
-    if page_size / block_size < ((1 as libc::c_long) << 16 as libc::c_int) as size_t
-    {} else {
+    if page_size / block_size < ((1 as libc::c_long) << 16 as libc::c_int) as size_t {
+    } else {
         _mi_assert_fail(
             b"page_size / block_size < (1L<<16)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7810 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"mi_page_init\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"mi_page_init\0")).as_ptr(),
         );
     };
     (*page).reserved = (page_size / block_size) as uint16_t;
-    if (*page).reserved as libc::c_int > 0 as libc::c_int {} else {
+    if (*page).reserved as libc::c_int > 0 as libc::c_int {
+    } else {
         _mi_assert_fail(
             b"page->reserved > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7812 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"mi_page_init\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"mi_page_init\0")).as_ptr(),
         );
     };
     (*page).keys[0 as libc::c_int as usize] = _mi_heap_random_next(heap);
@@ -16286,130 +15205,100 @@ unsafe extern "C" fn mi_page_init(
     } else {
         (*page).block_size_shift = 0 as libc::c_int as uint8_t;
     }
-    if (*page).capacity as libc::c_int == 0 as libc::c_int {} else {
+    if (*page).capacity as libc::c_int == 0 as libc::c_int {
+    } else {
         _mi_assert_fail(
             b"page->capacity == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7830 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"mi_page_init\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"mi_page_init\0")).as_ptr(),
         );
     };
-    if ((*page).free).is_null() {} else {
+    if ((*page).free).is_null() {
+    } else {
         _mi_assert_fail(
             b"page->free == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7831 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"mi_page_init\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"mi_page_init\0")).as_ptr(),
         );
     };
-    if (*page).used as libc::c_int == 0 as libc::c_int {} else {
+    if (*page).used as libc::c_int == 0 as libc::c_int {
+    } else {
         _mi_assert_fail(
             b"page->used == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7832 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"mi_page_init\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"mi_page_init\0")).as_ptr(),
         );
     };
-    if (*page).xthread_free == 0 as libc::c_int as mi_thread_free_t {} else {
+    if (*page).xthread_free == 0 as libc::c_int as mi_thread_free_t {
+    } else {
         _mi_assert_fail(
             b"page->xthread_free == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7833 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"mi_page_init\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"mi_page_init\0")).as_ptr(),
         );
     };
-    if ((*page).next).is_null() {} else {
+    if ((*page).next).is_null() {
+    } else {
         _mi_assert_fail(
             b"page->next == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7834 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"mi_page_init\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"mi_page_init\0")).as_ptr(),
         );
     };
-    if ((*page).prev).is_null() {} else {
+    if ((*page).prev).is_null() {
+    } else {
         _mi_assert_fail(
             b"page->prev == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7835 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"mi_page_init\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"mi_page_init\0")).as_ptr(),
         );
     };
-    if (*page).retire_expire() as libc::c_int == 0 as libc::c_int {} else {
+    if (*page).retire_expire() as libc::c_int == 0 as libc::c_int {
+    } else {
         _mi_assert_fail(
             b"page->retire_expire == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7836 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"mi_page_init\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"mi_page_init\0")).as_ptr(),
         );
     };
-    if !mi_page_has_aligned(page) {} else {
+    if !mi_page_has_aligned(page) {
+    } else {
         _mi_assert_fail(
             b"!mi_page_has_aligned(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7837 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"mi_page_init\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"mi_page_init\0")).as_ptr(),
         );
     };
-    if (*page).keys[0 as libc::c_int as usize] != 0 as libc::c_int as uintptr_t {} else {
+    if (*page).keys[0 as libc::c_int as usize] != 0 as libc::c_int as uintptr_t {
+    } else {
         _mi_assert_fail(
             b"page->keys[0] != 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7839 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"mi_page_init\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"mi_page_init\0")).as_ptr(),
         );
     };
-    if (*page).keys[1 as libc::c_int as usize] != 0 as libc::c_int as uintptr_t {} else {
+    if (*page).keys[1 as libc::c_int as usize] != 0 as libc::c_int as uintptr_t {
+    } else {
         _mi_assert_fail(
             b"page->keys[1] != 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7840 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"mi_page_init\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"mi_page_init\0")).as_ptr(),
         );
     };
     if (*page).block_size_shift as libc::c_int == 0 as libc::c_int
-        || block_size
-            == (1 as libc::c_int as size_t) << (*page).block_size_shift as libc::c_int
-    {} else {
+        || block_size == (1 as libc::c_int as size_t) << (*page).block_size_shift as libc::c_int
+    {
+    } else {
         _mi_assert_fail(
             b"page->block_size_shift == 0 || (block_size == ((size_t)1 << page->block_size_shift))\0"
                 as *const u8 as *const libc::c_char,
@@ -16423,41 +15312,34 @@ unsafe extern "C" fn mi_page_init(
         );
     };
     mi_page_extend_free(heap, page, tld);
-    if mi_page_immediate_available(page) as libc::c_int != 0 {} else {
+    if mi_page_immediate_available(page) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_page_immediate_available(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7845 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"mi_page_init\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"mi_page_init\0")).as_ptr(),
         );
     };
 }
 unsafe extern "C" fn mi_page_is_expandable(mut page: *const mi_page_t) -> bool {
-    if !page.is_null() {} else {
+    if !page.is_null() {
+    } else {
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7849 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"mi_page_is_expandable\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"mi_page_is_expandable\0"))
                 .as_ptr(),
         );
     };
-    if (*page).capacity as libc::c_int <= (*page).reserved as libc::c_int {} else {
+    if (*page).capacity as libc::c_int <= (*page).reserved as libc::c_int {
+    } else {
         _mi_assert_fail(
             b"page->capacity <= page->reserved\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7850 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"mi_page_is_expandable\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"mi_page_is_expandable\0"))
                 .as_ptr(),
         );
     };
@@ -16481,17 +15363,17 @@ unsafe extern "C" fn mi_page_queue_find_free_ex(
         _mi_page_free_collect(page, 0 as libc::c_int != 0);
         let immediate_available: bool = mi_page_immediate_available(page);
         if !immediate_available && !mi_page_is_expandable(page) {
-            if !mi_page_is_in_full(page) && !mi_page_immediate_available(page) {} else {
+            if !mi_page_is_in_full(page) && !mi_page_immediate_available(page) {
+            } else {
                 _mi_assert_fail(
                     b"!mi_page_is_in_full(page) && !mi_page_immediate_available(page)\0"
                         as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     7872 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 27],
-                        &[libc::c_char; 27],
-                    >(b"mi_page_queue_find_free_ex\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
+                        b"mi_page_queue_find_free_ex\0",
+                    ))
+                    .as_ptr(),
                 );
             };
             mi_page_to_full(page, pq);
@@ -16499,24 +15381,22 @@ unsafe extern "C" fn mi_page_queue_find_free_ex(
             if page_candidate.is_null() {
                 page_candidate = page;
                 candidate_count = 0 as libc::c_int as size_t;
-            } else if (*page).used as libc::c_int
-                >= (*page_candidate).used as libc::c_int
-            {
+            } else if (*page).used as libc::c_int >= (*page_candidate).used as libc::c_int {
                 page_candidate = page;
             }
             if immediate_available as libc::c_int != 0
                 || candidate_count > 8 as libc::c_int as size_t
             {
-                if !page_candidate.is_null() {} else {
+                if !page_candidate.is_null() {
+                } else {
                     _mi_assert_fail(
                         b"page_candidate!=NULL\0" as *const u8 as *const libc::c_char,
                         b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                         7884 as libc::c_int as libc::c_uint,
-                        (*::core::mem::transmute::<
-                            &[u8; 27],
-                            &[libc::c_char; 27],
-                        >(b"mi_page_queue_find_free_ex\0"))
-                            .as_ptr(),
+                        (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
+                            b"mi_page_queue_find_free_ex\0",
+                        ))
+                        .as_ptr(),
                     );
                 };
                 break;
@@ -16529,16 +15409,16 @@ unsafe extern "C" fn mi_page_queue_find_free_ex(
         page = page_candidate;
     }
     if !page.is_null() && !mi_page_immediate_available(page) {
-        if mi_page_is_expandable(page) as libc::c_int != 0 {} else {
+        if mi_page_is_expandable(page) as libc::c_int != 0 {
+        } else {
             _mi_assert_fail(
                 b"mi_page_is_expandable(page)\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 7902 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 27],
-                    &[libc::c_char; 27],
-                >(b"mi_page_queue_find_free_ex\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
+                    b"mi_page_queue_find_free_ex\0",
+                ))
+                .as_ptr(),
             );
         };
         mi_page_extend_free(heap, page, (*heap).tld);
@@ -16553,17 +15433,17 @@ unsafe extern "C" fn mi_page_queue_find_free_ex(
         mi_page_queue_move_to_front(heap, pq, page);
         (*page).set_retire_expire(0 as libc::c_int as uint8_t);
     }
-    if page.is_null() || mi_page_immediate_available(page) as libc::c_int != 0 {} else {
+    if page.is_null() || mi_page_immediate_available(page) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"page == NULL || mi_page_immediate_available(page)\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7916 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 27],
-                &[libc::c_char; 27],
-            >(b"mi_page_queue_find_free_ex\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
+                b"mi_page_queue_find_free_ex\0",
+            ))
+            .as_ptr(),
         );
     };
     return page;
@@ -16584,36 +15464,32 @@ unsafe extern "C" fn mi_find_free_page(
     }
     return mi_page_queue_find_free_ex(heap, pq, 1 as libc::c_int != 0);
 }
-static mut deferred_free: Option::<mi_deferred_free_fun> = None;
-static mut deferred_arg: *mut libc::c_void = 0 as *const libc::c_void
-    as *mut libc::c_void;
+static mut deferred_free: Option<mi_deferred_free_fun> = None;
+static mut deferred_arg: *mut libc::c_void = 0 as *const libc::c_void as *mut libc::c_void;
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_deferred_free(mut heap: *mut mi_heap_t, mut force: bool) {
     (*(*heap).tld).heartbeat = ((*(*heap).tld).heartbeat).wrapping_add(1);
     (*(*heap).tld).heartbeat;
-    if deferred_free.is_some() && !(*(*heap).tld).recurse {
+    if (*(&raw mut deferred_free)).is_some() && !(*(*heap).tld).recurse {
         (*(*heap).tld).recurse = 1 as libc::c_int != 0;
-        deferred_free
-            .expect(
-                "non-null function pointer",
-            )(
+        deferred_free.expect("non-null function pointer")(
             force,
             (*(*heap).tld).heartbeat,
-            ::core::intrinsics::atomic_load_relaxed(&mut deferred_arg),
+            ::core::intrinsics::atomic_load_relaxed(&raw mut deferred_arg),
         );
         (*(*heap).tld).recurse = 0 as libc::c_int != 0;
     }
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_register_deferred_free(
-    mut fn_0: Option::<mi_deferred_free_fun>,
+    mut fn_0: Option<mi_deferred_free_fun>,
     mut arg: *mut libc::c_void,
 ) {
     ::core::ptr::write_volatile(
-        &mut deferred_free as *mut Option::<mi_deferred_free_fun>,
+        &raw mut deferred_free as *mut Option<mi_deferred_free_fun>,
         fn_0,
     );
-    ::core::intrinsics::atomic_store_release(&mut deferred_arg, arg);
+    ::core::intrinsics::atomic_store_release(&raw mut deferred_arg, arg);
 }
 unsafe extern "C" fn mi_huge_page_alloc(
     mut heap: *mut mi_heap_t,
@@ -16623,109 +15499,97 @@ unsafe extern "C" fn mi_huge_page_alloc(
     let mut block_size: size_t = _mi_os_good_alloc_size(size);
     if mi_bin(block_size) as libc::c_uint == 73 as libc::c_uint
         || page_alignment > 0 as libc::c_int as size_t
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"mi_bin(block_size) == MI_BIN_HUGE || page_alignment > 0\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7956 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 19],
-                &[libc::c_char; 19],
-            >(b"mi_huge_page_alloc\0"))
+            (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(b"mi_huge_page_alloc\0"))
                 .as_ptr(),
         );
     };
     let mut pq: *mut mi_page_queue_t = mi_page_queue(
         heap,
         ((1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
             .wrapping_div(2 as libc::c_int as libc::c_ulonglong)
             .wrapping_add(1 as libc::c_int as libc::c_ulonglong) as size_t,
     );
-    if mi_page_queue_is_huge(pq) as libc::c_int != 0 {} else {
+    if mi_page_queue_is_huge(pq) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_page_queue_is_huge(pq)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7961 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 19],
-                &[libc::c_char; 19],
-            >(b"mi_huge_page_alloc\0"))
+            (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(b"mi_huge_page_alloc\0"))
                 .as_ptr(),
         );
     };
-    let mut page: *mut mi_page_t = mi_page_fresh_alloc(
-        heap,
-        pq,
-        block_size,
-        page_alignment,
-    );
+    let mut page: *mut mi_page_t = mi_page_fresh_alloc(heap, pq, block_size, page_alignment);
     if !page.is_null() {
-        if mi_page_block_size(page) >= size {} else {
+        if mi_page_block_size(page) >= size {
+        } else {
             _mi_assert_fail(
-                b"mi_page_block_size(page) >= size\0" as *const u8
-                    as *const libc::c_char,
+                b"mi_page_block_size(page) >= size\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 7965 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 19],
-                    &[libc::c_char; 19],
-                >(b"mi_huge_page_alloc\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(
+                    b"mi_huge_page_alloc\0",
+                ))
+                .as_ptr(),
             );
         };
-        if mi_page_immediate_available(page) as libc::c_int != 0 {} else {
+        if mi_page_immediate_available(page) as libc::c_int != 0 {
+        } else {
             _mi_assert_fail(
-                b"mi_page_immediate_available(page)\0" as *const u8
-                    as *const libc::c_char,
+                b"mi_page_immediate_available(page)\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 7966 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 19],
-                    &[libc::c_char; 19],
-                >(b"mi_huge_page_alloc\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(
+                    b"mi_huge_page_alloc\0",
+                ))
+                .as_ptr(),
             );
         };
-        if mi_page_is_huge(page) as libc::c_int != 0 {} else {
+        if mi_page_is_huge(page) as libc::c_int != 0 {
+        } else {
             _mi_assert_fail(
                 b"mi_page_is_huge(page)\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 7967 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 19],
-                    &[libc::c_char; 19],
-                >(b"mi_huge_page_alloc\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(
+                    b"mi_huge_page_alloc\0",
+                ))
+                .as_ptr(),
             );
         };
         if (*_mi_page_segment(page)).page_kind as libc::c_uint
             == MI_PAGE_HUGE as libc::c_int as libc::c_uint
-        {} else {
+        {
+        } else {
             _mi_assert_fail(
                 b"_mi_page_segment(page)->page_kind == MI_PAGE_HUGE\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 7968 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 19],
-                    &[libc::c_char; 19],
-                >(b"mi_huge_page_alloc\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(
+                    b"mi_huge_page_alloc\0",
+                ))
+                .as_ptr(),
             );
         };
-        if (*_mi_page_segment(page)).used == 1 as libc::c_int as size_t {} else {
+        if (*_mi_page_segment(page)).used == 1 as libc::c_int as size_t {
+        } else {
             _mi_assert_fail(
                 b"_mi_page_segment(page)->used==1\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 7969 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 19],
-                    &[libc::c_char; 19],
-                >(b"mi_huge_page_alloc\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(
+                    b"mi_huge_page_alloc\0",
+                ))
+                .as_ptr(),
             );
         };
         _mi_stat_increase(&mut (*(*heap).tld).stats.huge, mi_page_block_size(page));
@@ -16741,21 +15605,20 @@ unsafe extern "C" fn mi_find_page(
     mut size: size_t,
     mut huge_alignment: size_t,
 ) -> *mut mi_page_t {
-    let req_size: size_t = size
-        .wrapping_sub(::core::mem::size_of::<mi_padding_t>() as libc::c_ulong);
+    let req_size: size_t =
+        size.wrapping_sub(::core::mem::size_of::<mi_padding_t>() as libc::c_ulong);
     if (req_size as libc::c_ulonglong
         > ((1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
             .wrapping_div(2 as libc::c_int as libc::c_ulonglong)
             .wrapping_sub(
-                ::core::mem::size_of::<mi_padding_t>() as libc::c_ulong
-                    as libc::c_ulonglong,
-            ) || huge_alignment > 0 as libc::c_int as size_t) as libc::c_int
-        as libc::c_long != 0
+                ::core::mem::size_of::<mi_padding_t>() as libc::c_ulong as libc::c_ulonglong
+            )
+        || huge_alignment > 0 as libc::c_int as size_t) as libc::c_int as libc::c_long
+        != 0
     {
-        if (req_size > 9223372036854775807 as libc::c_long as size_t) as libc::c_int
-            as libc::c_long != 0
+        if (req_size > 9223372036854775807 as libc::c_long as size_t) as libc::c_int as libc::c_long
+            != 0
         {
             _mi_error_message(
                 75 as libc::c_int,
@@ -16765,18 +15628,16 @@ unsafe extern "C" fn mi_find_page(
             );
             return 0 as *mut mi_page_t;
         } else {
-            return mi_huge_page_alloc(heap, size, huge_alignment)
+            return mi_huge_page_alloc(heap, size, huge_alignment);
         }
     } else {
-        if size >= ::core::mem::size_of::<mi_padding_t>() as libc::c_ulong {} else {
+        if size >= ::core::mem::size_of::<mi_padding_t>() as libc::c_ulong {
+        } else {
             _mi_assert_fail(
                 b"size >= MI_PADDING_SIZE\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 7992 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 13],
-                    &[libc::c_char; 13],
-                >(b"mi_find_page\0"))
+                (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"mi_find_page\0"))
                     .as_ptr(),
             );
         };
@@ -16790,15 +15651,13 @@ pub unsafe extern "C" fn _mi_malloc_generic(
     mut zero: bool,
     mut huge_alignment: size_t,
 ) -> *mut libc::c_void {
-    if !heap.is_null() {} else {
+    if !heap.is_null() {
+    } else {
         _mi_assert_fail(
             b"heap != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             7999 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 19],
-                &[libc::c_char; 19],
-            >(b"_mi_malloc_generic\0"))
+            (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(b"_mi_malloc_generic\0"))
                 .as_ptr(),
         );
     };
@@ -16808,15 +15667,13 @@ pub unsafe extern "C" fn _mi_malloc_generic(
             return 0 as *mut libc::c_void;
         }
     }
-    if mi_heap_is_initialized(heap) as libc::c_int != 0 {} else {
+    if mi_heap_is_initialized(heap) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_heap_is_initialized(heap)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8004 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 19],
-                &[libc::c_char; 19],
-            >(b"_mi_malloc_generic\0"))
+            (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(b"_mi_malloc_generic\0"))
                 .as_ptr(),
         );
     };
@@ -16828,60 +15685,56 @@ pub unsafe extern "C" fn _mi_malloc_generic(
         page = mi_find_page(heap, size, huge_alignment);
     }
     if page.is_null() as libc::c_int as libc::c_long != 0 {
-        let req_size: size_t = size
-            .wrapping_sub(::core::mem::size_of::<mi_padding_t>() as libc::c_ulong);
+        let req_size: size_t =
+            size.wrapping_sub(::core::mem::size_of::<mi_padding_t>() as libc::c_ulong);
         _mi_error_message(
             12 as libc::c_int,
-            b"unable to allocate memory (%zu bytes)\n\0" as *const u8
-                as *const libc::c_char,
+            b"unable to allocate memory (%zu bytes)\n\0" as *const u8 as *const libc::c_char,
             req_size,
         );
         return 0 as *mut libc::c_void;
     }
-    if mi_page_immediate_available(page) as libc::c_int != 0 {} else {
+    if mi_page_immediate_available(page) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_page_immediate_available(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8017 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 19],
-                &[libc::c_char; 19],
-            >(b"_mi_malloc_generic\0"))
+            (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(b"_mi_malloc_generic\0"))
                 .as_ptr(),
         );
     };
-    if mi_page_block_size(page) >= size {} else {
+    if mi_page_block_size(page) >= size {
+    } else {
         _mi_assert_fail(
             b"mi_page_block_size(page) >= size\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8018 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 19],
-                &[libc::c_char; 19],
-            >(b"_mi_malloc_generic\0"))
+            (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(b"_mi_malloc_generic\0"))
                 .as_ptr(),
         );
     };
-    if (zero as libc::c_int != 0 && mi_page_is_huge(page) as libc::c_int != 0)
-        as libc::c_int as libc::c_long != 0
+    if (zero as libc::c_int != 0 && mi_page_is_huge(page) as libc::c_int != 0) as libc::c_int
+        as libc::c_long
+        != 0
     {
         let mut p: *mut libc::c_void = _mi_page_malloc(heap, page, size);
-        if !p.is_null() {} else {
+        if !p.is_null() {
+        } else {
             _mi_assert_fail(
                 b"p != NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 8021 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 19],
-                    &[libc::c_char; 19],
-                >(b"_mi_malloc_generic\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(
+                    b"_mi_malloc_generic\0",
+                ))
+                .as_ptr(),
             );
         };
         _mi_memzero_aligned(p, mi_page_usable_block_size(page));
         return p;
     } else {
-        return _mi_page_malloc_zero(heap, page, size, zero)
+        return _mi_page_malloc_zero(heap, page, size, zero);
     };
 }
 #[inline]
@@ -16898,37 +15751,25 @@ unsafe extern "C" fn qround(
 ) {
     let ref mut fresh40 = *x.offset(a as isize);
     *fresh40 = (*fresh40).wrapping_add(*x.offset(b as isize));
-    *x
-        .offset(
-            d as isize,
-        ) = rotl(
+    *x.offset(d as isize) = rotl(
         *x.offset(d as isize) ^ *x.offset(a as isize),
         16 as libc::c_int as uint32_t,
     );
     let ref mut fresh41 = *x.offset(c as isize);
     *fresh41 = (*fresh41).wrapping_add(*x.offset(d as isize));
-    *x
-        .offset(
-            b as isize,
-        ) = rotl(
+    *x.offset(b as isize) = rotl(
         *x.offset(b as isize) ^ *x.offset(c as isize),
         12 as libc::c_int as uint32_t,
     );
     let ref mut fresh42 = *x.offset(a as isize);
     *fresh42 = (*fresh42).wrapping_add(*x.offset(b as isize));
-    *x
-        .offset(
-            d as isize,
-        ) = rotl(
+    *x.offset(d as isize) = rotl(
         *x.offset(d as isize) ^ *x.offset(a as isize),
         8 as libc::c_int as uint32_t,
     );
     let ref mut fresh43 = *x.offset(c as isize);
     *fresh43 = (*fresh43).wrapping_add(*x.offset(d as isize));
-    *x
-        .offset(
-            b as isize,
-        ) = rotl(
+    *x.offset(b as isize) = rotl(
         *x.offset(b as isize) ^ *x.offset(c as isize),
         7 as libc::c_int as uint32_t,
     );
@@ -17003,26 +15844,18 @@ unsafe extern "C" fn chacha_block(mut ctx: *mut mi_random_ctx_t) {
     }
     let mut i_1: size_t = 0 as libc::c_int as size_t;
     while i_1 < 16 as libc::c_int as size_t {
-        (*ctx)
-            .output[i_1
-            as usize] = (x[i_1 as usize]).wrapping_add((*ctx).input[i_1 as usize]);
+        (*ctx).output[i_1 as usize] = (x[i_1 as usize]).wrapping_add((*ctx).input[i_1 as usize]);
         i_1 = i_1.wrapping_add(1);
         i_1;
     }
     (*ctx).output_available = 16 as libc::c_int;
-    (*ctx)
-        .input[12 as libc::c_int
-        as usize] = ((*ctx).input[12 as libc::c_int as usize])
-        .wrapping_add(1 as libc::c_int as uint32_t);
+    (*ctx).input[12 as libc::c_int as usize] =
+        ((*ctx).input[12 as libc::c_int as usize]).wrapping_add(1 as libc::c_int as uint32_t);
     if (*ctx).input[12 as libc::c_int as usize] == 0 as libc::c_int as uint32_t {
-        (*ctx)
-            .input[13 as libc::c_int
-            as usize] = ((*ctx).input[13 as libc::c_int as usize])
-            .wrapping_add(1 as libc::c_int as uint32_t);
+        (*ctx).input[13 as libc::c_int as usize] =
+            ((*ctx).input[13 as libc::c_int as usize]).wrapping_add(1 as libc::c_int as uint32_t);
         if (*ctx).input[13 as libc::c_int as usize] == 0 as libc::c_int as uint32_t {
-            (*ctx)
-                .input[14 as libc::c_int
-                as usize] = ((*ctx).input[14 as libc::c_int as usize])
+            (*ctx).input[14 as libc::c_int as usize] = ((*ctx).input[14 as libc::c_int as usize])
                 .wrapping_add(1 as libc::c_int as uint32_t);
         }
     }
@@ -17032,11 +15865,9 @@ unsafe extern "C" fn chacha_next32(mut ctx: *mut mi_random_ctx_t) -> uint32_t {
         chacha_block(ctx);
         (*ctx).output_available = 16 as libc::c_int;
     }
-    let x: uint32_t = (*ctx)
-        .output[(16 as libc::c_int - (*ctx).output_available) as usize];
-    (*ctx)
-        .output[(16 as libc::c_int - (*ctx).output_available)
-        as usize] = 0 as libc::c_int as uint32_t;
+    let x: uint32_t = (*ctx).output[(16 as libc::c_int - (*ctx).output_available) as usize];
+    (*ctx).output[(16 as libc::c_int - (*ctx).output_available) as usize] =
+        0 as libc::c_int as uint32_t;
     (*ctx).output_available -= 1;
     (*ctx).output_available;
     return x;
@@ -17064,17 +15895,15 @@ unsafe extern "C" fn chacha_init(
     );
     let mut i: size_t = 0 as libc::c_int as size_t;
     while i < 4 as libc::c_int as size_t {
-        let mut sigma: *const uint8_t = b"expand 32-byte k\0" as *const u8
-            as *const libc::c_char as *mut uint8_t;
+        let mut sigma: *const uint8_t =
+            b"expand 32-byte k\0" as *const u8 as *const libc::c_char as *mut uint8_t;
         (*ctx).input[i as usize] = read32(sigma, i);
         i = i.wrapping_add(1);
         i;
     }
     let mut i_0: size_t = 0 as libc::c_int as size_t;
     while i_0 < 8 as libc::c_int as size_t {
-        (*ctx)
-            .input[i_0.wrapping_add(4 as libc::c_int as size_t)
-            as usize] = read32(key, i_0);
+        (*ctx).input[i_0.wrapping_add(4 as libc::c_int as size_t) as usize] = read32(key, i_0);
         i_0 = i_0.wrapping_add(1);
         i_0;
     }
@@ -17101,23 +15930,17 @@ unsafe extern "C" fn chacha_split(
     (*ctx_new).input[12 as libc::c_int as usize] = 0 as libc::c_int as uint32_t;
     (*ctx_new).input[13 as libc::c_int as usize] = 0 as libc::c_int as uint32_t;
     (*ctx_new).input[14 as libc::c_int as usize] = nonce as uint32_t;
-    (*ctx_new)
-        .input[15 as libc::c_int as usize] = (nonce >> 32 as libc::c_int) as uint32_t;
-    if (*ctx).input[14 as libc::c_int as usize]
-        != (*ctx_new).input[14 as libc::c_int as usize]
-        || (*ctx).input[15 as libc::c_int as usize]
-            != (*ctx_new).input[15 as libc::c_int as usize]
-    {} else {
+    (*ctx_new).input[15 as libc::c_int as usize] = (nonce >> 32 as libc::c_int) as uint32_t;
+    if (*ctx).input[14 as libc::c_int as usize] != (*ctx_new).input[14 as libc::c_int as usize]
+        || (*ctx).input[15 as libc::c_int as usize] != (*ctx_new).input[15 as libc::c_int as usize]
+    {
+    } else {
         _mi_assert_fail(
             b"ctx->input[14] != ctx_new->input[14] || ctx->input[15] != ctx_new->input[15]\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8104 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 13],
-                &[libc::c_char; 13],
-            >(b"chacha_split\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 13], &[libc::c_char; 13]>(b"chacha_split\0")).as_ptr(),
         );
     };
     chacha_block(ctx_new);
@@ -17131,27 +15954,23 @@ pub unsafe extern "C" fn _mi_random_split(
     mut ctx: *mut mi_random_ctx_t,
     mut ctx_new: *mut mi_random_ctx_t,
 ) {
-    if mi_random_is_initialized(ctx) as libc::c_int != 0 {} else {
+    if mi_random_is_initialized(ctx) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_random_is_initialized(ctx)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8113 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 17],
-                &[libc::c_char; 17],
-            >(b"_mi_random_split\0"))
+            (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"_mi_random_split\0"))
                 .as_ptr(),
         );
     };
-    if ctx != ctx_new {} else {
+    if ctx != ctx_new {
+    } else {
         _mi_assert_fail(
             b"ctx != ctx_new\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8114 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 17],
-                &[libc::c_char; 17],
-            >(b"_mi_random_split\0"))
+            (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"_mi_random_split\0"))
                 .as_ptr(),
         );
     };
@@ -17159,15 +15978,13 @@ pub unsafe extern "C" fn _mi_random_split(
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_random_next(mut ctx: *mut mi_random_ctx_t) -> uintptr_t {
-    if mi_random_is_initialized(ctx) as libc::c_int != 0 {} else {
+    if mi_random_is_initialized(ctx) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_random_is_initialized(ctx)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8118 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 16],
-                &[libc::c_char; 16],
-            >(b"_mi_random_next\0"))
+            (*::core::mem::transmute::<&[u8; 16], &[libc::c_char; 16]>(b"_mi_random_next\0"))
                 .as_ptr(),
         );
     };
@@ -17176,14 +15993,12 @@ pub unsafe extern "C" fn _mi_random_next(mut ctx: *mut mi_random_ctx_t) -> uintp
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_os_random_weak(mut extra_seed: uintptr_t) -> uintptr_t {
-    let mut x: uintptr_t = ::core::mem::transmute::<
-        Option::<unsafe extern "C" fn(uintptr_t) -> uintptr_t>,
-        uintptr_t,
-    >(Some(_mi_os_random_weak as unsafe extern "C" fn(uintptr_t) -> uintptr_t))
-        ^ extra_seed;
+    let mut x: uintptr_t =
+        ::core::mem::transmute::<Option<unsafe extern "C" fn(uintptr_t) -> uintptr_t>, uintptr_t>(
+            Some(_mi_os_random_weak as unsafe extern "C" fn(uintptr_t) -> uintptr_t),
+        ) ^ extra_seed;
     x ^= _mi_prim_clock_now() as uintptr_t;
-    let mut max: uintptr_t = ((x ^ x >> 17 as libc::c_int)
-        & 0xf as libc::c_int as uintptr_t)
+    let mut max: uintptr_t = ((x ^ x >> 17 as libc::c_int) & 0xf as libc::c_int as uintptr_t)
         .wrapping_add(1 as libc::c_int as uintptr_t);
     let mut i: uintptr_t = 0 as libc::c_int as uintptr_t;
     while i < max {
@@ -17191,24 +16006,19 @@ pub unsafe extern "C" fn _mi_os_random_weak(mut extra_seed: uintptr_t) -> uintpt
         i = i.wrapping_add(1);
         i;
     }
-    if x != 0 as libc::c_int as uintptr_t {} else {
+    if x != 0 as libc::c_int as uintptr_t {
+    } else {
         _mi_assert_fail(
             b"x != 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8134 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 19],
-                &[libc::c_char; 19],
-            >(b"_mi_os_random_weak\0"))
+            (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(b"_mi_os_random_weak\0"))
                 .as_ptr(),
         );
     };
     return x;
 }
-unsafe extern "C" fn mi_random_init_ex(
-    mut ctx: *mut mi_random_ctx_t,
-    mut use_weak: bool,
-) {
+unsafe extern "C" fn mi_random_init_ex(mut ctx: *mut mi_random_ctx_t, mut use_weak: bool) {
     let mut key: [uint8_t; 32] = [0; 32];
     if use_weak as libc::c_int != 0
         || !_mi_prim_random_buf(
@@ -17218,8 +16028,7 @@ unsafe extern "C" fn mi_random_init_ex(
     {
         if !use_weak {
             _mi_warning_message(
-                b"unable to use secure randomness\n\0" as *const u8
-                    as *const libc::c_char,
+                b"unable to use secure randomness\n\0" as *const u8 as *const libc::c_char,
             );
         }
         let mut x: uintptr_t = _mi_os_random_weak(0 as libc::c_int as uintptr_t);
@@ -17276,16 +16085,16 @@ unsafe extern "C" fn mi_segment_enqueue(
     (*segment).next = 0 as *mut mi_segment_s;
     (*segment).prev = (*queue).last;
     if !((*queue).last).is_null() {
-        if ((*(*queue).last).next).is_null() {} else {
+        if ((*(*queue).last).next).is_null() {
+        } else {
             _mi_assert_fail(
                 b"queue->last->next == NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 8197 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 19],
-                    &[libc::c_char; 19],
-                >(b"mi_segment_enqueue\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(
+                    b"mi_segment_enqueue\0",
+                ))
+                .as_ptr(),
             );
         };
         (*(*queue).last).next = segment;
@@ -17300,11 +16109,11 @@ unsafe extern "C" fn mi_segment_free_queue_of_kind(
     mut tld: *mut mi_segments_tld_t,
 ) -> *mut mi_segment_queue_t {
     if kind as libc::c_uint == MI_PAGE_SMALL as libc::c_int as libc::c_uint {
-        return &mut (*tld).small_free
+        return &mut (*tld).small_free;
     } else if kind as libc::c_uint == MI_PAGE_MEDIUM as libc::c_int as libc::c_uint {
-        return &mut (*tld).medium_free
+        return &mut (*tld).medium_free;
     } else {
-        return 0 as *mut mi_segment_queue_t
+        return 0 as *mut mi_segment_queue_t;
     };
 }
 unsafe extern "C" fn mi_segment_free_queue(
@@ -17319,7 +16128,8 @@ unsafe extern "C" fn mi_segment_remove_from_free_queue(
 ) {
     let mut queue: *mut mi_segment_queue_t = mi_segment_free_queue(segment, tld);
     let mut in_queue: bool = !queue.is_null()
-        && (!((*segment).next).is_null() || !((*segment).prev).is_null()
+        && (!((*segment).next).is_null()
+            || !((*segment).prev).is_null()
             || (*queue).first == segment);
     if in_queue {
         mi_segment_queue_remove(queue, segment);
@@ -17333,36 +16143,30 @@ unsafe extern "C" fn mi_segment_insert_in_free_queue(
 }
 unsafe extern "C" fn mi_segment_page_size(mut segment: *const mi_segment_t) -> size_t {
     if (*segment).capacity > 1 as libc::c_int as size_t {
-        if (*segment).page_kind as libc::c_uint
-            <= MI_PAGE_MEDIUM as libc::c_int as libc::c_uint
-        {} else {
+        if (*segment).page_kind as libc::c_uint <= MI_PAGE_MEDIUM as libc::c_int as libc::c_uint {
+        } else {
             _mi_assert_fail(
-                b"segment->page_kind <= MI_PAGE_MEDIUM\0" as *const u8
-                    as *const libc::c_char,
+                b"segment->page_kind <= MI_PAGE_MEDIUM\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 8226 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 21],
-                    &[libc::c_char; 21],
-                >(b"mi_segment_page_size\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(
+                    b"mi_segment_page_size\0",
+                ))
+                .as_ptr(),
             );
         };
         return (1 as libc::c_int as size_t) << (*segment).page_shift;
     } else {
-        if (*segment).page_kind as libc::c_uint
-            >= MI_PAGE_LARGE as libc::c_int as libc::c_uint
-        {} else {
+        if (*segment).page_kind as libc::c_uint >= MI_PAGE_LARGE as libc::c_int as libc::c_uint {
+        } else {
             _mi_assert_fail(
-                b"segment->page_kind >= MI_PAGE_LARGE\0" as *const u8
-                    as *const libc::c_char,
+                b"segment->page_kind >= MI_PAGE_LARGE\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 8230 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 21],
-                    &[libc::c_char; 21],
-                >(b"mi_segment_page_size\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(
+                    b"mi_segment_page_size\0",
+                ))
+                .as_ptr(),
             );
         };
         return (*segment).segment_size;
@@ -17385,36 +16189,33 @@ unsafe extern "C" fn mi_page_not_in_queue(
     mut page: *const mi_page_t,
     mut tld: *mut mi_segments_tld_t,
 ) -> bool {
-    if !page.is_null() {} else {
+    if !page.is_null() {
+    } else {
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8270 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 21],
-                &[libc::c_char; 21],
-            >(b"mi_page_not_in_queue\0"))
+            (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(b"mi_page_not_in_queue\0"))
                 .as_ptr(),
         );
     };
     if !((*page).next).is_null() || !((*page).prev).is_null() {
-        if mi_pages_purge_contains(page, tld) as libc::c_int != 0 {} else {
+        if mi_pages_purge_contains(page, tld) as libc::c_int != 0 {
+        } else {
             _mi_assert_fail(
-                b"mi_pages_purge_contains(page, tld)\0" as *const u8
-                    as *const libc::c_char,
+                b"mi_pages_purge_contains(page, tld)\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 8272 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 21],
-                    &[libc::c_char; 21],
-                >(b"mi_page_not_in_queue\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(
+                    b"mi_page_not_in_queue\0",
+                ))
+                .as_ptr(),
             );
         };
         return 0 as libc::c_int != 0;
     } else {
         return (*tld).pages_purge.first != page as *mut mi_page_t
-            && (*tld).pages_purge.last != page as *mut mi_page_t
+            && (*tld).pages_purge.last != page as *mut mi_page_t;
     };
 }
 unsafe extern "C" fn mi_segment_protect_range(
@@ -17436,15 +16237,13 @@ unsafe extern "C" fn mi_segment_protect(
     if 0 as libc::c_int != 0 as libc::c_int {
         let os_psize: size_t = _mi_os_page_size();
         if ((*segment).segment_info_size).wrapping_sub(os_psize)
-            >= (::core::mem::size_of::<mi_segment_t>() as libc::c_ulong)
-                .wrapping_add(
-                    ((*segment).capacity)
-                        .wrapping_sub(1 as libc::c_int as size_t)
-                        .wrapping_mul(
-                            ::core::mem::size_of::<mi_page_t>() as libc::c_ulong,
-                        ),
-                )
-        {} else {
+            >= (::core::mem::size_of::<mi_segment_t>() as libc::c_ulong).wrapping_add(
+                ((*segment).capacity)
+                    .wrapping_sub(1 as libc::c_int as size_t)
+                    .wrapping_mul(::core::mem::size_of::<mi_page_t>() as libc::c_ulong),
+            )
+        {
+        } else {
             _mi_assert_fail(
                 b"(segment->segment_info_size - os_psize) >= (sizeof(mi_segment_t) + ((segment->capacity - 1) * sizeof(mi_page_t)))\0"
                     as *const u8 as *const libc::c_char,
@@ -17459,18 +16258,19 @@ unsafe extern "C" fn mi_segment_protect(
         };
         if (segment as uintptr_t)
             .wrapping_add((*segment).segment_info_size)
-            .wrapping_rem(os_psize) == 0 as libc::c_int as libc::c_ulong
-        {} else {
+            .wrapping_rem(os_psize)
+            == 0 as libc::c_int as libc::c_ulong
+        {
+        } else {
             _mi_assert_fail(
-                b"((uintptr_t)segment + segment->segment_info_size) % os_psize == 0\0"
-                    as *const u8 as *const libc::c_char,
+                b"((uintptr_t)segment + segment->segment_info_size) % os_psize == 0\0" as *const u8
+                    as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 8291 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 19],
-                    &[libc::c_char; 19],
-                >(b"mi_segment_protect\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(
+                    b"mi_segment_protect\0",
+                ))
+                .as_ptr(),
             );
         };
         mi_segment_protect_range(
@@ -17481,19 +16281,18 @@ unsafe extern "C" fn mi_segment_protect(
             protect,
         );
         if 0 as libc::c_int <= 1 as libc::c_int
-            || (*segment).page_kind as libc::c_uint
-                >= MI_PAGE_LARGE as libc::c_int as libc::c_uint
-        {} else {
+            || (*segment).page_kind as libc::c_uint >= MI_PAGE_LARGE as libc::c_int as libc::c_uint
+        {
+        } else {
             _mi_assert_fail(
                 b"MI_SECURE <= 1 || segment->page_kind >= MI_PAGE_LARGE\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 8297 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 19],
-                    &[libc::c_char; 19],
-                >(b"mi_segment_protect\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(
+                    b"mi_segment_protect\0",
+                ))
+                .as_ptr(),
             );
         };
         let mut start: *mut uint8_t = (segment as *mut uint8_t)
@@ -17507,11 +16306,7 @@ unsafe extern "C" fn mi_segment_protect(
                     0 as *mut bool,
                     (*tld).stats,
                 ) {
-                    mi_segment_protect_range(
-                        start as *mut libc::c_void,
-                        os_psize,
-                        protect,
-                    );
+                    mi_segment_protect_range(start as *mut libc::c_void, os_psize, protect);
                 }
             }
         } else {
@@ -17524,63 +16319,52 @@ unsafe extern "C" fn mi_page_purge(
     mut page: *mut mi_page_t,
     mut tld: *mut mi_segments_tld_t,
 ) {
-    if (*page).is_committed() as libc::c_int != 0 {} else {
+    if (*page).is_committed() as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"page->is_committed\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8323 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 14],
-                &[libc::c_char; 14],
-            >(b"mi_page_purge\0"))
+            (*::core::mem::transmute::<&[u8; 14], &[libc::c_char; 14]>(b"mi_page_purge\0"))
                 .as_ptr(),
         );
     };
-    if (*page).segment_in_use() == 0 {} else {
+    if (*page).segment_in_use() == 0 {
+    } else {
         _mi_assert_fail(
             b"!page->segment_in_use\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8324 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 14],
-                &[libc::c_char; 14],
-            >(b"mi_page_purge\0"))
+            (*::core::mem::transmute::<&[u8; 14], &[libc::c_char; 14]>(b"mi_page_purge\0"))
                 .as_ptr(),
         );
     };
     if !(*segment).allow_purge {
         return;
     }
-    if (*page).used as libc::c_int == 0 as libc::c_int {} else {
+    if (*page).used as libc::c_int == 0 as libc::c_int {
+    } else {
         _mi_assert_fail(
             b"page->used == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8326 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 14],
-                &[libc::c_char; 14],
-            >(b"mi_page_purge\0"))
+            (*::core::mem::transmute::<&[u8; 14], &[libc::c_char; 14]>(b"mi_page_purge\0"))
                 .as_ptr(),
         );
     };
-    if ((*page).free).is_null() {} else {
+    if ((*page).free).is_null() {
+    } else {
         _mi_assert_fail(
             b"page->free == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8327 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 14],
-                &[libc::c_char; 14],
-            >(b"mi_page_purge\0"))
+            (*::core::mem::transmute::<&[u8; 14], &[libc::c_char; 14]>(b"mi_page_purge\0"))
                 .as_ptr(),
         );
     };
     let mut psize: size_t = 0;
-    let mut start: *mut libc::c_void = mi_segment_raw_page_start(
-        segment,
-        page,
-        &mut psize,
-    ) as *mut libc::c_void;
+    let mut start: *mut libc::c_void =
+        mi_segment_raw_page_start(segment, page, &mut psize) as *mut libc::c_void;
     let needs_recommit: bool = _mi_os_purge(start, psize, (*tld).stats);
     if needs_recommit {
         (*page).set_is_committed(0 as libc::c_int as uint8_t);
@@ -17594,16 +16378,16 @@ unsafe extern "C" fn mi_page_ensure_committed(
     if (*page).is_committed() != 0 {
         return 1 as libc::c_int != 0;
     }
-    if (*segment).allow_decommit as libc::c_int != 0 {} else {
+    if (*segment).allow_decommit as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"segment->allow_decommit\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8336 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 25],
-                &[libc::c_char; 25],
-            >(b"mi_page_ensure_committed\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                b"mi_page_ensure_committed\0",
+            ))
+            .as_ptr(),
         );
     };
     let mut psize: size_t = 0;
@@ -17643,16 +16427,16 @@ unsafe extern "C" fn mi_page_set_expire(mut page: *mut mi_page_t, mut expire: ui
     (*page).free = expire as uintptr_t as *mut mi_block_t;
 }
 unsafe extern "C" fn mi_page_purge_set_expire(mut page: *mut mi_page_t) {
-    if mi_page_get_expire(page) == 0 as libc::c_int as uint32_t {} else {
+    if mi_page_get_expire(page) == 0 as libc::c_int as uint32_t {
+    } else {
         _mi_assert_fail(
             b"mi_page_get_expire(page)==0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8360 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 25],
-                &[libc::c_char; 25],
-            >(b"mi_page_purge_set_expire\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                b"mi_page_purge_set_expire\0",
+            ))
+            .as_ptr(),
         );
     };
     let mut expire: uint32_t = (_mi_clock_now() as uint32_t as libc::c_long
@@ -17671,40 +16455,40 @@ unsafe extern "C" fn mi_segment_schedule_purge(
     mut page: *mut mi_page_t,
     mut tld: *mut mi_segments_tld_t,
 ) {
-    if (*page).segment_in_use() == 0 {} else {
+    if (*page).segment_in_use() == 0 {
+    } else {
         _mi_assert_fail(
             b"!page->segment_in_use\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8369 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 26],
-                &[libc::c_char; 26],
-            >(b"mi_segment_schedule_purge\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 26], &[libc::c_char; 26]>(
+                b"mi_segment_schedule_purge\0",
+            ))
+            .as_ptr(),
         );
     };
-    if mi_page_not_in_queue(page, tld) as libc::c_int != 0 {} else {
+    if mi_page_not_in_queue(page, tld) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_page_not_in_queue(page,tld)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8370 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 26],
-                &[libc::c_char; 26],
-            >(b"mi_segment_schedule_purge\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 26], &[libc::c_char; 26]>(
+                b"mi_segment_schedule_purge\0",
+            ))
+            .as_ptr(),
         );
     };
-    if _mi_page_segment(page) == segment {} else {
+    if _mi_page_segment(page) == segment {
+    } else {
         _mi_assert_fail(
             b"_mi_page_segment(page)==segment\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8372 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 26],
-                &[libc::c_char; 26],
-            >(b"mi_segment_schedule_purge\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 26], &[libc::c_char; 26]>(
+                b"mi_segment_schedule_purge\0",
+            ))
+            .as_ptr(),
         );
     };
     if !(*segment).allow_purge {
@@ -17718,16 +16502,16 @@ unsafe extern "C" fn mi_segment_schedule_purge(
         (*page).next = (*pq).first;
         (*page).prev = 0 as *mut mi_page_s;
         if ((*pq).first).is_null() {
-            if ((*pq).last).is_null() {} else {
+            if ((*pq).last).is_null() {
+            } else {
                 _mi_assert_fail(
                     b"pq->last == NULL\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     8383 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 26],
-                        &[libc::c_char; 26],
-                    >(b"mi_segment_schedule_purge\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 26], &[libc::c_char; 26]>(
+                        b"mi_segment_schedule_purge\0",
+                    ))
+                    .as_ptr(),
                 );
             };
             (*pq).last = page;
@@ -17746,51 +16530,43 @@ unsafe extern "C" fn mi_page_purge_remove(
         return;
     }
     let mut pq: *mut mi_page_queue_t = &mut (*tld).pages_purge;
-    if !pq.is_null() {} else {
+    if !pq.is_null() {
+    } else {
         _mi_assert_fail(
             b"pq!=NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8395 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 21],
-                &[libc::c_char; 21],
-            >(b"mi_page_purge_remove\0"))
+            (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(b"mi_page_purge_remove\0"))
                 .as_ptr(),
         );
     };
-    if (*page).segment_in_use() == 0 {} else {
+    if (*page).segment_in_use() == 0 {
+    } else {
         _mi_assert_fail(
             b"!page->segment_in_use\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8396 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 21],
-                &[libc::c_char; 21],
-            >(b"mi_page_purge_remove\0"))
+            (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(b"mi_page_purge_remove\0"))
                 .as_ptr(),
         );
     };
-    if mi_page_get_expire(page) != 0 as libc::c_int as uint32_t {} else {
+    if mi_page_get_expire(page) != 0 as libc::c_int as uint32_t {
+    } else {
         _mi_assert_fail(
             b"mi_page_get_expire(page) != 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8397 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 21],
-                &[libc::c_char; 21],
-            >(b"mi_page_purge_remove\0"))
+            (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(b"mi_page_purge_remove\0"))
                 .as_ptr(),
         );
     };
-    if mi_pages_purge_contains(page, tld) as libc::c_int != 0 {} else {
+    if mi_pages_purge_contains(page, tld) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_pages_purge_contains(page, tld)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8398 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 21],
-                &[libc::c_char; 21],
-            >(b"mi_page_purge_remove\0"))
+            (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(b"mi_page_purge_remove\0"))
                 .as_ptr(),
         );
     };
@@ -17820,28 +16596,24 @@ unsafe extern "C" fn mi_segment_remove_all_purges(
     }
     let mut i: size_t = 0 as libc::c_int as size_t;
     while i < (*segment).capacity {
-        let mut page: *mut mi_page_t = &mut *((*segment).pages)
-            .as_mut_ptr()
-            .offset(i as isize) as *mut mi_page_t;
+        let mut page: *mut mi_page_t =
+            &mut *((*segment).pages).as_mut_ptr().offset(i as isize) as *mut mi_page_t;
         if (*page).segment_in_use() == 0 {
             mi_page_purge_remove(page, tld);
-            if force_purge as libc::c_int != 0
-                && (*page).is_committed() as libc::c_int != 0
-            {
+            if force_purge as libc::c_int != 0 && (*page).is_committed() as libc::c_int != 0 {
                 mi_page_purge(segment, page, tld);
             }
         } else {
-            if mi_page_not_in_queue(page, tld) as libc::c_int != 0 {} else {
+            if mi_page_not_in_queue(page, tld) as libc::c_int != 0 {
+            } else {
                 _mi_assert_fail(
-                    b"mi_page_not_in_queue(page,tld)\0" as *const u8
-                        as *const libc::c_char,
+                    b"mi_page_not_in_queue(page,tld)\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     8417 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 29],
-                        &[libc::c_char; 29],
-                    >(b"mi_segment_remove_all_purges\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 29], &[libc::c_char; 29]>(
+                        b"mi_segment_remove_all_purges\0",
+                    ))
+                    .as_ptr(),
                 );
             };
         }
@@ -17849,10 +16621,7 @@ unsafe extern "C" fn mi_segment_remove_all_purges(
         i;
     }
 }
-unsafe extern "C" fn mi_pages_try_purge(
-    mut force: bool,
-    mut tld: *mut mi_segments_tld_t,
-) {
+unsafe extern "C" fn mi_pages_try_purge(mut force: bool, mut tld: *mut mi_segments_tld_t) {
     if mi_option_get(mi_option_purge_delay) < 0 as libc::c_int as libc::c_long {
         return;
     }
@@ -17860,8 +16629,7 @@ unsafe extern "C" fn mi_pages_try_purge(
     let mut pq: *mut mi_page_queue_t = &mut (*tld).pages_purge;
     let mut page: *mut mi_page_t = (*pq).last;
     while !page.is_null()
-        && (force as libc::c_int != 0
-            || mi_page_purge_is_expired(page, now) as libc::c_int != 0)
+        && (force as libc::c_int != 0 || mi_page_purge_is_expired(page, now) as libc::c_int != 0)
     {
         let prev: *mut mi_page_t = (*page).prev;
         mi_page_purge_remove(page, tld);
@@ -17875,12 +16643,8 @@ unsafe extern "C" fn mi_pages_try_purge(
         (*pq).first = 0 as *mut mi_page_t;
     };
 }
-unsafe extern "C" fn mi_segment_raw_page_size(
-    mut segment: *const mi_segment_t,
-) -> size_t {
-    return if (*segment).page_kind as libc::c_uint
-        == MI_PAGE_HUGE as libc::c_int as libc::c_uint
-    {
+unsafe extern "C" fn mi_segment_raw_page_size(mut segment: *const mi_segment_t) -> size_t {
+    return if (*segment).page_kind as libc::c_uint == MI_PAGE_HUGE as libc::c_int as libc::c_uint {
         (*segment).segment_size
     } else {
         (1 as libc::c_int as size_t) << (*segment).page_shift
@@ -17892,8 +16656,8 @@ unsafe extern "C" fn mi_segment_raw_page_start(
     mut page_size: *mut size_t,
 ) -> *mut uint8_t {
     let mut psize: size_t = mi_segment_raw_page_size(segment);
-    let mut p: *mut uint8_t = (segment as *mut uint8_t)
-        .offset(((*page).segment_idx as size_t * psize) as isize);
+    let mut p: *mut uint8_t =
+        (segment as *mut uint8_t).offset(((*page).segment_idx as size_t * psize) as isize);
     if (*page).segment_idx as libc::c_int == 0 as libc::c_int {
         p = p.offset((*segment).segment_info_size as isize);
         psize = psize.wrapping_sub((*segment).segment_info_size);
@@ -17903,30 +16667,29 @@ unsafe extern "C" fn mi_segment_raw_page_start(
     }
     if (*page).block_size == 0 as libc::c_int as size_t
         || _mi_ptr_page(p as *mut libc::c_void) == page as *mut mi_page_t
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"page->block_size == 0 || _mi_ptr_page(p) == page\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8458 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 26],
-                &[libc::c_char; 26],
-            >(b"mi_segment_raw_page_start\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 26], &[libc::c_char; 26]>(
+                b"mi_segment_raw_page_start\0",
+            ))
+            .as_ptr(),
         );
     };
-    if _mi_ptr_segment(p as *const libc::c_void) == segment as *mut mi_segment_t
-    {} else {
+    if _mi_ptr_segment(p as *const libc::c_void) == segment as *mut mi_segment_t {
+    } else {
         _mi_assert_fail(
             b"_mi_ptr_segment(p) == segment\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8459 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 26],
-                &[libc::c_char; 26],
-            >(b"mi_segment_raw_page_start\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 26], &[libc::c_char; 26]>(
+                b"mi_segment_raw_page_start\0",
+            ))
+            .as_ptr(),
         );
     };
     return p;
@@ -17946,56 +16709,46 @@ pub unsafe extern "C" fn _mi_segment_page_start(
                 << 3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
                 .wrapping_div(4 as libc::c_int as libc::c_ulonglong)
     {
-        if (*segment).page_kind as libc::c_uint
-            <= MI_PAGE_MEDIUM as libc::c_int as libc::c_uint
-        {} else {
+        if (*segment).page_kind as libc::c_uint <= MI_PAGE_MEDIUM as libc::c_int as libc::c_uint {
+        } else {
             _mi_assert_fail(
-                b"segment->page_kind <= MI_PAGE_MEDIUM\0" as *const u8
-                    as *const libc::c_char,
+                b"segment->page_kind <= MI_PAGE_MEDIUM\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 8468 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 23],
-                    &[libc::c_char; 23],
-                >(b"_mi_segment_page_start\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
+                    b"_mi_segment_page_start\0",
+                ))
+                .as_ptr(),
             );
         };
-        let mut adjust: size_t = block_size
-            .wrapping_sub((p as uintptr_t).wrapping_rem(block_size));
+        let mut adjust: size_t = block_size.wrapping_sub((p as uintptr_t).wrapping_rem(block_size));
         if adjust < block_size && psize >= block_size.wrapping_add(adjust) {
             p = p.offset(adjust as isize);
             psize = psize.wrapping_sub(adjust);
-            if (p as uintptr_t).wrapping_rem(block_size)
-                == 0 as libc::c_int as libc::c_ulong
-            {} else {
+            if (p as uintptr_t).wrapping_rem(block_size) == 0 as libc::c_int as libc::c_ulong {
+            } else {
                 _mi_assert_fail(
-                    b"(uintptr_t)p % block_size == 0\0" as *const u8
-                        as *const libc::c_char,
+                    b"(uintptr_t)p % block_size == 0\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     8473 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 23],
-                        &[libc::c_char; 23],
-                    >(b"_mi_segment_page_start\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
+                        b"_mi_segment_page_start\0",
+                    ))
+                    .as_ptr(),
                 );
             };
         }
     }
-    if _mi_is_aligned(p as *mut libc::c_void, 16 as libc::c_int as size_t) as libc::c_int
-        != 0
-    {} else {
+    if _mi_is_aligned(p as *mut libc::c_void, 16 as libc::c_int as size_t) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
-            b"_mi_is_aligned(p, MI_MAX_ALIGN_SIZE)\0" as *const u8
-                as *const libc::c_char,
+            b"_mi_is_aligned(p, MI_MAX_ALIGN_SIZE)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8476 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 23],
-                &[libc::c_char; 23],
-            >(b"_mi_segment_page_start\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
+                b"_mi_segment_page_start\0",
+            ))
+            .as_ptr(),
         );
     };
     if block_size == 0 as libc::c_int as size_t
@@ -18004,7 +16757,8 @@ pub unsafe extern "C" fn _mi_segment_page_start(
                 << 3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
                 .wrapping_div(4 as libc::c_int as libc::c_ulonglong)
         || _mi_is_aligned(p as *mut libc::c_void, block_size) as libc::c_int != 0
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"block_size == 0 || block_size > MI_MAX_ALIGN_GUARANTEE || _mi_is_aligned(p,block_size)\0"
                 as *const u8 as *const libc::c_char,
@@ -18020,29 +16774,28 @@ pub unsafe extern "C" fn _mi_segment_page_start(
     if !page_size.is_null() {
         *page_size = psize;
     }
-    if _mi_ptr_page(p as *mut libc::c_void) == page as *mut mi_page_t {} else {
+    if _mi_ptr_page(p as *mut libc::c_void) == page as *mut mi_page_t {
+    } else {
         _mi_assert_fail(
             b"_mi_ptr_page(p) == page\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8479 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 23],
-                &[libc::c_char; 23],
-            >(b"_mi_segment_page_start\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
+                b"_mi_segment_page_start\0",
+            ))
+            .as_ptr(),
         );
     };
-    if _mi_ptr_segment(p as *const libc::c_void) == segment as *mut mi_segment_t
-    {} else {
+    if _mi_ptr_segment(p as *const libc::c_void) == segment as *mut mi_segment_t {
+    } else {
         _mi_assert_fail(
             b"_mi_ptr_segment(p) == segment\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8480 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 23],
-                &[libc::c_char; 23],
-            >(b"_mi_segment_page_start\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
+                b"_mi_segment_page_start\0",
+            ))
+            .as_ptr(),
         );
     };
     return p;
@@ -18077,8 +16830,7 @@ unsafe extern "C" fn mi_segment_calculate_sizes(
     }
     return (if required == 0 as libc::c_int as size_t {
         (1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
     } else {
         _mi_align_up(
             required
@@ -18097,15 +16849,13 @@ unsafe extern "C" fn mi_segments_track_size(
     } else {
         _mi_stat_decrease(&mut (*(*tld).stats).segments, 1 as libc::c_int as size_t);
     }
-    (*tld)
-        .count = ((*tld).count)
-        .wrapping_add(
-            (if segment_size >= 0 as libc::c_int as libc::c_long {
-                1 as libc::c_int
-            } else {
-                -(1 as libc::c_int)
-            }) as size_t,
-        );
+    (*tld).count = ((*tld).count).wrapping_add(
+        (if segment_size >= 0 as libc::c_int as libc::c_long {
+            1 as libc::c_int
+        } else {
+            -(1 as libc::c_int)
+        }) as size_t,
+    );
     if (*tld).count > (*tld).peak_count {
         (*tld).peak_count = (*tld).count;
     }
@@ -18128,16 +16878,16 @@ unsafe extern "C" fn mi_segment_os_free(
         (*segment).was_reclaimed = 0 as libc::c_int != 0;
     }
     if 0 as libc::c_int != 0 as libc::c_int {
-        if !(*segment).memid.is_pinned {} else {
+        if !(*segment).memid.is_pinned {
+        } else {
             _mi_assert_fail(
                 b"!segment->memid.is_pinned\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 8521 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 19],
-                    &[libc::c_char; 19],
-                >(b"mi_segment_os_free\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(
+                    b"mi_segment_os_free\0",
+                ))
+                .as_ptr(),
             );
         };
         mi_segment_protect(segment, 0 as libc::c_int != 0, (*tld).os);
@@ -18147,9 +16897,8 @@ unsafe extern "C" fn mi_segment_os_free(
     let page_size: size_t = mi_segment_raw_page_size(segment);
     let mut i: size_t = 0 as libc::c_int as size_t;
     while i < (*segment).capacity {
-        let mut page: *mut mi_page_t = &mut *((*segment).pages)
-            .as_mut_ptr()
-            .offset(i as isize) as *mut mi_page_t;
+        let mut page: *mut mi_page_t =
+            &mut *((*segment).pages).as_mut_ptr().offset(i as isize) as *mut mi_page_t;
         if (*page).is_committed() != 0 {
             committed_size = committed_size.wrapping_add(page_size);
         }
@@ -18161,7 +16910,8 @@ unsafe extern "C" fn mi_segment_os_free(
     }
     if fully_committed as libc::c_int != 0 && committed_size == segment_size
         || !fully_committed && committed_size < segment_size
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"(fully_committed && committed_size == segment_size) || (!fully_committed && committed_size < segment_size)\0"
                 as *const u8 as *const libc::c_char,
@@ -18183,34 +16933,31 @@ unsafe extern "C" fn mi_segment_os_free(
     );
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn _mi_segments_collect(
-    mut force: bool,
-    mut tld: *mut mi_segments_tld_t,
-) {
+pub unsafe extern "C" fn _mi_segments_collect(mut force: bool, mut tld: *mut mi_segments_tld_t) {
     mi_pages_try_purge(force, tld);
     if !_mi_is_main_thread() {
-        if ((*tld).pages_purge.first).is_null() {} else {
+        if ((*tld).pages_purge.first).is_null() {
+        } else {
             _mi_assert_fail(
                 b"tld->pages_purge.first == NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 8540 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 21],
-                    &[libc::c_char; 21],
-                >(b"_mi_segments_collect\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(
+                    b"_mi_segments_collect\0",
+                ))
+                .as_ptr(),
             );
         };
-        if ((*tld).pages_purge.last).is_null() {} else {
+        if ((*tld).pages_purge.last).is_null() {
+        } else {
             _mi_assert_fail(
                 b"tld->pages_purge.last == NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 8541 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 21],
-                    &[libc::c_char; 21],
-                >(b"_mi_segments_collect\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(
+                    b"_mi_segments_collect\0",
+                ))
+                .as_ptr(),
             );
         };
     }
@@ -18241,15 +16988,14 @@ unsafe extern "C" fn mi_segment_os_alloc(
     let mut allow_large: bool = !eager_delayed && 0 as libc::c_int == 0 as libc::c_int;
     let mut align_offset: size_t = 0 as libc::c_int as size_t;
     let mut alignment: size_t = ((1 as libc::c_ulonglong)
-        << 3 as libc::c_int
-            + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))) as size_t;
+        << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+        as size_t;
     if page_alignment > 0 as libc::c_int as size_t {
         alignment = page_alignment;
         align_offset = _mi_align_up(
             pre_size,
             ((1 as libc::c_ulonglong)
-                << 3 as libc::c_int
-                    + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+                << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
                 as size_t,
         );
         segment_size = segment_size.wrapping_add(align_offset.wrapping_sub(pre_size));
@@ -18268,16 +17014,16 @@ unsafe extern "C" fn mi_segment_os_alloc(
         return 0 as *mut mi_segment_t;
     }
     if !memid.initially_committed {
-        if !memid.is_pinned {} else {
+        if !memid.is_pinned {
+        } else {
             _mi_assert_fail(
                 b"!memid.is_pinned\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 8563 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 20],
-                    &[libc::c_char; 20],
-                >(b"mi_segment_os_alloc\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(
+                    b"mi_segment_os_alloc\0",
+                ))
+                .as_ptr(),
             );
         };
         let mut ok: bool = _mi_os_commit(
@@ -18299,8 +17045,7 @@ unsafe extern "C" fn mi_segment_os_alloc(
     }
     (*segment).memid = memid;
     (*segment).allow_decommit = !memid.is_pinned;
-    (*segment)
-        .allow_purge = (*segment).allow_decommit as libc::c_int != 0
+    (*segment).allow_purge = (*segment).allow_decommit as libc::c_int != 0
         && mi_option_get(mi_option_purge_delay) >= 0 as libc::c_int as libc::c_long;
     (*segment).segment_size = segment_size;
     (*segment).subproc = (*tld).subproc;
@@ -18321,7 +17066,8 @@ unsafe extern "C" fn mi_segment_alloc(
         && page_kind as libc::c_uint > MI_PAGE_LARGE as libc::c_int as libc::c_uint
         || required == 0 as libc::c_int as size_t
             && page_kind as libc::c_uint <= MI_PAGE_LARGE as libc::c_int as libc::c_uint
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"(required > 0 && page_kind > MI_PAGE_LARGE)|| (required==0 && page_kind <= MI_PAGE_LARGE)\0"
                 as *const u8 as *const libc::c_char,
@@ -18339,57 +17085,46 @@ unsafe extern "C" fn mi_segment_alloc(
         if page_shift
             == (3 as libc::c_int
                 + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
-                + 1 as libc::c_int) as size_t && required > 0 as libc::c_int as size_t
-        {} else {
+                + 1 as libc::c_int) as size_t
+            && required > 0 as libc::c_int as size_t
+        {
+        } else {
             _mi_assert_fail(
                 b"page_shift == MI_SEGMENT_SHIFT + 1 && required > 0\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 8586 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 17],
-                    &[libc::c_char; 17],
-                >(b"mi_segment_alloc\0"))
+                (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"mi_segment_alloc\0"))
                     .as_ptr(),
             );
         };
         capacity = 1 as libc::c_int as size_t;
     } else {
-        if required == 0 as libc::c_int as size_t
-            && page_alignment == 0 as libc::c_int as size_t
-        {} else {
+        if required == 0 as libc::c_int as size_t && page_alignment == 0 as libc::c_int as size_t {
+        } else {
             _mi_assert_fail(
-                b"required == 0 && page_alignment == 0\0" as *const u8
-                    as *const libc::c_char,
+                b"required == 0 && page_alignment == 0\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 8590 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 17],
-                    &[libc::c_char; 17],
-                >(b"mi_segment_alloc\0"))
+                (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"mi_segment_alloc\0"))
                     .as_ptr(),
             );
         };
         let mut page_size: size_t = (1 as libc::c_int as size_t) << page_shift;
         capacity = ((1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
             .wrapping_div(page_size as libc::c_ulonglong) as size_t;
         if ((1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
             .wrapping_rem(page_size as libc::c_ulonglong)
             == 0 as libc::c_int as libc::c_ulonglong
-        {} else {
+        {
+        } else {
             _mi_assert_fail(
-                b"MI_SEGMENT_SIZE % page_size == 0\0" as *const u8
-                    as *const libc::c_char,
+                b"MI_SEGMENT_SIZE % page_size == 0\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 8593 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 17],
-                    &[libc::c_char; 17],
-                >(b"mi_segment_alloc\0"))
+                (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"mi_segment_alloc\0"))
                     .as_ptr(),
             );
         };
@@ -18398,40 +17133,30 @@ unsafe extern "C" fn mi_segment_alloc(
                 <= ((1 as libc::c_ulonglong)
                     << 3 as libc::c_int
                         + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
-                    .wrapping_div(
-                        (1 as libc::c_ulonglong) << 13 as libc::c_int + 3 as libc::c_int,
-                    )
-        {} else {
+                    .wrapping_div((1 as libc::c_ulonglong) << 13 as libc::c_int + 3 as libc::c_int)
+        {
+        } else {
             _mi_assert_fail(
                 b"capacity >= 1 && capacity <= MI_SMALL_PAGES_PER_SEGMENT\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 8594 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 17],
-                    &[libc::c_char; 17],
-                >(b"mi_segment_alloc\0"))
+                (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"mi_segment_alloc\0"))
                     .as_ptr(),
             );
         };
     }
     let mut info_size: size_t = 0;
     let mut pre_size: size_t = 0;
-    let init_segment_size: size_t = mi_segment_calculate_sizes(
-        capacity,
-        required,
-        &mut pre_size,
-        &mut info_size,
-    );
-    if init_segment_size >= required {} else {
+    let init_segment_size: size_t =
+        mi_segment_calculate_sizes(capacity, required, &mut pre_size, &mut info_size);
+    if init_segment_size >= required {
+    } else {
         _mi_assert_fail(
             b"init_segment_size >= required\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8599 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 17],
-                &[libc::c_char; 17],
-            >(b"mi_segment_alloc\0"))
+            (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"mi_segment_alloc\0"))
                 .as_ptr(),
         );
     };
@@ -18439,8 +17164,8 @@ unsafe extern "C" fn mi_segment_alloc(
         <= MI_PAGE_MEDIUM as libc::c_int as libc::c_uint
         && _mi_current_thread_count() > 1 as libc::c_int as size_t
         && (*tld).peak_count < mi_option_get(mi_option_eager_commit_delay) as size_t;
-    let eager: bool = !eager_delayed
-        && mi_option_is_enabled(mi_option_eager_commit) as libc::c_int != 0;
+    let eager: bool =
+        !eager_delayed && mi_option_is_enabled(mi_option_eager_commit) as libc::c_int != 0;
     let init_commit: bool = eager;
     let mut segment: *mut mi_segment_t = mi_segment_os_alloc(
         eager_delayed,
@@ -18457,22 +17182,18 @@ unsafe extern "C" fn mi_segment_alloc(
         return 0 as *mut mi_segment_t;
     }
     if !segment.is_null()
-        && (segment as uintptr_t as libc::c_ulonglong)
-            .wrapping_rem(
-                (1 as libc::c_ulonglong)
-                    << 3 as libc::c_int
-                        + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)),
-            ) == 0 as libc::c_int as libc::c_ulonglong
-    {} else {
+        && (segment as uintptr_t as libc::c_ulonglong).wrapping_rem(
+            (1 as libc::c_ulonglong)
+                << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)),
+        ) == 0 as libc::c_int as libc::c_ulonglong
+    {
+    } else {
         _mi_assert_fail(
-            b"segment != NULL && (uintptr_t)segment % MI_SEGMENT_SIZE == 0\0"
-                as *const u8 as *const libc::c_char,
+            b"segment != NULL && (uintptr_t)segment % MI_SEGMENT_SIZE == 0\0" as *const u8
+                as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8607 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 17],
-                &[libc::c_char; 17],
-            >(b"mi_segment_alloc\0"))
+            (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"mi_segment_alloc\0"))
                 .as_ptr(),
         );
     };
@@ -18481,16 +17202,14 @@ unsafe extern "C" fn mi_segment_alloc(
     } else {
         1 as libc::c_int
     } != 0
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
-            b"segment->memid.is_pinned ? segment->memid.initially_committed : true\0"
-                as *const u8 as *const libc::c_char,
+            b"segment->memid.is_pinned ? segment->memid.initially_committed : true\0" as *const u8
+                as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8608 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 17],
-                &[libc::c_char; 17],
-            >(b"mi_segment_alloc\0"))
+            (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"mi_segment_alloc\0"))
                 .as_ptr(),
         );
     };
@@ -18499,19 +17218,16 @@ unsafe extern "C" fn mi_segment_alloc(
         (segment as *mut uint8_t).offset(ofs as isize) as *mut libc::c_void,
         info_size.wrapping_sub(ofs as size_t),
     );
-    let is_huge: bool = page_kind as libc::c_uint
-        == MI_PAGE_HUGE as libc::c_int as libc::c_uint;
+    let is_huge: bool = page_kind as libc::c_uint == MI_PAGE_HUGE as libc::c_int as libc::c_uint;
     let mut i: size_t = 0 as libc::c_int as size_t;
     while i < capacity {
-        if i <= 255 as libc::c_int as size_t {} else {
+        if i <= 255 as libc::c_int as size_t {
+        } else {
             _mi_assert_fail(
                 b"i <= 255\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 8613 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 17],
-                    &[libc::c_char; 17],
-                >(b"mi_segment_alloc\0"))
+                (*::core::mem::transmute::<&[u8; 17], &[libc::c_char; 17]>(b"mi_segment_alloc\0"))
                     .as_ptr(),
             );
         };
@@ -18542,15 +17258,13 @@ unsafe extern "C" fn mi_segment_free(
     mut force: bool,
     mut tld: *mut mi_segments_tld_t,
 ) {
-    if !segment.is_null() {} else {
+    if !segment.is_null() {
+    } else {
         _mi_assert_fail(
             b"segment != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8633 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 16],
-                &[libc::c_char; 16],
-            >(b"mi_segment_free\0"))
+            (*::core::mem::transmute::<&[u8; 16], &[libc::c_char; 16]>(b"mi_segment_free\0"))
                 .as_ptr(),
         );
     };
@@ -18559,31 +17273,30 @@ unsafe extern "C" fn mi_segment_free(
     }
     mi_segment_remove_all_purges(segment, 0 as libc::c_int != 0, tld);
     mi_segment_remove_from_free_queue(segment, tld);
-    if ((*segment).next).is_null() {} else {
+    if ((*segment).next).is_null() {
+    } else {
         _mi_assert_fail(
             b"segment->next == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8639 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 16],
-                &[libc::c_char; 16],
-            >(b"mi_segment_free\0"))
+            (*::core::mem::transmute::<&[u8; 16], &[libc::c_char; 16]>(b"mi_segment_free\0"))
                 .as_ptr(),
         );
     };
-    if ((*segment).prev).is_null() {} else {
+    if ((*segment).prev).is_null() {
+    } else {
         _mi_assert_fail(
             b"segment->prev == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8640 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 16],
-                &[libc::c_char; 16],
-            >(b"mi_segment_free\0"))
+            (*::core::mem::transmute::<&[u8; 16], &[libc::c_char; 16]>(b"mi_segment_free\0"))
                 .as_ptr(),
         );
     };
-    _mi_stat_decrease(&mut (*(*tld).stats).page_committed, (*segment).segment_info_size);
+    _mi_stat_decrease(
+        &mut (*(*tld).stats).page_committed,
+        (*segment).segment_info_size,
+    );
     mi_segment_os_free(segment, (*segment).segment_size, tld);
 }
 unsafe extern "C" fn mi_segment_has_free(mut segment: *const mi_segment_t) -> bool {
@@ -18594,27 +17307,23 @@ unsafe extern "C" fn mi_segment_page_claim(
     mut page: *mut mi_page_t,
     mut tld: *mut mi_segments_tld_t,
 ) -> bool {
-    if _mi_page_segment(page) == segment {} else {
+    if _mi_page_segment(page) == segment {
+    } else {
         _mi_assert_fail(
             b"_mi_page_segment(page) == segment\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8648 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"mi_segment_page_claim\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"mi_segment_page_claim\0"))
                 .as_ptr(),
         );
     };
-    if (*page).segment_in_use() == 0 {} else {
+    if (*page).segment_in_use() == 0 {
+    } else {
         _mi_assert_fail(
             b"!page->segment_in_use\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8649 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"mi_segment_page_claim\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"mi_segment_page_claim\0"))
                 .as_ptr(),
         );
     };
@@ -18629,7 +17338,8 @@ unsafe extern "C" fn mi_segment_page_claim(
         && (*page).is_committed() as libc::c_int != 0
         && (*page).used as libc::c_int == 0 as libc::c_int
         && !mi_pages_purge_contains(page, tld)
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"page->segment_in_use && page->is_committed && page->used==0 && !mi_pages_purge_contains(page,tld)\0"
                 as *const u8 as *const libc::c_char,
@@ -18642,32 +17352,29 @@ unsafe extern "C" fn mi_segment_page_claim(
                 .as_ptr(),
         );
     };
-    if (*segment).used <= (*segment).capacity {} else {
+    if (*segment).used <= (*segment).capacity {
+    } else {
         _mi_assert_fail(
             b"segment->used <= segment->capacity\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8655 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"mi_segment_page_claim\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"mi_segment_page_claim\0"))
                 .as_ptr(),
         );
     };
     if (*segment).used == (*segment).capacity
-        && (*segment).page_kind as libc::c_uint
-            <= MI_PAGE_MEDIUM as libc::c_int as libc::c_uint
+        && (*segment).page_kind as libc::c_uint <= MI_PAGE_MEDIUM as libc::c_int as libc::c_uint
     {
-        if !mi_segment_has_free(segment) {} else {
+        if !mi_segment_has_free(segment) {
+        } else {
             _mi_assert_fail(
                 b"!mi_segment_has_free(segment)\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 8657 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 22],
-                    &[libc::c_char; 22],
-                >(b"mi_segment_page_claim\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(
+                    b"mi_segment_page_claim\0",
+                ))
+                .as_ptr(),
             );
         };
         mi_segment_remove_from_free_queue(segment, tld);
@@ -18679,51 +17386,43 @@ unsafe extern "C" fn mi_segment_page_clear(
     mut page: *mut mi_page_t,
     mut tld: *mut mi_segments_tld_t,
 ) {
-    if (*page).segment_in_use() as libc::c_int != 0 {} else {
+    if (*page).segment_in_use() as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"page->segment_in_use\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8665 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"mi_segment_page_clear\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"mi_segment_page_clear\0"))
                 .as_ptr(),
         );
     };
-    if mi_page_all_free(page) as libc::c_int != 0 {} else {
+    if mi_page_all_free(page) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_page_all_free(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8666 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"mi_segment_page_clear\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"mi_segment_page_clear\0"))
                 .as_ptr(),
         );
     };
-    if (*page).is_committed() as libc::c_int != 0 {} else {
+    if (*page).is_committed() as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"page->is_committed\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8667 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"mi_segment_page_clear\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"mi_segment_page_clear\0"))
                 .as_ptr(),
         );
     };
-    if mi_page_not_in_queue(page, tld) as libc::c_int != 0 {} else {
+    if mi_page_not_in_queue(page, tld) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_page_not_in_queue(page, tld)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8668 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"mi_segment_page_clear\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"mi_segment_page_clear\0"))
                 .as_ptr(),
         );
     };
@@ -18741,8 +17440,7 @@ unsafe extern "C" fn mi_segment_page_clear(
     let mut ofs: ptrdiff_t = 2 as libc::c_ulong as ptrdiff_t;
     _mi_memzero(
         (page as *mut uint8_t).offset(ofs as isize) as *mut libc::c_void,
-        (::core::mem::size_of::<mi_page_t>() as libc::c_ulong)
-            .wrapping_sub(ofs as libc::c_ulong),
+        (::core::mem::size_of::<mi_page_t>() as libc::c_ulong).wrapping_sub(ofs as libc::c_ulong),
     );
     (*page).capacity = capacity;
     (*page).reserved = reserved;
@@ -18762,15 +17460,13 @@ pub unsafe extern "C" fn _mi_segment_page_free(
     mut force: bool,
     mut tld: *mut mi_segments_tld_t,
 ) {
-    if !page.is_null() {} else {
+    if !page.is_null() {
+    } else {
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8695 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"_mi_segment_page_free\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"_mi_segment_page_free\0"))
                 .as_ptr(),
         );
     };
@@ -18781,27 +17477,20 @@ pub unsafe extern "C" fn _mi_segment_page_free(
         mi_segment_free(segment, force, tld);
     } else if (*segment).used == (*segment).abandoned {
         mi_segment_abandon(segment, tld);
-    } else if ((*segment).used).wrapping_add(1 as libc::c_int as size_t)
-        == (*segment).capacity
-    {
-        if (*segment).page_kind as libc::c_uint
-            <= MI_PAGE_MEDIUM as libc::c_int as libc::c_uint
-        {} else {
+    } else if ((*segment).used).wrapping_add(1 as libc::c_int as size_t) == (*segment).capacity {
+        if (*segment).page_kind as libc::c_uint <= MI_PAGE_MEDIUM as libc::c_int as libc::c_uint {
+        } else {
             _mi_assert_fail(
-                b"segment->page_kind <= MI_PAGE_MEDIUM\0" as *const u8
-                    as *const libc::c_char,
+                b"segment->page_kind <= MI_PAGE_MEDIUM\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 8708 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 22],
-                    &[libc::c_char; 22],
-                >(b"_mi_segment_page_free\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(
+                    b"_mi_segment_page_free\0",
+                ))
+                .as_ptr(),
             );
         };
-        if (*segment).page_kind as libc::c_uint
-            <= MI_PAGE_MEDIUM as libc::c_int as libc::c_uint
-        {
+        if (*segment).page_kind as libc::c_uint <= MI_PAGE_MEDIUM as libc::c_int as libc::c_uint {
             mi_segment_insert_in_free_queue(segment, tld);
         }
     }
@@ -18810,27 +17499,23 @@ unsafe extern "C" fn mi_segment_abandon(
     mut segment: *mut mi_segment_t,
     mut tld: *mut mi_segments_tld_t,
 ) {
-    if (*segment).used == (*segment).abandoned {} else {
+    if (*segment).used == (*segment).abandoned {
+    } else {
         _mi_assert_fail(
             b"segment->used == segment->abandoned\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8716 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 19],
-                &[libc::c_char; 19],
-            >(b"mi_segment_abandon\0"))
+            (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(b"mi_segment_abandon\0"))
                 .as_ptr(),
         );
     };
-    if (*segment).used > 0 as libc::c_int as size_t {} else {
+    if (*segment).used > 0 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"segment->used > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8717 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 19],
-                &[libc::c_char; 19],
-            >(b"mi_segment_abandon\0"))
+            (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(b"mi_segment_abandon\0"))
                 .as_ptr(),
         );
     };
@@ -18840,16 +17525,13 @@ unsafe extern "C" fn mi_segment_abandon(
         || mi_option_is_enabled(mi_option_abandoned_page_purge) as libc::c_int != 0;
     mi_segment_remove_all_purges(segment, force_purge, tld);
     mi_segment_remove_from_free_queue(segment, tld);
-    if ((*segment).next).is_null() && ((*segment).prev).is_null() {} else {
+    if ((*segment).next).is_null() && ((*segment).prev).is_null() {
+    } else {
         _mi_assert_fail(
-            b"segment->next == NULL && segment->prev == NULL\0" as *const u8
-                as *const libc::c_char,
+            b"segment->next == NULL && segment->prev == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8723 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 19],
-                &[libc::c_char; 19],
-            >(b"mi_segment_abandon\0"))
+            (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(b"mi_segment_abandon\0"))
                 .as_ptr(),
         );
     };
@@ -18871,59 +17553,62 @@ pub unsafe extern "C" fn _mi_segment_page_abandon(
     mut page: *mut mi_page_t,
     mut tld: *mut mi_segments_tld_t,
 ) {
-    if !page.is_null() {} else {
+    if !page.is_null() {
+    } else {
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8734 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 25],
-                &[libc::c_char; 25],
-            >(b"_mi_segment_page_abandon\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                b"_mi_segment_page_abandon\0",
+            ))
+            .as_ptr(),
         );
     };
     if mi_page_thread_free_flag(page) as libc::c_uint
         == MI_NEVER_DELAYED_FREE as libc::c_int as libc::c_uint
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"mi_page_thread_free_flag(page)==MI_NEVER_DELAYED_FREE\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8735 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 25],
-                &[libc::c_char; 25],
-            >(b"_mi_segment_page_abandon\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                b"_mi_segment_page_abandon\0",
+            ))
+            .as_ptr(),
         );
     };
-    if (mi_page_heap(page)).is_null() {} else {
+    if (mi_page_heap(page)).is_null() {
+    } else {
         _mi_assert_fail(
             b"mi_page_heap(page) == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8736 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 25],
-                &[libc::c_char; 25],
-            >(b"_mi_segment_page_abandon\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                b"_mi_segment_page_abandon\0",
+            ))
+            .as_ptr(),
         );
     };
     let mut segment: *mut mi_segment_t = _mi_page_segment(page);
     (*segment).abandoned = ((*segment).abandoned).wrapping_add(1);
     (*segment).abandoned;
-    _mi_stat_increase(&mut (*(*tld).stats).pages_abandoned, 1 as libc::c_int as size_t);
-    if (*segment).abandoned <= (*segment).used {} else {
+    _mi_stat_increase(
+        &mut (*(*tld).stats).pages_abandoned,
+        1 as libc::c_int as size_t,
+    );
+    if (*segment).abandoned <= (*segment).used {
+    } else {
         _mi_assert_fail(
             b"segment->abandoned <= segment->used\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8742 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 25],
-                &[libc::c_char; 25],
-            >(b"_mi_segment_page_abandon\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                b"_mi_segment_page_abandon\0",
+            ))
+            .as_ptr(),
         );
     };
     if (*segment).used == (*segment).abandoned {
@@ -18935,19 +17620,16 @@ unsafe extern "C" fn mi_segment_check_free(
     mut block_size: size_t,
     mut all_pages_free: *mut bool,
 ) -> bool {
-    if ::core::intrinsics::atomic_load_relaxed(
-        &mut (*segment).thread_id as *mut mi_threadid_t,
-    ) == 0 as libc::c_int as mi_threadid_t
-    {} else {
+    if ::core::intrinsics::atomic_load_relaxed(&mut (*segment).thread_id as *mut mi_threadid_t)
+        == 0 as libc::c_int as mi_threadid_t
+    {
+    } else {
         _mi_assert_fail(
             b"mi_atomic_load_relaxed(&segment->thread_id) == 0\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8749 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"mi_segment_check_free\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"mi_segment_check_free\0"))
                 .as_ptr(),
         );
     };
@@ -18956,9 +17638,8 @@ unsafe extern "C" fn mi_segment_check_free(
     let mut pages_used_empty: size_t = 0 as libc::c_int as size_t;
     let mut i: size_t = 0 as libc::c_int as size_t;
     while i < (*segment).capacity {
-        let mut page: *mut mi_page_t = &mut *((*segment).pages)
-            .as_mut_ptr()
-            .offset(i as isize) as *mut mi_page_t;
+        let mut page: *mut mi_page_t =
+            &mut *((*segment).pages).as_mut_ptr().offset(i as isize) as *mut mi_page_t;
         if (*page).segment_in_use() != 0 {
             pages_used = pages_used.wrapping_add(1);
             pages_used;
@@ -18978,22 +17659,19 @@ unsafe extern "C" fn mi_segment_check_free(
         i = i.wrapping_add(1);
         i;
     }
-    if pages_used == (*segment).used && pages_used >= pages_used_empty {} else {
+    if pages_used == (*segment).used && pages_used >= pages_used_empty {
+    } else {
         _mi_assert_fail(
-            b"pages_used == segment->used && pages_used >= pages_used_empty\0"
-                as *const u8 as *const libc::c_char,
+            b"pages_used == segment->used && pages_used >= pages_used_empty\0" as *const u8
+                as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8770 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"mi_segment_check_free\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"mi_segment_check_free\0"))
                 .as_ptr(),
         );
     };
     if !all_pages_free.is_null() {
-        *all_pages_free = pages_used.wrapping_sub(pages_used_empty)
-            == 0 as libc::c_int as size_t;
+        *all_pages_free = pages_used.wrapping_sub(pages_used_empty) == 0 as libc::c_int as size_t;
     }
     return has_page;
 }
@@ -19007,13 +17685,12 @@ unsafe extern "C" fn mi_segment_reclaim(
     if !right_page_reclaimed.is_null() {
         *right_page_reclaimed = 0 as libc::c_int != 0;
     }
-    if ::core::intrinsics::atomic_load_relaxed(
-        &mut (*segment).thread_id as *mut mi_threadid_t,
-    ) == 0 as libc::c_int as mi_threadid_t
-        || ::core::intrinsics::atomic_load_relaxed(
-            &mut (*segment).thread_id as *mut mi_threadid_t,
-        ) == _mi_thread_id()
-    {} else {
+    if ::core::intrinsics::atomic_load_relaxed(&mut (*segment).thread_id as *mut mi_threadid_t)
+        == 0 as libc::c_int as mi_threadid_t
+        || ::core::intrinsics::atomic_load_relaxed(&mut (*segment).thread_id as *mut mi_threadid_t)
+            == _mi_thread_id()
+    {
+    } else {
         _mi_assert_fail(
             b"mi_atomic_load_relaxed(&segment->thread_id) == 0 || mi_atomic_load_relaxed(&segment->thread_id) == _mi_thread_id()\0"
                 as *const u8 as *const libc::c_char,
@@ -19026,16 +17703,14 @@ unsafe extern "C" fn mi_segment_reclaim(
                 .as_ptr(),
         );
     };
-    if (*segment).subproc == (*(*heap).tld).segments.subproc {} else {
+    if (*segment).subproc == (*(*heap).tld).segments.subproc {
+    } else {
         _mi_assert_fail(
             b"segment->subproc == heap->tld->segments.subproc\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8779 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 19],
-                &[libc::c_char; 19],
-            >(b"mi_segment_reclaim\0"))
+            (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(b"mi_segment_reclaim\0"))
                 .as_ptr(),
         );
     };
@@ -19045,16 +17720,13 @@ unsafe extern "C" fn mi_segment_reclaim(
     (*tld).reclaim_count = ((*tld).reclaim_count).wrapping_add(1);
     (*tld).reclaim_count;
     mi_segments_track_size((*segment).segment_size as libc::c_long, tld);
-    if ((*segment).next).is_null() && ((*segment).prev).is_null() {} else {
+    if ((*segment).next).is_null() && ((*segment).prev).is_null() {
+    } else {
         _mi_assert_fail(
-            b"segment->next == NULL && segment->prev == NULL\0" as *const u8
-                as *const libc::c_char,
+            b"segment->next == NULL && segment->prev == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8785 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 19],
-                &[libc::c_char; 19],
-            >(b"mi_segment_reclaim\0"))
+            (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(b"mi_segment_reclaim\0"))
                 .as_ptr(),
         );
     };
@@ -19064,84 +17736,79 @@ unsafe extern "C" fn mi_segment_reclaim(
     );
     let mut i: size_t = 0 as libc::c_int as size_t;
     while i < (*segment).capacity {
-        let mut page: *mut mi_page_t = &mut *((*segment).pages)
-            .as_mut_ptr()
-            .offset(i as isize) as *mut mi_page_t;
+        let mut page: *mut mi_page_t =
+            &mut *((*segment).pages).as_mut_ptr().offset(i as isize) as *mut mi_page_t;
         if (*page).segment_in_use() != 0 {
-            if (*page).is_committed() as libc::c_int != 0 {} else {
+            if (*page).is_committed() as libc::c_int != 0 {
+            } else {
                 _mi_assert_fail(
                     b"page->is_committed\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     8791 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 19],
-                        &[libc::c_char; 19],
-                    >(b"mi_segment_reclaim\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(
+                        b"mi_segment_reclaim\0",
+                    ))
+                    .as_ptr(),
                 );
             };
-            if mi_page_not_in_queue(page, tld) as libc::c_int != 0 {} else {
+            if mi_page_not_in_queue(page, tld) as libc::c_int != 0 {
+            } else {
                 _mi_assert_fail(
-                    b"mi_page_not_in_queue(page, tld)\0" as *const u8
-                        as *const libc::c_char,
+                    b"mi_page_not_in_queue(page, tld)\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     8792 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 19],
-                        &[libc::c_char; 19],
-                    >(b"mi_segment_reclaim\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(
+                        b"mi_segment_reclaim\0",
+                    ))
+                    .as_ptr(),
                 );
             };
             if mi_page_thread_free_flag(page) as libc::c_uint
                 == MI_NEVER_DELAYED_FREE as libc::c_int as libc::c_uint
-            {} else {
+            {
+            } else {
                 _mi_assert_fail(
-                    b"mi_page_thread_free_flag(page)==MI_NEVER_DELAYED_FREE\0"
-                        as *const u8 as *const libc::c_char,
+                    b"mi_page_thread_free_flag(page)==MI_NEVER_DELAYED_FREE\0" as *const u8
+                        as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     8793 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 19],
-                        &[libc::c_char; 19],
-                    >(b"mi_segment_reclaim\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(
+                        b"mi_segment_reclaim\0",
+                    ))
+                    .as_ptr(),
                 );
             };
-            if (mi_page_heap(page)).is_null() {} else {
+            if (mi_page_heap(page)).is_null() {
+            } else {
                 _mi_assert_fail(
                     b"mi_page_heap(page) == NULL\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     8794 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 19],
-                        &[libc::c_char; 19],
-                    >(b"mi_segment_reclaim\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(
+                        b"mi_segment_reclaim\0",
+                    ))
+                    .as_ptr(),
                 );
             };
             (*segment).abandoned = ((*segment).abandoned).wrapping_sub(1);
             (*segment).abandoned;
-            if ((*page).next).is_null() {} else {
+            if ((*page).next).is_null() {
+            } else {
                 _mi_assert_fail(
                     b"page->next == NULL\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     8796 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 19],
-                        &[libc::c_char; 19],
-                    >(b"mi_segment_reclaim\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(
+                        b"mi_segment_reclaim\0",
+                    ))
+                    .as_ptr(),
                 );
             };
             _mi_stat_decrease(
                 &mut (*(*tld).stats).pages_abandoned,
                 1 as libc::c_int as size_t,
             );
-            let mut target_heap: *mut mi_heap_t = _mi_heap_by_tag(
-                heap,
-                (*page).heap_tag,
-            );
+            let mut target_heap: *mut mi_heap_t = _mi_heap_by_tag(heap, (*page).heap_tag);
             if target_heap.is_null() {
                 target_heap = heap;
                 _mi_error_message(
@@ -19172,37 +17839,34 @@ unsafe extern "C" fn mi_segment_reclaim(
         i = i.wrapping_add(1);
         i;
     }
-    if (*segment).abandoned == 0 as libc::c_int as size_t {} else {
+    if (*segment).abandoned == 0 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"segment->abandoned == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8817 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 19],
-                &[libc::c_char; 19],
-            >(b"mi_segment_reclaim\0"))
+            (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(b"mi_segment_reclaim\0"))
                 .as_ptr(),
         );
     };
     if (*segment).used == 0 as libc::c_int as size_t {
-        if right_page_reclaimed.is_null() || !*right_page_reclaimed {} else {
+        if right_page_reclaimed.is_null() || !*right_page_reclaimed {
+        } else {
             _mi_assert_fail(
-                b"right_page_reclaimed == NULL || !(*right_page_reclaimed)\0"
-                    as *const u8 as *const libc::c_char,
+                b"right_page_reclaimed == NULL || !(*right_page_reclaimed)\0" as *const u8
+                    as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 8819 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 19],
-                    &[libc::c_char; 19],
-                >(b"mi_segment_reclaim\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(
+                    b"mi_segment_reclaim\0",
+                ))
+                .as_ptr(),
             );
         };
         mi_segment_free(segment, 0 as libc::c_int != 0, tld);
         return 0 as *mut mi_segment_t;
     } else {
-        if (*segment).page_kind as libc::c_uint
-            <= MI_PAGE_MEDIUM as libc::c_int as libc::c_uint
+        if (*segment).page_kind as libc::c_uint <= MI_PAGE_MEDIUM as libc::c_int as libc::c_uint
             && mi_segment_has_free(segment) as libc::c_int != 0
         {
             mi_segment_insert_in_free_queue(segment, tld);
@@ -19215,9 +17879,8 @@ pub unsafe extern "C" fn _mi_segment_attempt_reclaim(
     mut heap: *mut mi_heap_t,
     mut segment: *mut mi_segment_t,
 ) -> bool {
-    if ::core::intrinsics::atomic_load_relaxed(
-        &mut (*segment).thread_id as *mut mi_threadid_t,
-    ) != 0 as libc::c_int as mi_threadid_t
+    if ::core::intrinsics::atomic_load_relaxed(&mut (*segment).thread_id as *mut mi_threadid_t)
+        != 0 as libc::c_int as mi_threadid_t
     {
         return 0 as libc::c_int != 0;
     }
@@ -19233,8 +17896,7 @@ pub unsafe extern "C" fn _mi_segment_attempt_reclaim(
     {
         return 0 as libc::c_int != 0;
     }
-    if (*segment).memid.memkind as libc::c_uint
-        == MI_MEM_ARENA as libc::c_int as libc::c_uint
+    if (*segment).memid.memkind as libc::c_uint == MI_MEM_ARENA as libc::c_int as libc::c_uint
         && (*(*heap).tld).segments.reclaim_count * 2 as libc::c_int as size_t
             > (*(*heap).tld).segments.count
     {
@@ -19248,16 +17910,16 @@ pub unsafe extern "C" fn _mi_segment_attempt_reclaim(
             0 as *mut bool,
             &mut (*(*heap).tld).segments,
         );
-        if res == segment {} else {
+        if res == segment {
+        } else {
             _mi_assert_fail(
                 b"res == segment\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 8841 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 28],
-                    &[libc::c_char; 28],
-                >(b"_mi_segment_attempt_reclaim\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 28], &[libc::c_char; 28]>(
+                    b"_mi_segment_attempt_reclaim\0",
+                ))
+                .as_ptr(),
             );
         };
         return !res.is_null();
@@ -19279,12 +17941,7 @@ pub unsafe extern "C" fn _mi_abandoned_reclaim_all(
         visit_all: false,
         hold_visit_lock: false,
     };
-    _mi_arena_field_cursor_init(
-        heap,
-        (*tld).subproc,
-        1 as libc::c_int != 0,
-        &mut current,
-    );
+    _mi_arena_field_cursor_init(heap, (*tld).subproc, 1 as libc::c_int != 0, &mut current);
     loop {
         segment = _mi_arena_segment_clear_abandoned_next(&mut current);
         if segment.is_null() {
@@ -19314,9 +17971,7 @@ unsafe extern "C" fn segment_count_is_within_target(
     }
     return target == 0 as libc::c_int as size_t || (*tld).count < target;
 }
-unsafe extern "C" fn mi_segment_get_reclaim_tries(
-    mut tld: *mut mi_segments_tld_t,
-) -> libc::c_long {
+unsafe extern "C" fn mi_segment_get_reclaim_tries(mut tld: *mut mi_segments_tld_t) -> libc::c_long {
     let perc: size_t = mi_option_get_clamp(
         mi_option_max_segment_reclaim,
         0 as libc::c_int as libc::c_long,
@@ -19325,9 +17980,8 @@ unsafe extern "C" fn mi_segment_get_reclaim_tries(
     if perc <= 0 as libc::c_int as size_t {
         return 0 as libc::c_int as libc::c_long;
     }
-    let total_count: size_t = ::core::intrinsics::atomic_load_relaxed(
-        &mut (*(*tld).subproc).abandoned_count,
-    );
+    let total_count: size_t =
+        ::core::intrinsics::atomic_load_relaxed(&mut (*(*tld).subproc).abandoned_count);
     if total_count == 0 as libc::c_int as size_t {
         return 0 as libc::c_int as libc::c_long;
     }
@@ -19343,9 +17997,7 @@ unsafe extern "C" fn mi_segment_get_reclaim_tries(
     } else {
         relative_count
     }) as libc::c_long;
-    if max_tries < 8 as libc::c_int as libc::c_long
-        && total_count > 8 as libc::c_int as size_t
-    {
+    if max_tries < 8 as libc::c_int as libc::c_long && total_count > 8 as libc::c_int as size_t {
         max_tries = 8 as libc::c_int as libc::c_long;
     }
     return max_tries;
@@ -19373,12 +18025,7 @@ unsafe extern "C" fn mi_segment_try_reclaim(
         visit_all: false,
         hold_visit_lock: false,
     };
-    _mi_arena_field_cursor_init(
-        heap,
-        (*tld).subproc,
-        0 as libc::c_int != 0,
-        &mut current,
-    );
+    _mi_arena_field_cursor_init(heap, (*tld).subproc, 0 as libc::c_int != 0, &mut current);
     while segment_count_is_within_target(tld, 0 as *mut size_t) as libc::c_int != 0
         && {
             let fresh47 = max_tries;
@@ -19390,28 +18037,24 @@ unsafe extern "C" fn mi_segment_try_reclaim(
             !segment.is_null()
         }
     {
-        if (*segment).subproc == (*(*heap).tld).segments.subproc {} else {
+        if (*segment).subproc == (*(*heap).tld).segments.subproc {
+        } else {
             _mi_assert_fail(
                 b"segment->subproc == heap->tld->segments.subproc\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 8881 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 23],
-                    &[libc::c_char; 23],
-                >(b"mi_segment_try_reclaim\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
+                    b"mi_segment_try_reclaim\0",
+                ))
+                .as_ptr(),
             );
         };
         (*segment).abandoned_visits = ((*segment).abandoned_visits).wrapping_add(1);
         (*segment).abandoned_visits;
         let mut is_suitable: bool = _mi_heap_memid_is_suitable(heap, (*segment).memid);
         let mut all_pages_free: bool = false;
-        let mut has_page: bool = mi_segment_check_free(
-            segment,
-            block_size,
-            &mut all_pages_free,
-        );
+        let mut has_page: bool = mi_segment_check_free(segment, block_size, &mut all_pages_free);
         if all_pages_free {
             mi_segment_reclaim(
                 segment,
@@ -19447,52 +18090,49 @@ unsafe extern "C" fn mi_segment_force_abandon(
     mut segment: *mut mi_segment_t,
     mut tld: *mut mi_segments_tld_t,
 ) {
-    if (*segment).abandoned < (*segment).used {} else {
+    if (*segment).abandoned < (*segment).used {
+    } else {
         _mi_assert_fail(
             b"segment->abandoned < segment->used\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8905 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 25],
-                &[libc::c_char; 25],
-            >(b"mi_segment_force_abandon\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                b"mi_segment_force_abandon\0",
+            ))
+            .as_ptr(),
         );
     };
-    if !(*segment).dont_free {} else {
+    if !(*segment).dont_free {
+    } else {
         _mi_assert_fail(
             b"!segment->dont_free\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8906 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 25],
-                &[libc::c_char; 25],
-            >(b"mi_segment_force_abandon\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                b"mi_segment_force_abandon\0",
+            ))
+            .as_ptr(),
         );
     };
     (*segment).dont_free = 1 as libc::c_int != 0;
     let mut i: size_t = 0 as libc::c_int as size_t;
     while i < (*segment).capacity {
-        let mut page: *mut mi_page_t = &mut *((*segment).pages)
-            .as_mut_ptr()
-            .offset(i as isize) as *mut mi_page_t;
+        let mut page: *mut mi_page_t =
+            &mut *((*segment).pages).as_mut_ptr().offset(i as isize) as *mut mi_page_t;
         if (*page).segment_in_use() != 0 {
-            if (*segment).used > 0 as libc::c_int as size_t {} else {
+            if (*segment).used > 0 as libc::c_int as size_t {
+            } else {
                 _mi_assert_fail(
                     b"segment->used > 0\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                     8911 as libc::c_int as libc::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 25],
-                        &[libc::c_char; 25],
-                    >(b"mi_segment_force_abandon\0"))
-                        .as_ptr(),
+                    (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                        b"mi_segment_force_abandon\0",
+                    ))
+                    .as_ptr(),
                 );
             };
-            if (*segment).used
-                == ((*segment).abandoned).wrapping_add(1 as libc::c_int as size_t)
-            {
+            if (*segment).used == ((*segment).abandoned).wrapping_add(1 as libc::c_int as size_t) {
                 (*segment).dont_free = 0 as libc::c_int != 0;
                 _mi_page_force_abandon(page);
                 return;
@@ -19504,28 +18144,28 @@ unsafe extern "C" fn mi_segment_force_abandon(
         i;
     }
     (*segment).dont_free = 0 as libc::c_int != 0;
-    if (*segment).used == (*segment).abandoned {} else {
+    if (*segment).used == (*segment).abandoned {
+    } else {
         _mi_assert_fail(
             b"segment->used == segment->abandoned\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8923 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 25],
-                &[libc::c_char; 25],
-            >(b"mi_segment_force_abandon\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                b"mi_segment_force_abandon\0",
+            ))
+            .as_ptr(),
         );
     };
-    if (*segment).used == 0 as libc::c_int as size_t {} else {
+    if (*segment).used == 0 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"segment->used == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8924 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 25],
-                &[libc::c_char; 25],
-            >(b"mi_segment_force_abandon\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                b"mi_segment_force_abandon\0",
+            ))
+            .as_ptr(),
         );
     };
     if (*segment).used == 0 as libc::c_int as size_t {
@@ -19549,9 +18189,8 @@ unsafe extern "C" fn mi_segments_try_abandon_to_target(
     };
     let mut i: libc::c_int = 0 as libc::c_int;
     while i < 64 as libc::c_int && (*tld).count >= min_target {
-        let mut page: *mut mi_page_t = (*heap)
-            .pages[(73 as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
-                as usize]
+        let mut page: *mut mi_page_t = (*heap).pages
+            [(73 as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as usize]
             .first;
         while !page.is_null() && mi_page_is_huge(page) as libc::c_int != 0 {
             page = (*page).next;
@@ -19562,21 +18201,19 @@ unsafe extern "C" fn mi_segments_try_abandon_to_target(
         let mut segment: *mut mi_segment_t = _mi_page_segment(page);
         mi_segment_force_abandon(segment, tld);
         if page
-            != (*heap)
-                .pages[(73 as libc::c_uint)
-                    .wrapping_add(1 as libc::c_int as libc::c_uint) as usize]
+            != (*heap).pages
+                [(73 as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as usize]
                 .first
-        {} else {
+        {
+        } else {
             _mi_assert_fail(
-                b"page != heap->pages[MI_BIN_FULL].first\0" as *const u8
-                    as *const libc::c_char,
+                b"page != heap->pages[MI_BIN_FULL].first\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 8945 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 34],
-                    &[libc::c_char; 34],
-                >(b"mi_segments_try_abandon_to_target\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 34], &[libc::c_char; 34]>(
+                    b"mi_segments_try_abandon_to_target\0",
+                ))
+                .as_ptr(),
             );
         };
         i += 1;
@@ -19598,12 +18235,10 @@ pub unsafe extern "C" fn mi_collect_reduce(mut target_size: size_t) {
     mi_collect(1 as libc::c_int != 0);
     let mut heap: *mut mi_heap_t = mi_heap_get_default();
     let mut tld: *mut mi_segments_tld_t = &mut (*(*heap).tld).segments;
-    let mut target: size_t = (target_size as libc::c_ulonglong)
-        .wrapping_div(
-            (1 as libc::c_ulonglong)
-                << 3 as libc::c_int
-                    + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)),
-        ) as size_t;
+    let mut target: size_t = (target_size as libc::c_ulonglong).wrapping_div(
+        (1 as libc::c_ulonglong)
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)),
+    ) as size_t;
     if target == 0 as libc::c_int as size_t {
         target = mi_option_get_clamp(
             mi_option_target_segments_per_thread,
@@ -19621,66 +18256,59 @@ unsafe extern "C" fn mi_segment_reclaim_or_alloc(
     mut tld: *mut mi_segments_tld_t,
     mut os_tld: *mut mi_os_tld_t,
 ) -> *mut mi_segment_t {
-    if page_kind as libc::c_uint <= MI_PAGE_LARGE as libc::c_int as libc::c_uint
-    {} else {
+    if page_kind as libc::c_uint <= MI_PAGE_LARGE as libc::c_int as libc::c_uint {
+    } else {
         _mi_assert_fail(
             b"page_kind <= MI_PAGE_LARGE\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8965 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 28],
-                &[libc::c_char; 28],
-            >(b"mi_segment_reclaim_or_alloc\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 28], &[libc::c_char; 28]>(
+                b"mi_segment_reclaim_or_alloc\0",
+            ))
+            .as_ptr(),
         );
     };
     if block_size as libc::c_ulonglong
         <= ((1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
             .wrapping_div(2 as libc::c_int as libc::c_ulonglong)
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
             b"block_size <= MI_LARGE_OBJ_SIZE_MAX\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8966 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 28],
-                &[libc::c_char; 28],
-            >(b"mi_segment_reclaim_or_alloc\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 28], &[libc::c_char; 28]>(
+                b"mi_segment_reclaim_or_alloc\0",
+            ))
+            .as_ptr(),
         );
     };
     mi_segments_try_abandon(heap, tld);
     let mut reclaimed: bool = false;
-    let mut segment: *mut mi_segment_t = mi_segment_try_reclaim(
-        heap,
-        block_size,
-        page_kind,
-        &mut reclaimed,
-        tld,
-    );
+    let mut segment: *mut mi_segment_t =
+        mi_segment_try_reclaim(heap, block_size, page_kind, &mut reclaimed, tld);
     if segment.is_null()
-        || _mi_arena_memid_is_suitable((*segment).memid, (*heap).arena_id) as libc::c_int
-            != 0
-    {} else {
+        || _mi_arena_memid_is_suitable((*segment).memid, (*heap).arena_id) as libc::c_int != 0
+    {
+    } else {
         _mi_assert_fail(
             b"segment == NULL || _mi_arena_memid_is_suitable(segment->memid, heap->arena_id)\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8970 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 28],
-                &[libc::c_char; 28],
-            >(b"mi_segment_reclaim_or_alloc\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 28], &[libc::c_char; 28]>(
+                b"mi_segment_reclaim_or_alloc\0",
+            ))
+            .as_ptr(),
         );
     };
     if reclaimed {
         if !segment.is_null()
             && (*segment).page_kind as libc::c_uint == page_kind as libc::c_uint
             && page_kind as libc::c_uint <= MI_PAGE_LARGE as libc::c_int as libc::c_uint
-        {} else {
+        {
+        } else {
             _mi_assert_fail(
                 b"segment != NULL && segment->page_kind == page_kind && page_kind <= MI_PAGE_LARGE\0"
                     as *const u8 as *const libc::c_char,
@@ -19695,7 +18323,7 @@ unsafe extern "C" fn mi_segment_reclaim_or_alloc(
         };
         return 0 as *mut mi_segment_t;
     } else if !segment.is_null() {
-        return segment
+        return segment;
     }
     return mi_segment_alloc(
         0 as libc::c_int as size_t,
@@ -19711,23 +18339,20 @@ unsafe extern "C" fn mi_segment_find_free(
     mut segment: *mut mi_segment_t,
     mut tld: *mut mi_segments_tld_t,
 ) -> *mut mi_page_t {
-    if mi_segment_has_free(segment) as libc::c_int != 0 {} else {
+    if mi_segment_has_free(segment) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_segment_has_free(segment)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8981 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 21],
-                &[libc::c_char; 21],
-            >(b"mi_segment_find_free\0"))
+            (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(b"mi_segment_find_free\0"))
                 .as_ptr(),
         );
     };
     let mut i: size_t = 0 as libc::c_int as size_t;
     while i < (*segment).capacity {
-        let mut page: *mut mi_page_t = &mut *((*segment).pages)
-            .as_mut_ptr()
-            .offset(i as isize) as *mut mi_page_t;
+        let mut page: *mut mi_page_t =
+            &mut *((*segment).pages).as_mut_ptr().offset(i as isize) as *mut mi_page_t;
         if (*page).segment_in_use() == 0 {
             let mut ok: bool = mi_segment_page_claim(segment, page, tld);
             if ok {
@@ -19737,15 +18362,13 @@ unsafe extern "C" fn mi_segment_find_free(
         i = i.wrapping_add(1);
         i;
     }
-    if 0 as libc::c_int != 0 {} else {
+    if 0 as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"false\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8990 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 21],
-                &[libc::c_char; 21],
-            >(b"mi_segment_find_free\0"))
+            (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(b"mi_segment_find_free\0"))
                 .as_ptr(),
         );
     };
@@ -19755,16 +18378,16 @@ unsafe extern "C" fn mi_segment_page_alloc_in(
     mut segment: *mut mi_segment_t,
     mut tld: *mut mi_segments_tld_t,
 ) -> *mut mi_page_t {
-    if mi_segment_has_free(segment) as libc::c_int != 0 {} else {
+    if mi_segment_has_free(segment) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"mi_segment_has_free(segment)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             8994 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 25],
-                &[libc::c_char; 25],
-            >(b"mi_segment_page_alloc_in\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
+                b"mi_segment_page_alloc_in\0",
+            ))
+            .as_ptr(),
         );
     };
     return mi_segment_find_free(segment, tld);
@@ -19777,8 +18400,8 @@ unsafe extern "C" fn mi_segment_page_try_alloc_in_queue(
     let free_queue: *mut mi_segment_queue_t = mi_segment_free_queue_of_kind(kind, tld);
     let mut segment: *mut mi_segment_t = (*free_queue).first;
     while !segment.is_null() {
-        if _mi_arena_memid_is_suitable((*segment).memid, (*heap).arena_id) as libc::c_int
-            != 0 && mi_segment_has_free(segment) as libc::c_int != 0
+        if _mi_arena_memid_is_suitable((*segment).memid, (*heap).arena_id) as libc::c_int != 0
+            && mi_segment_has_free(segment) as libc::c_int != 0
         {
             return mi_segment_page_alloc_in(segment, tld);
         }
@@ -19796,68 +18419,57 @@ unsafe extern "C" fn mi_segment_page_alloc(
 ) -> *mut mi_page_t {
     let mut page: *mut mi_page_t = mi_segment_page_try_alloc_in_queue(heap, kind, tld);
     if page.is_null() {
-        let segment: *mut mi_segment_t = mi_segment_reclaim_or_alloc(
-            heap,
-            block_size,
-            kind,
-            page_shift,
-            tld,
-            os_tld,
-        );
+        let segment: *mut mi_segment_t =
+            mi_segment_reclaim_or_alloc(heap, block_size, kind, page_shift, tld, os_tld);
         if segment.is_null() {
             return 0 as *mut mi_page_t;
         }
-        if (*segment).page_kind as libc::c_uint == kind as libc::c_uint {} else {
+        if (*segment).page_kind as libc::c_uint == kind as libc::c_uint {
+        } else {
             _mi_assert_fail(
                 b"segment->page_kind==kind\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 9011 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 22],
-                    &[libc::c_char; 22],
-                >(b"mi_segment_page_alloc\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(
+                    b"mi_segment_page_alloc\0",
+                ))
+                .as_ptr(),
             );
         };
-        if (*segment).used < (*segment).capacity {} else {
+        if (*segment).used < (*segment).capacity {
+        } else {
             _mi_assert_fail(
-                b"segment->used < segment->capacity\0" as *const u8
-                    as *const libc::c_char,
+                b"segment->used < segment->capacity\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 9012 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 22],
-                    &[libc::c_char; 22],
-                >(b"mi_segment_page_alloc\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(
+                    b"mi_segment_page_alloc\0",
+                ))
+                .as_ptr(),
             );
         };
-        if _mi_arena_memid_is_suitable((*segment).memid, (*heap).arena_id) as libc::c_int
-            != 0
-        {} else {
+        if _mi_arena_memid_is_suitable((*segment).memid, (*heap).arena_id) as libc::c_int != 0 {
+        } else {
             _mi_assert_fail(
-                b"_mi_arena_memid_is_suitable(segment->memid, heap->arena_id)\0"
-                    as *const u8 as *const libc::c_char,
+                b"_mi_arena_memid_is_suitable(segment->memid, heap->arena_id)\0" as *const u8
+                    as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 9013 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 22],
-                    &[libc::c_char; 22],
-                >(b"mi_segment_page_alloc\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(
+                    b"mi_segment_page_alloc\0",
+                ))
+                .as_ptr(),
             );
         };
         page = mi_segment_page_try_alloc_in_queue(heap, kind, tld);
     }
-    if !page.is_null() {} else {
+    if !page.is_null() {
+    } else {
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             9016 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"mi_segment_page_alloc\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"mi_segment_page_alloc\0"))
                 .as_ptr(),
         );
     };
@@ -19905,8 +18517,7 @@ unsafe extern "C" fn mi_segment_large_page_alloc(
         heap,
         block_size,
         MI_PAGE_LARGE,
-        (3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
-            as size_t,
+        (3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))) as size_t,
         tld,
         os_tld,
     );
@@ -19914,16 +18525,16 @@ unsafe extern "C" fn mi_segment_large_page_alloc(
         return 0 as *mut mi_page_t;
     }
     let mut page: *mut mi_page_t = mi_segment_find_free(segment, tld);
-    if !page.is_null() {} else {
+    if !page.is_null() {
+    } else {
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             9032 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 28],
-                &[libc::c_char; 28],
-            >(b"mi_segment_large_page_alloc\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 28], &[libc::c_char; 28]>(
+                b"mi_segment_large_page_alloc\0",
+            ))
+            .as_ptr(),
         );
     };
     *(mi_segment_raw_page_start(segment, page, 0 as *mut size_t))
@@ -19940,7 +18551,8 @@ unsafe extern "C" fn mi_segment_huge_page_alloc(
     let mut segment: *mut mi_segment_t = mi_segment_alloc(
         size,
         MI_PAGE_HUGE,
-        (3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
+        (3 as libc::c_int
+            + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
             + 1 as libc::c_int) as size_t,
         page_alignment,
         req_arena_id,
@@ -19959,8 +18571,10 @@ unsafe extern "C" fn mi_segment_huge_page_alloc(
                 } else {
                     _mi_os_page_size()
                 }),
-        ) >= size
-    {} else {
+        )
+        >= size
+    {
+    } else {
         _mi_assert_fail(
             b"mi_segment_page_size(segment) - segment->segment_info_size - (2*(MI_SECURE == 0 ? 0 : _mi_os_page_size())) >= size\0"
                 as *const u8 as *const libc::c_char,
@@ -19974,28 +18588,28 @@ unsafe extern "C" fn mi_segment_huge_page_alloc(
         );
     };
     let mut page: *mut mi_page_t = mi_segment_find_free(segment, tld);
-    if !page.is_null() {} else {
+    if !page.is_null() {
+    } else {
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             9048 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 27],
-                &[libc::c_char; 27],
-            >(b"mi_segment_huge_page_alloc\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
+                b"mi_segment_huge_page_alloc\0",
+            ))
+            .as_ptr(),
         );
     };
-    if (*page).is_huge() as libc::c_int != 0 {} else {
+    if (*page).is_huge() as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"page->is_huge\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             9049 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 27],
-                &[libc::c_char; 27],
-            >(b"mi_segment_huge_page_alloc\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
+                b"mi_segment_huge_page_alloc\0",
+            ))
+            .as_ptr(),
         );
     };
     let mut psize: size_t = 0;
@@ -20005,44 +18619,35 @@ unsafe extern "C" fn mi_segment_huge_page_alloc(
         && (*segment).allow_decommit as libc::c_int != 0
         && (*page).is_committed() as libc::c_int != 0
     {
-        let mut aligned_p: *mut uint8_t = _mi_align_up(
-            start as uintptr_t,
-            page_alignment,
-        ) as *mut uint8_t;
-        if _mi_is_aligned(aligned_p as *mut libc::c_void, page_alignment) as libc::c_int
-            != 0
-        {} else {
+        let mut aligned_p: *mut uint8_t =
+            _mi_align_up(start as uintptr_t, page_alignment) as *mut uint8_t;
+        if _mi_is_aligned(aligned_p as *mut libc::c_void, page_alignment) as libc::c_int != 0 {
+        } else {
             _mi_assert_fail(
-                b"_mi_is_aligned(aligned_p, page_alignment)\0" as *const u8
-                    as *const libc::c_char,
+                b"_mi_is_aligned(aligned_p, page_alignment)\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 9055 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 27],
-                    &[libc::c_char; 27],
-                >(b"mi_segment_huge_page_alloc\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
+                    b"mi_segment_huge_page_alloc\0",
+                ))
+                .as_ptr(),
             );
         };
-        if psize.wrapping_sub(aligned_p.offset_from(start) as libc::c_long as size_t)
-            >= size
-        {} else {
+        if psize.wrapping_sub(aligned_p.offset_from(start) as libc::c_long as size_t) >= size {
+        } else {
             _mi_assert_fail(
-                b"psize - (aligned_p - start) >= size\0" as *const u8
-                    as *const libc::c_char,
+                b"psize - (aligned_p - start) >= size\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 9056 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 27],
-                    &[libc::c_char; 27],
-                >(b"mi_segment_huge_page_alloc\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
+                    b"mi_segment_huge_page_alloc\0",
+                ))
+                .as_ptr(),
             );
         };
-        let mut decommit_start: *mut uint8_t = start
-            .offset(::core::mem::size_of::<mi_block_t>() as libc::c_ulong as isize);
-        let mut decommit_size: ptrdiff_t = aligned_p.offset_from(decommit_start)
-            as libc::c_long;
+        let mut decommit_start: *mut uint8_t =
+            start.offset(::core::mem::size_of::<mi_block_t>() as libc::c_ulong as isize);
+        let mut decommit_size: ptrdiff_t = aligned_p.offset_from(decommit_start) as libc::c_long;
         _mi_os_reset(
             decommit_start as *mut libc::c_void,
             decommit_size as size_t,
@@ -20057,66 +18662,62 @@ pub unsafe extern "C" fn _mi_segment_huge_page_reset(
     mut page: *mut mi_page_t,
     mut block: *mut mi_block_t,
 ) {
-    if (*segment).page_kind as libc::c_uint
-        == MI_PAGE_HUGE as libc::c_int as libc::c_uint
-    {} else {
+    if (*segment).page_kind as libc::c_uint == MI_PAGE_HUGE as libc::c_int as libc::c_uint {
+    } else {
         _mi_assert_fail(
             b"segment->page_kind == MI_PAGE_HUGE\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             9088 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 28],
-                &[libc::c_char; 28],
-            >(b"_mi_segment_huge_page_reset\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 28], &[libc::c_char; 28]>(
+                b"_mi_segment_huge_page_reset\0",
+            ))
+            .as_ptr(),
         );
     };
-    if segment == _mi_page_segment(page) {} else {
+    if segment == _mi_page_segment(page) {
+    } else {
         _mi_assert_fail(
             b"segment == _mi_page_segment(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             9089 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 28],
-                &[libc::c_char; 28],
-            >(b"_mi_segment_huge_page_reset\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 28], &[libc::c_char; 28]>(
+                b"_mi_segment_huge_page_reset\0",
+            ))
+            .as_ptr(),
         );
     };
-    if (*page).used as libc::c_int == 1 as libc::c_int {} else {
+    if (*page).used as libc::c_int == 1 as libc::c_int {
+    } else {
         _mi_assert_fail(
             b"page->used == 1\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             9090 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 28],
-                &[libc::c_char; 28],
-            >(b"_mi_segment_huge_page_reset\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 28], &[libc::c_char; 28]>(
+                b"_mi_segment_huge_page_reset\0",
+            ))
+            .as_ptr(),
         );
     };
-    if ((*page).free).is_null() {} else {
+    if ((*page).free).is_null() {
+    } else {
         _mi_assert_fail(
             b"page->free == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             9091 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 28],
-                &[libc::c_char; 28],
-            >(b"_mi_segment_huge_page_reset\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 28], &[libc::c_char; 28]>(
+                b"_mi_segment_huge_page_reset\0",
+            ))
+            .as_ptr(),
         );
     };
-    if (*segment).allow_decommit as libc::c_int != 0
-        && (*page).is_committed() as libc::c_int != 0
-    {
+    if (*segment).allow_decommit as libc::c_int != 0 && (*page).is_committed() as libc::c_int != 0 {
         let mut usize: size_t = mi_usable_size(block as *const libc::c_void);
         if usize > ::core::mem::size_of::<mi_block_t>() as libc::c_ulong {
-            usize = usize
-                .wrapping_sub(::core::mem::size_of::<mi_block_t>() as libc::c_ulong);
-            let mut p: *mut uint8_t = (block as *mut uint8_t)
-                .offset(::core::mem::size_of::<mi_block_t>() as libc::c_ulong as isize);
-            _mi_os_reset(p as *mut libc::c_void, usize, &mut _mi_stats_main);
+            usize = usize.wrapping_sub(::core::mem::size_of::<mi_block_t>() as libc::c_ulong);
+            let mut p: *mut uint8_t =
+                (block as *mut uint8_t)
+                    .offset(::core::mem::size_of::<mi_block_t>() as libc::c_ulong as isize);
+            _mi_os_reset(p as *mut libc::c_void, usize, &raw mut _mi_stats_main);
         }
     }
 }
@@ -20131,94 +18732,77 @@ pub unsafe extern "C" fn _mi_segment_page_alloc(
     let mut page: *mut mi_page_t = 0 as *mut mi_page_t;
     if (page_alignment as libc::c_ulonglong
         > (1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
-            >> 1 as libc::c_int) as libc::c_int as libc::c_long != 0
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
+            >> 1 as libc::c_int) as libc::c_int as libc::c_long
+        != 0
     {
-        if _mi_is_power_of_two(page_alignment) as libc::c_int != 0 {} else {
+        if _mi_is_power_of_two(page_alignment) as libc::c_int != 0 {
+        } else {
             _mi_assert_fail(
-                b"_mi_is_power_of_two(page_alignment)\0" as *const u8
-                    as *const libc::c_char,
+                b"_mi_is_power_of_two(page_alignment)\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 9105 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 23],
-                    &[libc::c_char; 23],
-                >(b"_mi_segment_page_alloc\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
+                    b"_mi_segment_page_alloc\0",
+                ))
+                .as_ptr(),
             );
         };
         if page_alignment as libc::c_ulonglong
             >= (1 as libc::c_ulonglong)
-                << 3 as libc::c_int
-                    + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
-        {} else {
+                << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
+        {
+        } else {
             _mi_assert_fail(
-                b"page_alignment >= MI_SEGMENT_SIZE\0" as *const u8
-                    as *const libc::c_char,
+                b"page_alignment >= MI_SEGMENT_SIZE\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 9106 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 23],
-                    &[libc::c_char; 23],
-                >(b"_mi_segment_page_alloc\0"))
-                    .as_ptr(),
+                (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
+                    b"_mi_segment_page_alloc\0",
+                ))
+                .as_ptr(),
             );
         };
         if (page_alignment as libc::c_ulonglong)
             < (1 as libc::c_ulonglong)
-                << 3 as libc::c_int
-                    + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
+                << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
         {
             page_alignment = ((1 as libc::c_ulonglong)
-                << 3 as libc::c_int
-                    + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+                << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
                 as size_t;
         }
-        page = mi_segment_huge_page_alloc(
-            block_size,
-            page_alignment,
-            (*heap).arena_id,
-            tld,
-            os_tld,
-        );
+        page =
+            mi_segment_huge_page_alloc(block_size, page_alignment, (*heap).arena_id, tld, os_tld);
     } else if block_size as libc::c_ulonglong
         <= ((1 as libc::c_ulonglong) << 13 as libc::c_int + 3 as libc::c_int)
             .wrapping_div(4 as libc::c_int as libc::c_ulonglong)
     {
         page = mi_segment_small_page_alloc(heap, block_size, tld, os_tld);
     } else if block_size as libc::c_ulonglong
-        <= ((1 as libc::c_ulonglong)
-            << 3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
+        <= ((1 as libc::c_ulonglong) << 3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))
             .wrapping_div(4 as libc::c_int as libc::c_ulonglong)
     {
         page = mi_segment_medium_page_alloc(heap, block_size, tld, os_tld);
     } else if block_size as libc::c_ulonglong
         <= ((1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
             .wrapping_div(2 as libc::c_int as libc::c_ulonglong)
     {
         page = mi_segment_large_page_alloc(heap, block_size, tld, os_tld);
     } else {
-        page = mi_segment_huge_page_alloc(
-            block_size,
-            page_alignment,
-            (*heap).arena_id,
-            tld,
-            os_tld,
-        );
+        page =
+            mi_segment_huge_page_alloc(block_size, page_alignment, (*heap).arena_id, tld, os_tld);
     }
     if page.is_null()
-        || (mi_segment_page_size(_mi_page_segment(page)))
-            .wrapping_sub(
-                (if 0 as libc::c_int == 0 as libc::c_int {
-                    0 as libc::c_int as size_t
-                } else {
-                    _mi_os_page_size()
-                }),
-            ) >= block_size
-    {} else {
+        || (mi_segment_page_size(_mi_page_segment(page))).wrapping_sub(
+            (if 0 as libc::c_int == 0 as libc::c_int {
+                0 as libc::c_int as size_t
+            } else {
+                _mi_os_page_size()
+            }),
+        ) >= block_size
+    {
+    } else {
         _mi_assert_fail(
             b"page == NULL || (mi_segment_page_size(_mi_page_segment(page)) - (MI_SECURE == 0 ? 0 : _mi_os_page_size())) >= block_size\0"
                 as *const u8 as *const libc::c_char,
@@ -20231,30 +18815,30 @@ pub unsafe extern "C" fn _mi_segment_page_alloc(
                 .as_ptr(),
         );
     };
-    if page.is_null() || mi_page_not_in_queue(page, tld) as libc::c_int != 0 {} else {
+    if page.is_null() || mi_page_not_in_queue(page, tld) as libc::c_int != 0 {
+    } else {
         _mi_assert_fail(
             b"page == NULL || mi_page_not_in_queue(page, tld)\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             9124 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 23],
-                &[libc::c_char; 23],
-            >(b"_mi_segment_page_alloc\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
+                b"_mi_segment_page_alloc\0",
+            ))
+            .as_ptr(),
         );
     };
-    if page.is_null() || (*_mi_page_segment(page)).subproc == (*tld).subproc {} else {
+    if page.is_null() || (*_mi_page_segment(page)).subproc == (*tld).subproc {
+    } else {
         _mi_assert_fail(
-            b"page == NULL || _mi_page_segment(page)->subproc == tld->subproc\0"
-                as *const u8 as *const libc::c_char,
+            b"page == NULL || _mi_page_segment(page)->subproc == tld->subproc\0" as *const u8
+                as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             9125 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 23],
-                &[libc::c_char; 23],
-            >(b"_mi_segment_page_alloc\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
+                b"_mi_segment_page_alloc\0",
+            ))
+            .as_ptr(),
         );
     };
     return page;
@@ -20262,7 +18846,7 @@ pub unsafe extern "C" fn _mi_segment_page_alloc(
 unsafe extern "C" fn mi_segment_visit_page(
     mut page: *mut mi_page_t,
     mut visit_blocks: bool,
-    mut visitor: Option::<mi_block_visit_fun>,
+    mut visitor: Option<mi_block_visit_fun>,
     mut arg: *mut libc::c_void,
 ) -> bool {
     let mut area: mi_heap_area_t = mi_heap_area_s {
@@ -20275,17 +18859,19 @@ unsafe extern "C" fn mi_segment_visit_page(
         heap_tag: 0,
     };
     _mi_heap_area_init(&mut area, page);
-    if !visitor
-        .expect(
-            "non-null function pointer",
-        )(0 as *const mi_heap_t, &mut area, 0 as *mut libc::c_void, area.block_size, arg)
-    {
+    if !visitor.expect("non-null function pointer")(
+        0 as *const mi_heap_t,
+        &mut area,
+        0 as *mut libc::c_void,
+        area.block_size,
+        arg,
+    ) {
         return 0 as libc::c_int != 0;
     }
     if visit_blocks {
-        return _mi_heap_area_visit_blocks(&mut area, page, visitor, arg)
+        return _mi_heap_area_visit_blocks(&mut area, page, visitor, arg);
     } else {
-        return 1 as libc::c_int != 0
+        return 1 as libc::c_int != 0;
     };
 }
 #[unsafe(no_mangle)]
@@ -20293,17 +18879,15 @@ pub unsafe extern "C" fn _mi_segment_visit_blocks(
     mut segment: *mut mi_segment_t,
     mut heap_tag: libc::c_int,
     mut visit_blocks: bool,
-    mut visitor: Option::<mi_block_visit_fun>,
+    mut visitor: Option<mi_block_visit_fun>,
     mut arg: *mut libc::c_void,
 ) -> bool {
     let mut i: size_t = 0 as libc::c_int as size_t;
     while i < (*segment).capacity {
-        let page: *mut mi_page_t = &mut *((*segment).pages)
-            .as_mut_ptr()
-            .offset(i as isize) as *mut mi_page_t;
+        let page: *mut mi_page_t =
+            &mut *((*segment).pages).as_mut_ptr().offset(i as isize) as *mut mi_page_t;
         if (*page).segment_in_use() != 0 {
-            if heap_tag < 0 as libc::c_int || (*page).heap_tag as libc::c_int == heap_tag
-            {
+            if heap_tag < 0 as libc::c_int || (*page).heap_tag as libc::c_int == heap_tag {
                 if !mi_segment_visit_page(page, visit_blocks, visitor, arg) {
                     return 0 as libc::c_int != 0;
                 }
@@ -20314,8 +18898,8 @@ pub unsafe extern "C" fn _mi_segment_visit_blocks(
     }
     return 1 as libc::c_int != 0;
 }
-static mut mi_segment_map: [*mut mi_segmap_part_t; 196] = [0 as *const mi_segmap_part_t
-    as *mut mi_segmap_part_t; 196];
+static mut mi_segment_map: [*mut mi_segmap_part_t; 196] =
+    [0 as *const mi_segmap_part_t as *mut mi_segmap_part_t; 196];
 unsafe extern "C" fn mi_segment_map_index_of(
     mut segment: *const mi_segment_t,
     mut create_on_demand: bool,
@@ -20324,17 +18908,16 @@ unsafe extern "C" fn mi_segment_map_index_of(
 ) -> *mut mi_segmap_part_t {
     if _mi_ptr_segment(segment.offset(1 as libc::c_int as isize) as *const libc::c_void)
         == segment as *mut mi_segment_t
-    {} else {
+    {
+    } else {
         _mi_assert_fail(
-            b"_mi_ptr_segment(segment + 1) == segment\0" as *const u8
-                as *const libc::c_char,
+            b"_mi_ptr_segment(segment + 1) == segment\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             9169 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 24],
-                &[libc::c_char; 24],
-            >(b"mi_segment_map_index_of\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 24], &[libc::c_char; 24]>(
+                b"mi_segment_map_index_of\0",
+            ))
+            .as_ptr(),
         );
     };
     *idx = 0 as libc::c_int as size_t;
@@ -20350,20 +18933,19 @@ unsafe extern "C" fn mi_segment_map_index_of(
     {
         return 0 as *mut mi_segmap_part_t;
     }
-    let segindex: uintptr_t = (segment as uintptr_t as libc::c_ulonglong)
-        .wrapping_div(
-            (8 as libc::c_int as libc::c_ulonglong)
-                .wrapping_mul(
-                    (((1 as libc::c_int) << 3 as libc::c_int) as libc::c_ulonglong)
-                        .wrapping_mul(1024 as libc::c_ulonglong)
-                        .wrapping_sub(128 as libc::c_int as libc::c_ulonglong),
-                )
-                .wrapping_mul(
-                    (1 as libc::c_ulonglong)
-                        << 3 as libc::c_int
-                            + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)),
-                ),
-        ) as uintptr_t;
+    let segindex: uintptr_t = (segment as uintptr_t as libc::c_ulonglong).wrapping_div(
+        (8 as libc::c_int as libc::c_ulonglong)
+            .wrapping_mul(
+                (((1 as libc::c_int) << 3 as libc::c_int) as libc::c_ulonglong)
+                    .wrapping_mul(1024 as libc::c_ulonglong)
+                    .wrapping_sub(128 as libc::c_int as libc::c_ulonglong),
+            )
+            .wrapping_mul(
+                (1 as libc::c_ulonglong)
+                    << 3 as libc::c_int
+                        + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)),
+            ),
+    ) as uintptr_t;
     if segindex as libc::c_ulonglong
         >= (48 as libc::c_int as libc::c_ulonglong)
             .wrapping_mul(1024 as libc::c_ulonglong)
@@ -20382,8 +18964,7 @@ unsafe extern "C" fn mi_segment_map_index_of(
                     .wrapping_mul(
                         (1 as libc::c_ulonglong)
                             << 3 as libc::c_int
-                                + (3 as libc::c_int
-                                    + (13 as libc::c_int + 3 as libc::c_int)),
+                                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)),
                     ),
             )
             .wrapping_add(1 as libc::c_int as libc::c_ulonglong)
@@ -20391,8 +18972,7 @@ unsafe extern "C" fn mi_segment_map_index_of(
         return 0 as *mut mi_segmap_part_t;
     }
     let mut part: *mut mi_segmap_part_t = ::core::intrinsics::atomic_load_relaxed(
-        &mut *mi_segment_map.as_mut_ptr().offset(segindex as isize)
-            as *mut *mut mi_segmap_part_t,
+        &mut *(*(&raw mut mi_segment_map)).as_mut_ptr().offset(segindex as isize) as *mut *mut mi_segmap_part_t,
     );
     if part.is_null() {
         if !create_on_demand {
@@ -20420,7 +19000,7 @@ unsafe extern "C" fn mi_segment_map_index_of(
         }
         let mut expected: *mut mi_segmap_part_t = 0 as *mut mi_segmap_part_t;
         let fresh48 = ::core::intrinsics::atomic_cxchg_release_relaxed(
-            &mut *mi_segment_map.as_mut_ptr().offset(segindex as isize)
+            &mut *(*(&raw mut mi_segment_map)).as_mut_ptr().offset(segindex as isize)
                 as *mut *mut mi_segmap_part_t,
             *(&mut expected as *mut *mut mi_segmap_part_t),
             part,
@@ -20439,59 +19019,48 @@ unsafe extern "C" fn mi_segment_map_index_of(
             }
         }
     }
-    if !part.is_null() {} else {
+    if !part.is_null() {
+    } else {
         _mi_assert_fail(
             b"part != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             9188 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 24],
-                &[libc::c_char; 24],
-            >(b"mi_segment_map_index_of\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 24], &[libc::c_char; 24]>(
+                b"mi_segment_map_index_of\0",
+            ))
+            .as_ptr(),
         );
     };
-    let offset: uintptr_t = (segment as uintptr_t as libc::c_ulonglong)
-        .wrapping_rem(
-            (8 as libc::c_int as libc::c_ulonglong)
-                .wrapping_mul(
-                    (((1 as libc::c_int) << 3 as libc::c_int) as libc::c_ulonglong)
-                        .wrapping_mul(1024 as libc::c_ulonglong)
-                        .wrapping_sub(128 as libc::c_int as libc::c_ulonglong),
-                )
-                .wrapping_mul(
-                    (1 as libc::c_ulonglong)
-                        << 3 as libc::c_int
-                            + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)),
-                ),
-        ) as uintptr_t;
-    let bitofs: uintptr_t = (offset as libc::c_ulonglong)
-        .wrapping_div(
-            (1 as libc::c_ulonglong)
-                << 3 as libc::c_int
-                    + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)),
-        ) as uintptr_t;
-    *idx = bitofs
-        / (((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int) as uintptr_t;
-    *bitidx = bitofs
-        % (((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int) as uintptr_t;
+    let offset: uintptr_t = (segment as uintptr_t as libc::c_ulonglong).wrapping_rem(
+        (8 as libc::c_int as libc::c_ulonglong)
+            .wrapping_mul(
+                (((1 as libc::c_int) << 3 as libc::c_int) as libc::c_ulonglong)
+                    .wrapping_mul(1024 as libc::c_ulonglong)
+                    .wrapping_sub(128 as libc::c_int as libc::c_ulonglong),
+            )
+            .wrapping_mul(
+                (1 as libc::c_ulonglong)
+                    << 3 as libc::c_int
+                        + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)),
+            ),
+    ) as uintptr_t;
+    let bitofs: uintptr_t = (offset as libc::c_ulonglong).wrapping_div(
+        (1 as libc::c_ulonglong)
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)),
+    ) as uintptr_t;
+    *idx = bitofs / (((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int) as uintptr_t;
+    *bitidx = bitofs % (((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int) as uintptr_t;
     return part;
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_segment_map_allocated_at(mut segment: *const mi_segment_t) {
-    if (*segment).memid.memkind as libc::c_uint
-        == MI_MEM_ARENA as libc::c_int as libc::c_uint
-    {
+    if (*segment).memid.memkind as libc::c_uint == MI_MEM_ARENA as libc::c_int as libc::c_uint {
         return;
     }
     let mut index: size_t = 0;
     let mut bitidx: size_t = 0;
-    let mut part: *mut mi_segmap_part_t = mi_segment_map_index_of(
-        segment,
-        1 as libc::c_int != 0,
-        &mut index,
-        &mut bitidx,
-    );
+    let mut part: *mut mi_segmap_part_t =
+        mi_segment_map_index_of(segment, 1 as libc::c_int != 0, &mut index, &mut bitidx);
     if part.is_null() {
         return;
     }
@@ -20510,23 +19079,17 @@ pub unsafe extern "C" fn _mi_segment_map_allocated_at(mut segment: *const mi_seg
         if fresh49.1 {
             break;
         }
-    };
+    }
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_segment_map_freed_at(mut segment: *const mi_segment_t) {
-    if (*segment).memid.memkind as libc::c_uint
-        == MI_MEM_ARENA as libc::c_int as libc::c_uint
-    {
+    if (*segment).memid.memkind as libc::c_uint == MI_MEM_ARENA as libc::c_int as libc::c_uint {
         return;
     }
     let mut index: size_t = 0;
     let mut bitidx: size_t = 0;
-    let mut part: *mut mi_segmap_part_t = mi_segment_map_index_of(
-        segment,
-        0 as libc::c_int != 0,
-        &mut index,
-        &mut bitidx,
-    );
+    let mut part: *mut mi_segmap_part_t =
+        mi_segment_map_index_of(segment, 0 as libc::c_int != 0, &mut index, &mut bitidx);
     if part.is_null() {
         return;
     }
@@ -20545,7 +19108,7 @@ pub unsafe extern "C" fn _mi_segment_map_freed_at(mut segment: *const mi_segment
         if fresh50.1 {
             break;
         }
-    };
+    }
 }
 unsafe extern "C" fn _mi_segment_of(mut p: *const libc::c_void) -> *mut mi_segment_t {
     if p.is_null() {
@@ -20554,32 +19117,27 @@ unsafe extern "C" fn _mi_segment_of(mut p: *const libc::c_void) -> *mut mi_segme
     let mut segment: *mut mi_segment_t = _mi_ptr_segment(p);
     let mut index: size_t = 0;
     let mut bitidx: size_t = 0;
-    let mut part: *mut mi_segmap_part_t = mi_segment_map_index_of(
-        segment,
-        0 as libc::c_int != 0,
-        &mut index,
-        &mut bitidx,
-    );
+    let mut part: *mut mi_segmap_part_t =
+        mi_segment_map_index_of(segment, 0 as libc::c_int != 0, &mut index, &mut bitidx);
     if part.is_null() {
         return 0 as *mut mi_segment_t;
     }
     let mask: uintptr_t = ::core::intrinsics::atomic_load_relaxed(
         &mut *((*part).map).as_mut_ptr().offset(index as isize) as *mut uintptr_t,
     );
-    if (mask & (1 as libc::c_int as uintptr_t) << bitidx
-        != 0 as libc::c_int as uintptr_t) as libc::c_int as libc::c_long != 0
+    if (mask & (1 as libc::c_int as uintptr_t) << bitidx != 0 as libc::c_int as uintptr_t)
+        as libc::c_int as libc::c_long
+        != 0
     {
-        let mut cookie_ok: bool = _mi_ptr_cookie(segment as *const libc::c_void)
-            == (*segment).cookie;
-        if cookie_ok as libc::c_int != 0 {} else {
+        let mut cookie_ok: bool =
+            _mi_ptr_cookie(segment as *const libc::c_void) == (*segment).cookie;
+        if cookie_ok as libc::c_int != 0 {
+        } else {
             _mi_assert_fail(
                 b"cookie_ok\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 9229 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 15],
-                    &[libc::c_char; 15],
-                >(b"_mi_segment_of\0"))
+                (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"_mi_segment_of\0"))
                     .as_ptr(),
             );
         };
@@ -20595,23 +19153,18 @@ pub unsafe extern "C" fn mi_is_in_heap_region(mut p: *const libc::c_void) -> boo
     return mi_is_valid_pointer(p);
 }
 unsafe extern "C" fn mi_is_in_main(mut stat: *mut libc::c_void) -> bool {
-    return stat as *mut uint8_t >= &mut _mi_stats_main as *mut mi_stats_t as *mut uint8_t
+    return stat as *mut uint8_t >= &raw mut _mi_stats_main as *mut mi_stats_t as *mut uint8_t
         && (stat as *mut uint8_t)
-            < (&mut _mi_stats_main as *mut mi_stats_t as *mut uint8_t)
+            < (&raw mut _mi_stats_main as *mut mi_stats_t as *mut uint8_t)
                 .offset(::core::mem::size_of::<mi_stats_t>() as libc::c_ulong as isize);
 }
-unsafe extern "C" fn mi_stat_update(
-    mut stat: *mut mi_stat_count_t,
-    mut amount: int64_t,
-) {
+unsafe extern "C" fn mi_stat_update(mut stat: *mut mi_stat_count_t, mut amount: int64_t) {
     if amount == 0 as libc::c_int as int64_t {
         return;
     }
     if mi_is_in_main(stat as *mut libc::c_void) {
-        let mut current: int64_t = mi_atomic_addi64_relaxed(
-            &mut (*stat).current as *mut int64_t as *mut int64_t,
-            amount,
-        );
+        let mut current: int64_t =
+            mi_atomic_addi64_relaxed(&mut (*stat).current as *mut int64_t as *mut int64_t, amount);
         mi_atomic_maxi64_relaxed(
             &mut (*stat).peak as *mut int64_t as *mut int64_t,
             current + amount,
@@ -20622,10 +19175,7 @@ unsafe extern "C" fn mi_stat_update(
                 amount,
             );
         } else {
-            mi_atomic_addi64_relaxed(
-                &mut (*stat).freed as *mut int64_t as *mut int64_t,
-                -amount,
-            );
+            mi_atomic_addi64_relaxed(&mut (*stat).freed as *mut int64_t as *mut int64_t, -amount);
         }
     } else {
         (*stat).current += amount;
@@ -20656,23 +19206,15 @@ pub unsafe extern "C" fn _mi_stat_counter_increase(
     } else {
         (*stat).count += 1;
         (*stat).count;
-        (*stat)
-            .total = ((*stat).total as size_t).wrapping_add(amount) as int64_t
-            as int64_t;
+        (*stat).total = ((*stat).total as size_t).wrapping_add(amount) as int64_t as int64_t;
     };
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn _mi_stat_increase(
-    mut stat: *mut mi_stat_count_t,
-    mut amount: size_t,
-) {
+pub unsafe extern "C" fn _mi_stat_increase(mut stat: *mut mi_stat_count_t, mut amount: size_t) {
     mi_stat_update(stat, amount as int64_t);
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn _mi_stat_decrease(
-    mut stat: *mut mi_stat_count_t,
-    mut amount: size_t,
-) {
+pub unsafe extern "C" fn _mi_stat_decrease(mut stat: *mut mi_stat_count_t, mut amount: size_t) {
     mi_stat_update(stat, -(amount as int64_t));
 }
 unsafe extern "C" fn mi_stat_add(
@@ -20722,19 +19264,40 @@ unsafe extern "C" fn mi_stat_counter_add(
         (*src).count * unit,
     );
 }
-unsafe extern "C" fn mi_stats_add(
-    mut stats: *mut mi_stats_t,
-    mut src: *const mi_stats_t,
-) {
+unsafe extern "C" fn mi_stats_add(mut stats: *mut mi_stats_t, mut src: *const mi_stats_t) {
     if stats == src as *mut mi_stats_t {
         return;
     }
-    mi_stat_add(&mut (*stats).segments, &(*src).segments, 1 as libc::c_int as int64_t);
-    mi_stat_add(&mut (*stats).pages, &(*src).pages, 1 as libc::c_int as int64_t);
-    mi_stat_add(&mut (*stats).reserved, &(*src).reserved, 1 as libc::c_int as int64_t);
-    mi_stat_add(&mut (*stats).committed, &(*src).committed, 1 as libc::c_int as int64_t);
-    mi_stat_add(&mut (*stats).reset, &(*src).reset, 1 as libc::c_int as int64_t);
-    mi_stat_add(&mut (*stats).purged, &(*src).purged, 1 as libc::c_int as int64_t);
+    mi_stat_add(
+        &mut (*stats).segments,
+        &(*src).segments,
+        1 as libc::c_int as int64_t,
+    );
+    mi_stat_add(
+        &mut (*stats).pages,
+        &(*src).pages,
+        1 as libc::c_int as int64_t,
+    );
+    mi_stat_add(
+        &mut (*stats).reserved,
+        &(*src).reserved,
+        1 as libc::c_int as int64_t,
+    );
+    mi_stat_add(
+        &mut (*stats).committed,
+        &(*src).committed,
+        1 as libc::c_int as int64_t,
+    );
+    mi_stat_add(
+        &mut (*stats).reset,
+        &(*src).reset,
+        1 as libc::c_int as int64_t,
+    );
+    mi_stat_add(
+        &mut (*stats).purged,
+        &(*src).purged,
+        1 as libc::c_int as int64_t,
+    );
     mi_stat_add(
         &mut (*stats).page_committed,
         &(*src).page_committed,
@@ -20750,16 +19313,36 @@ unsafe extern "C" fn mi_stats_add(
         &(*src).segments_abandoned,
         1 as libc::c_int as int64_t,
     );
-    mi_stat_add(&mut (*stats).threads, &(*src).threads, 1 as libc::c_int as int64_t);
-    mi_stat_add(&mut (*stats).malloc, &(*src).malloc, 1 as libc::c_int as int64_t);
+    mi_stat_add(
+        &mut (*stats).threads,
+        &(*src).threads,
+        1 as libc::c_int as int64_t,
+    );
+    mi_stat_add(
+        &mut (*stats).malloc,
+        &(*src).malloc,
+        1 as libc::c_int as int64_t,
+    );
     mi_stat_add(
         &mut (*stats).segments_cache,
         &(*src).segments_cache,
         1 as libc::c_int as int64_t,
     );
-    mi_stat_add(&mut (*stats).normal, &(*src).normal, 1 as libc::c_int as int64_t);
-    mi_stat_add(&mut (*stats).huge, &(*src).huge, 1 as libc::c_int as int64_t);
-    mi_stat_add(&mut (*stats).giant, &(*src).giant, 1 as libc::c_int as int64_t);
+    mi_stat_add(
+        &mut (*stats).normal,
+        &(*src).normal,
+        1 as libc::c_int as int64_t,
+    );
+    mi_stat_add(
+        &mut (*stats).huge,
+        &(*src).huge,
+        1 as libc::c_int as int64_t,
+    );
+    mi_stat_add(
+        &mut (*stats).giant,
+        &(*src).giant,
+        1 as libc::c_int as int64_t,
+    );
     mi_stat_counter_add(
         &mut (*stats).pages_extended,
         &(*src).pages_extended,
@@ -20828,7 +19411,7 @@ unsafe extern "C" fn mi_stats_add(
 unsafe extern "C" fn mi_printf_amount(
     mut n: int64_t,
     mut unit: int64_t,
-    mut out: Option::<mi_output_fun>,
+    mut out: Option<mi_output_fun>,
     mut arg: *mut libc::c_void,
     mut fmt: *const libc::c_char,
 ) {
@@ -20848,7 +19431,11 @@ unsafe extern "C" fn mi_printf_amount(
     if unit > 0 as libc::c_int as int64_t {
         n *= unit;
     }
-    let pos: int64_t = if n < 0 as libc::c_int as int64_t { -n } else { n };
+    let pos: int64_t = if n < 0 as libc::c_int as int64_t {
+        -n
+    } else {
+        n
+    };
     if pos < base {
         if n != 1 as libc::c_int as int64_t
             || *suffix.offset(0 as libc::c_int as isize) as libc::c_int != 'B' as i32
@@ -20867,8 +19454,7 @@ unsafe extern "C" fn mi_printf_amount(
         }
     } else {
         let mut divider: int64_t = base;
-        let mut magnitude: *const libc::c_char = b"K\0" as *const u8
-            as *const libc::c_char;
+        let mut magnitude: *const libc::c_char = b"K\0" as *const u8 as *const libc::c_char;
         if pos >= divider * base {
             divider *= base;
             magnitude = b"M\0" as *const u8 as *const libc::c_char;
@@ -20898,21 +19484,29 @@ unsafe extern "C" fn mi_printf_amount(
             len as size_t,
             b"%ld.%ld %-3s\0" as *const u8 as *const libc::c_char,
             whole,
-            if frac1 < 0 as libc::c_int as libc::c_long { -frac1 } else { frac1 },
+            if frac1 < 0 as libc::c_int as libc::c_long {
+                -frac1
+            } else {
+                frac1
+            },
             unitdesc.as_mut_ptr(),
         );
     }
     _mi_fprintf(
         out,
         arg,
-        if fmt.is_null() { b"%12s\0" as *const u8 as *const libc::c_char } else { fmt },
+        if fmt.is_null() {
+            b"%12s\0" as *const u8 as *const libc::c_char
+        } else {
+            fmt
+        },
         buf.as_mut_ptr(),
     );
 }
 unsafe extern "C" fn mi_print_amount(
     mut n: int64_t,
     mut unit: int64_t,
-    mut out: Option::<mi_output_fun>,
+    mut out: Option<mi_output_fun>,
     mut arg: *mut libc::c_void,
 ) {
     mi_printf_amount(n, unit, out, arg, 0 as *const libc::c_char);
@@ -20920,7 +19514,7 @@ unsafe extern "C" fn mi_print_amount(
 unsafe extern "C" fn mi_print_count(
     mut n: int64_t,
     mut unit: int64_t,
-    mut out: Option::<mi_output_fun>,
+    mut out: Option<mi_output_fun>,
     mut arg: *mut libc::c_void,
 ) {
     if unit == 1 as libc::c_int as int64_t {
@@ -20938,11 +19532,16 @@ unsafe extern "C" fn mi_stat_print_ex(
     mut stat: *const mi_stat_count_t,
     mut msg: *const libc::c_char,
     mut unit: int64_t,
-    mut out: Option::<mi_output_fun>,
+    mut out: Option<mi_output_fun>,
     mut arg: *mut libc::c_void,
     mut notok: *const libc::c_char,
 ) {
-    _mi_fprintf(out, arg, b"%10s:\0" as *const u8 as *const libc::c_char, msg);
+    _mi_fprintf(
+        out,
+        arg,
+        b"%10s:\0" as *const u8 as *const libc::c_char,
+        msg,
+    );
     if unit != 0 as libc::c_int as int64_t {
         if unit > 0 as libc::c_int as int64_t {
             mi_print_amount((*stat).peak, unit, out, arg);
@@ -21005,7 +19604,7 @@ unsafe extern "C" fn mi_stat_print(
     mut stat: *const mi_stat_count_t,
     mut msg: *const libc::c_char,
     mut unit: int64_t,
-    mut out: Option::<mi_output_fun>,
+    mut out: Option<mi_output_fun>,
     mut arg: *mut libc::c_void,
 ) {
     mi_stat_print_ex(stat, msg, unit, out, arg, 0 as *const libc::c_char);
@@ -21014,27 +19613,37 @@ unsafe extern "C" fn mi_stat_peak_print(
     mut stat: *const mi_stat_count_t,
     mut msg: *const libc::c_char,
     mut unit: int64_t,
-    mut out: Option::<mi_output_fun>,
+    mut out: Option<mi_output_fun>,
     mut arg: *mut libc::c_void,
 ) {
-    _mi_fprintf(out, arg, b"%10s:\0" as *const u8 as *const libc::c_char, msg);
+    _mi_fprintf(
+        out,
+        arg,
+        b"%10s:\0" as *const u8 as *const libc::c_char,
+        msg,
+    );
     mi_print_amount((*stat).peak, unit, out, arg);
     _mi_fprintf(out, arg, b"\n\0" as *const u8 as *const libc::c_char);
 }
 unsafe extern "C" fn mi_stat_counter_print(
     mut stat: *const mi_stat_counter_t,
     mut msg: *const libc::c_char,
-    mut out: Option::<mi_output_fun>,
+    mut out: Option<mi_output_fun>,
     mut arg: *mut libc::c_void,
 ) {
-    _mi_fprintf(out, arg, b"%10s:\0" as *const u8 as *const libc::c_char, msg);
+    _mi_fprintf(
+        out,
+        arg,
+        b"%10s:\0" as *const u8 as *const libc::c_char,
+        msg,
+    );
     mi_print_amount((*stat).total, -(1 as libc::c_int) as int64_t, out, arg);
     _mi_fprintf(out, arg, b"\n\0" as *const u8 as *const libc::c_char);
 }
 unsafe extern "C" fn mi_stat_counter_print_avg(
     mut stat: *const mi_stat_counter_t,
     mut msg: *const libc::c_char,
-    mut out: Option::<mi_output_fun>,
+    mut out: Option<mi_output_fun>,
     mut arg: *mut libc::c_void,
 ) {
     let avg_tens: int64_t = if (*stat).count == 0 as libc::c_int as int64_t {
@@ -21053,10 +19662,7 @@ unsafe extern "C" fn mi_stat_counter_print_avg(
         avg_frac1,
     );
 }
-unsafe extern "C" fn mi_print_header(
-    mut out: Option::<mi_output_fun>,
-    mut arg: *mut libc::c_void,
-) {
+unsafe extern "C" fn mi_print_header(mut out: Option<mi_output_fun>, mut arg: *mut libc::c_void) {
     _mi_fprintf(
         out,
         arg,
@@ -21074,7 +19680,7 @@ unsafe extern "C" fn mi_stats_print_bins(
     mut bins: *const mi_stat_count_t,
     mut max: size_t,
     mut fmt: *const libc::c_char,
-    mut out: Option::<mi_output_fun>,
+    mut out: Option<mi_output_fun>,
     mut arg: *mut libc::c_void,
 ) {
     let mut found: bool = 0 as libc::c_int != 0;
@@ -21106,10 +19712,7 @@ unsafe extern "C" fn mi_buffered_flush(mut buf: *mut buffered_t) {
     _mi_fputs((*buf).out, (*buf).arg, 0 as *const libc::c_char, (*buf).buf);
     (*buf).used = 0 as libc::c_int as size_t;
 }
-unsafe extern "C" fn mi_buffered_out(
-    mut msg: *const libc::c_char,
-    mut arg: *mut libc::c_void,
-) {
+unsafe extern "C" fn mi_buffered_out(mut msg: *const libc::c_char, mut arg: *mut libc::c_void) {
     let mut buf: *mut buffered_t = arg as *mut buffered_t;
     if msg.is_null() || buf.is_null() {
         return;
@@ -21120,15 +19723,13 @@ unsafe extern "C" fn mi_buffered_out(
         if (*buf).used >= (*buf).count {
             mi_buffered_flush(buf);
         }
-        if (*buf).used < (*buf).count {} else {
+        if (*buf).used < (*buf).count {
+        } else {
             _mi_assert_fail(
                 b"buf->used < buf->count\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
                 9468 as libc::c_int as libc::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 16],
-                    &[libc::c_char; 16],
-                >(b"mi_buffered_out\0"))
+                (*::core::mem::transmute::<&[u8; 16], &[libc::c_char; 16]>(b"mi_buffered_out\0"))
                     .as_ptr(),
             );
         };
@@ -21144,7 +19745,7 @@ unsafe extern "C" fn mi_buffered_out(
 }
 unsafe extern "C" fn _mi_stats_print(
     mut stats: *mut mi_stats_t,
-    mut out0: Option::<mi_output_fun>,
+    mut out0: Option<mi_output_fun>,
     mut arg0: *mut libc::c_void,
 ) {
     let mut buf: [libc::c_char; 256] = [0; 256];
@@ -21159,10 +19760,8 @@ unsafe extern "C" fn _mi_stats_print(
         init
     };
     buffer.buf = buf.as_mut_ptr();
-    let mut out: Option::<mi_output_fun> = Some(
-        mi_buffered_out
-            as unsafe extern "C" fn(*const libc::c_char, *mut libc::c_void) -> (),
-    );
+    let mut out: Option<mi_output_fun> =
+        Some(mi_buffered_out as unsafe extern "C" fn(*const libc::c_char, *mut libc::c_void) -> ());
     let mut arg: *mut libc::c_void = &mut buffer as *mut buffered_t as *mut libc::c_void;
     mi_print_header(out, arg);
     mi_stats_print_bins(
@@ -21203,7 +19802,11 @@ unsafe extern "C" fn _mi_stats_print(
         };
         init
     };
-    mi_stat_add(&mut total, &mut (*stats).normal, 1 as libc::c_int as int64_t);
+    mi_stat_add(
+        &mut total,
+        &mut (*stats).normal,
+        1 as libc::c_int as int64_t,
+    );
     mi_stat_add(&mut total, &mut (*stats).huge, 1 as libc::c_int as int64_t);
     mi_stat_print(
         &mut total,
@@ -21401,8 +20004,8 @@ unsafe extern "C" fn _mi_stats_print(
     _mi_fprintf(
         out,
         arg,
-        b"%10s: user: %ld.%03ld s, system: %ld.%03ld s, faults: %lu, rss: \0"
-            as *const u8 as *const libc::c_char,
+        b"%10s: user: %ld.%03ld s, system: %ld.%03ld s, faults: %lu, rss: \0" as *const u8
+            as *const libc::c_char,
         b"process\0" as *const u8 as *const libc::c_char,
         user_time / 1000 as libc::c_int as size_t,
         user_time % 1000 as libc::c_int as size_t,
@@ -21418,7 +20021,11 @@ unsafe extern "C" fn _mi_stats_print(
         b"%s\0" as *const u8 as *const libc::c_char,
     );
     if peak_commit > 0 as libc::c_int as size_t {
-        _mi_fprintf(out, arg, b", commit: \0" as *const u8 as *const libc::c_char);
+        _mi_fprintf(
+            out,
+            arg,
+            b", commit: \0" as *const u8 as *const libc::c_char,
+        );
         mi_printf_amount(
             peak_commit as int64_t,
             1 as libc::c_int as int64_t,
@@ -21435,8 +20042,8 @@ unsafe extern "C" fn mi_stats_get_default() -> *mut mi_stats_t {
     return &mut (*(*heap).tld).stats;
 }
 unsafe extern "C" fn mi_stats_merge_from(mut stats: *mut mi_stats_t) {
-    if stats != &mut _mi_stats_main as *mut mi_stats_t {
-        mi_stats_add(&mut _mi_stats_main, stats);
+    if stats != &raw mut _mi_stats_main as *mut mi_stats_t {
+        mi_stats_add(&raw mut _mi_stats_main, stats);
         memset(
             stats as *mut libc::c_void,
             0 as libc::c_int,
@@ -21447,7 +20054,7 @@ unsafe extern "C" fn mi_stats_merge_from(mut stats: *mut mi_stats_t) {
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_stats_reset() {
     let mut stats: *mut mi_stats_t = mi_stats_get_default();
-    if stats != &mut _mi_stats_main as *mut mi_stats_t {
+    if stats != &raw mut _mi_stats_main as *mut mi_stats_t {
         memset(
             stats as *mut libc::c_void,
             0 as libc::c_int,
@@ -21455,7 +20062,7 @@ pub unsafe extern "C" fn mi_stats_reset() {
         );
     }
     memset(
-        &mut _mi_stats_main as *mut mi_stats_t as *mut libc::c_void,
+        &raw mut _mi_stats_main as *mut mi_stats_t as *mut libc::c_void,
         0 as libc::c_int,
         ::core::mem::size_of::<mi_stats_t>() as libc::c_ulong,
     );
@@ -21473,22 +20080,22 @@ pub unsafe extern "C" fn _mi_stats_done(mut stats: *mut mi_stats_t) {
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_stats_print_out(
-    mut out: Option::<mi_output_fun>,
+    mut out: Option<mi_output_fun>,
     mut arg: *mut libc::c_void,
 ) {
     mi_stats_merge_from(mi_stats_get_default());
-    _mi_stats_print(&mut _mi_stats_main, out, arg);
+    _mi_stats_print(&raw mut _mi_stats_main, out, arg);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_stats_print(mut out: *mut libc::c_void) {
     mi_stats_print_out(
-        ::core::mem::transmute::<*mut libc::c_void, Option::<mi_output_fun>>(out),
+        ::core::mem::transmute::<*mut libc::c_void, Option<mi_output_fun>>(out),
         0 as *mut libc::c_void,
     );
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_thread_stats_print_out(
-    mut out: Option::<mi_output_fun>,
+    mut out: Option<mi_output_fun>,
     mut arg: *mut libc::c_void,
 ) {
     _mi_stats_print(mi_stats_get_default(), out, arg);
@@ -21538,13 +20145,11 @@ pub unsafe extern "C" fn mi_process_info(
         ::core::mem::size_of::<mi_process_info_t>() as libc::c_ulong,
     );
     pinfo.elapsed = _mi_clock_end(mi_process_start);
-    pinfo
-        .current_commit = ::core::intrinsics::atomic_load_relaxed(
-        &mut _mi_stats_main.committed.current as *mut int64_t as *mut int64_t,
+    pinfo.current_commit = ::core::intrinsics::atomic_load_relaxed(
+        &raw mut _mi_stats_main.committed.current as *mut int64_t as *mut int64_t,
     ) as size_t;
-    pinfo
-        .peak_commit = ::core::intrinsics::atomic_load_relaxed(
-        &mut _mi_stats_main.committed.peak as *mut int64_t as *mut int64_t,
+    pinfo.peak_commit = ::core::intrinsics::atomic_load_relaxed(
+        &raw mut _mi_stats_main.committed.peak as *mut int64_t as *mut int64_t,
     ) as size_t;
     pinfo.current_rss = pinfo.current_commit;
     pinfo.peak_rss = pinfo.peak_commit;
@@ -21600,8 +20205,12 @@ unsafe extern "C" fn mi_prim_open(
     mut fpath: *const libc::c_char,
     mut open_flags: libc::c_int,
 ) -> libc::c_int {
-    return syscall(2 as libc::c_int as libc::c_long, fpath, open_flags, 0 as libc::c_int)
-        as libc::c_int;
+    return syscall(
+        2 as libc::c_int as libc::c_long,
+        fpath,
+        open_flags,
+        0 as libc::c_int,
+    ) as libc::c_int;
 }
 #[inline]
 unsafe extern "C" fn mi_prim_read(
@@ -21657,11 +20266,9 @@ pub unsafe extern "C" fn _mi_prim_mem_init(mut config: *mut mi_os_mem_config_t) 
             (*config).physical_memory = pphys as size_t * psize as size_t;
         }
     }
-    (*config)
-        .large_page_size = (2 as libc::c_int as libc::c_ulonglong)
-        .wrapping_mul(
-            (1024 as libc::c_ulonglong).wrapping_mul(1024 as libc::c_ulonglong),
-        ) as size_t;
+    (*config).large_page_size = (2 as libc::c_int as libc::c_ulonglong)
+        .wrapping_mul((1024 as libc::c_ulonglong).wrapping_mul(1024 as libc::c_ulonglong))
+        as size_t;
     (*config).has_overcommit = unix_detect_overcommit();
     (*config).has_partial_free = 1 as libc::c_int != 0;
     (*config).has_virtual_reserve = 1 as libc::c_int != 0;
@@ -21692,7 +20299,11 @@ pub unsafe extern "C" fn _mi_prim_free(
     mut size: size_t,
 ) -> libc::c_int {
     let mut err: bool = munmap(addr, size) == -(1 as libc::c_int);
-    return if err as libc::c_int != 0 { *__errno_location() } else { 0 as libc::c_int };
+    return if err as libc::c_int != 0 {
+        *__errno_location()
+    } else {
+        0 as libc::c_int
+    };
 }
 unsafe extern "C" fn unix_madvise(
     mut addr: *mut libc::c_void,
@@ -21700,7 +20311,11 @@ unsafe extern "C" fn unix_madvise(
     mut advice: libc::c_int,
 ) -> libc::c_int {
     let mut res: libc::c_int = madvise(addr, size, advice);
-    return if res == 0 as libc::c_int { 0 as libc::c_int } else { *__errno_location() };
+    return if res == 0 as libc::c_int {
+        0 as libc::c_int
+    } else {
+        *__errno_location()
+    };
 }
 unsafe extern "C" fn unix_mmap_prim(
     mut addr: *mut libc::c_void,
@@ -21714,10 +20329,15 @@ unsafe extern "C" fn unix_mmap_prim(
     if addr.is_null() {
         let mut hint: *mut libc::c_void = _mi_os_get_aligned_hint(try_alignment, size);
         if !hint.is_null() {
-            p = mmap(hint, size, protect_flags, flags, fd, 0 as libc::c_int as __off_t);
-            if p == -(1 as libc::c_int) as *mut libc::c_void
-                || !_mi_is_aligned(p, try_alignment)
-            {
+            p = mmap(
+                hint,
+                size,
+                protect_flags,
+                flags,
+                fd,
+                0 as libc::c_int as __off_t,
+            );
+            if p == -(1 as libc::c_int) as *mut libc::c_void || !_mi_is_aligned(p, try_alignment) {
                 let mut err: libc::c_int = *__errno_location();
                 _mi_trace_message(
                     b"unable to directly request hinted aligned OS memory (error: %d (0x%x), size: 0x%zx bytes, alignment: 0x%zx, hint address: %p)\n\0"
@@ -21734,7 +20354,14 @@ unsafe extern "C" fn unix_mmap_prim(
             }
         }
     }
-    p = mmap(addr, size, protect_flags, flags, fd, 0 as libc::c_int as __off_t);
+    p = mmap(
+        addr,
+        size,
+        protect_flags,
+        flags,
+        fd,
+        0 as libc::c_int as __off_t,
+    );
     if p != -(1 as libc::c_int) as *mut libc::c_void {
         return p;
     }
@@ -21763,12 +20390,10 @@ unsafe extern "C" fn unix_mmap(
         && allow_large as libc::c_int != 0
     {
         static mut large_page_try_ok: size_t = 0;
-        let mut try_ok: size_t = ::core::intrinsics::atomic_load_acquire(
-            &mut large_page_try_ok,
-        );
+        let mut try_ok: size_t = ::core::intrinsics::atomic_load_acquire(&raw mut large_page_try_ok);
         if !large_only && try_ok > 0 as libc::c_int as size_t {
             let fresh52 = ::core::intrinsics::atomic_cxchg_acqrel_acquire(
-                &mut large_page_try_ok,
+                &raw mut large_page_try_ok,
                 *&mut try_ok,
                 try_ok.wrapping_sub(1 as libc::c_int as size_t),
             );
@@ -21779,30 +20404,22 @@ unsafe extern "C" fn unix_mmap(
             let mut lfd: libc::c_int = fd;
             lflags |= 0x40000 as libc::c_int;
             static mut mi_huge_pages_available: bool = 1 as libc::c_int != 0;
-            if (size as libc::c_ulonglong)
-                .wrapping_rem(
-                    (1024 as libc::c_ulonglong)
-                        .wrapping_mul(1024 as libc::c_ulonglong)
-                        .wrapping_mul(1024 as libc::c_ulonglong),
-                ) == 0 as libc::c_int as libc::c_ulonglong
+            if (size as libc::c_ulonglong).wrapping_rem(
+                (1024 as libc::c_ulonglong)
+                    .wrapping_mul(1024 as libc::c_ulonglong)
+                    .wrapping_mul(1024 as libc::c_ulonglong),
+            ) == 0 as libc::c_int as libc::c_ulonglong
                 && mi_huge_pages_available as libc::c_int != 0
             {
-                lflags = (lflags as libc::c_uint
-                    | (30 as libc::c_uint) << 26 as libc::c_int) as libc::c_int;
+                lflags = (lflags as libc::c_uint | (30 as libc::c_uint) << 26 as libc::c_int)
+                    as libc::c_int;
             } else {
-                lflags = (lflags as libc::c_uint
-                    | (21 as libc::c_uint) << 26 as libc::c_int) as libc::c_int;
+                lflags = (lflags as libc::c_uint | (21 as libc::c_uint) << 26 as libc::c_int)
+                    as libc::c_int;
             }
             if large_only as libc::c_int != 0 || lflags != flags {
                 *is_large = 1 as libc::c_int != 0;
-                p = unix_mmap_prim(
-                    addr,
-                    size,
-                    try_alignment,
-                    protect_flags,
-                    lflags,
-                    lfd,
-                );
+                p = unix_mmap_prim(addr, size, try_alignment, protect_flags, lflags, lfd);
                 if p.is_null()
                     && lflags as libc::c_uint & (30 as libc::c_uint) << 26 as libc::c_int
                         == (30 as libc::c_uint) << 26 as libc::c_int
@@ -21813,24 +20430,17 @@ unsafe extern "C" fn unix_mmap(
                             as *const u8 as *const libc::c_char,
                         *__errno_location(),
                     );
-                    lflags = (lflags as libc::c_uint
-                        & !((30 as libc::c_uint) << 26 as libc::c_int)
-                        | (21 as libc::c_uint) << 26 as libc::c_int) as libc::c_int;
-                    p = unix_mmap_prim(
-                        addr,
-                        size,
-                        try_alignment,
-                        protect_flags,
-                        lflags,
-                        lfd,
-                    );
+                    lflags = (lflags as libc::c_uint & !((30 as libc::c_uint) << 26 as libc::c_int)
+                        | (21 as libc::c_uint) << 26 as libc::c_int)
+                        as libc::c_int;
+                    p = unix_mmap_prim(addr, size, try_alignment, protect_flags, lflags, lfd);
                 }
                 if large_only {
                     return p;
                 }
                 if p.is_null() {
                     ::core::intrinsics::atomic_store_release(
-                        &mut large_page_try_ok,
+                        &raw mut large_page_try_ok,
                         8 as libc::c_int as size_t,
                     );
                 }
@@ -21861,42 +20471,34 @@ pub unsafe extern "C" fn _mi_prim_alloc(
     mut is_zero: *mut bool,
     mut addr: *mut *mut libc::c_void,
 ) -> libc::c_int {
-    if size > 0 as libc::c_int as size_t
-        && size % _mi_os_page_size() == 0 as libc::c_int as size_t
-    {} else {
+    if size > 0 as libc::c_int as size_t && size % _mi_os_page_size() == 0 as libc::c_int as size_t
+    {
+    } else {
         _mi_assert_fail(
-            b"size > 0 && (size % _mi_os_page_size()) == 0\0" as *const u8
-                as *const libc::c_char,
+            b"size > 0 && (size % _mi_os_page_size()) == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             11354 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 15],
-                &[libc::c_char; 15],
-            >(b"_mi_prim_alloc\0"))
+            (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"_mi_prim_alloc\0"))
                 .as_ptr(),
         );
     };
-    if commit as libc::c_int != 0 || !allow_large {} else {
+    if commit as libc::c_int != 0 || !allow_large {
+    } else {
         _mi_assert_fail(
             b"commit || !allow_large\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             11355 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 15],
-                &[libc::c_char; 15],
-            >(b"_mi_prim_alloc\0"))
+            (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"_mi_prim_alloc\0"))
                 .as_ptr(),
         );
     };
-    if try_alignment > 0 as libc::c_int as size_t {} else {
+    if try_alignment > 0 as libc::c_int as size_t {
+    } else {
         _mi_assert_fail(
             b"try_alignment > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             11356 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 15],
-                &[libc::c_char; 15],
-            >(b"_mi_prim_alloc\0"))
+            (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"_mi_prim_alloc\0"))
                 .as_ptr(),
         );
     };
@@ -21915,7 +20517,11 @@ pub unsafe extern "C" fn _mi_prim_alloc(
         allow_large,
         is_large,
     );
-    return if !(*addr).is_null() { 0 as libc::c_int } else { *__errno_location() };
+    return if !(*addr).is_null() {
+        0 as libc::c_int
+    } else {
+        *__errno_location()
+    };
 }
 unsafe extern "C" fn unix_mprotect_hint(mut err: libc::c_int) {}
 #[unsafe(no_mangle)]
@@ -21925,11 +20531,7 @@ pub unsafe extern "C" fn _mi_prim_commit(
     mut is_zero: *mut bool,
 ) -> libc::c_int {
     *is_zero = 0 as libc::c_int != 0;
-    let mut err: libc::c_int = mprotect(
-        start,
-        size,
-        0x1 as libc::c_int | 0x2 as libc::c_int,
-    );
+    let mut err: libc::c_int = mprotect(start, size, 0x1 as libc::c_int | 0x2 as libc::c_int);
     if err != 0 as libc::c_int {
         err = *__errno_location();
         unix_mprotect_hint(err);
@@ -21954,8 +20556,8 @@ pub unsafe extern "C" fn _mi_prim_reset(
     mut size: size_t,
 ) -> libc::c_int {
     static mut advice: size_t = 8 as libc::c_int as libc::c_ulong;
-    let mut oadvice: libc::c_int = ::core::intrinsics::atomic_load_relaxed(&mut advice)
-        as libc::c_int;
+    let mut oadvice: libc::c_int =
+        ::core::intrinsics::atomic_load_relaxed(&raw mut advice) as libc::c_int;
     let mut err: libc::c_int = 0;
     loop {
         err = unix_madvise(start, size, oadvice);
@@ -21964,13 +20566,11 @@ pub unsafe extern "C" fn _mi_prim_reset(
         }
         *__errno_location() = 0 as libc::c_int;
     }
-    if err != 0 as libc::c_int && *__errno_location() == 22 as libc::c_int
+    if err != 0 as libc::c_int
+        && *__errno_location() == 22 as libc::c_int
         && oadvice == 8 as libc::c_int
     {
-        ::core::intrinsics::atomic_store_release(
-            &mut advice,
-            4 as libc::c_int as size_t,
-        );
+        ::core::intrinsics::atomic_store_release(&raw mut advice, 4 as libc::c_int as size_t);
         err = unix_madvise(start, size, 4 as libc::c_int);
     }
     return err;
@@ -22028,14 +20628,15 @@ pub unsafe extern "C" fn _mi_prim_alloc_huge_os_pages(
         hint_addr,
         size,
         ((1 as libc::c_ulonglong)
-            << 3 as libc::c_int
-                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int))) as size_t,
+            << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
+            as size_t,
         0x1 as libc::c_int | 0x2 as libc::c_int,
         1 as libc::c_int != 0,
         1 as libc::c_int != 0,
         &mut is_large,
     );
-    if !(*addr).is_null() && numa_node >= 0 as libc::c_int
+    if !(*addr).is_null()
+        && numa_node >= 0 as libc::c_int
         && numa_node < 8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)
     {
         let mut numa_mask: libc::c_ulong = (1 as libc::c_ulong) << numa_node;
@@ -22044,8 +20645,7 @@ pub unsafe extern "C" fn _mi_prim_alloc_huge_os_pages(
             size,
             1 as libc::c_int as libc::c_ulong,
             &mut numa_mask,
-            (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int))
-                as libc::c_ulong,
+            (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as libc::c_ulong,
             0 as libc::c_int as libc::c_uint,
         );
         if err != 0 as libc::c_int as libc::c_long {
@@ -22059,7 +20659,11 @@ pub unsafe extern "C" fn _mi_prim_alloc_huge_os_pages(
             );
         }
     }
-    return if !(*addr).is_null() { 0 as libc::c_int } else { *__errno_location() };
+    return if !(*addr).is_null() {
+        0 as libc::c_int
+    } else {
+        *__errno_location()
+    };
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_prim_numa_node() -> size_t {
@@ -22098,7 +20702,10 @@ pub unsafe extern "C" fn _mi_prim_numa_node_count() -> size_t {
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_prim_clock_now() -> mi_msecs_t {
-    let mut t: timespec = timespec { tv_sec: 0, tv_nsec: 0 };
+    let mut t: timespec = timespec {
+        tv_sec: 0,
+        tv_nsec: 0,
+    };
     clock_gettime(1 as libc::c_int, &mut t);
     return t.tv_sec * 1000 as libc::c_int as mi_msecs_t
         + t.tv_nsec / 1000000 as libc::c_int as mi_msecs_t;
@@ -22109,8 +20716,14 @@ unsafe extern "C" fn timeval_secs(mut tv: *const timeval) -> mi_msecs_t {
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_prim_process_info(mut pinfo: *mut mi_process_info_t) {
     let mut rusage: rusage = rusage {
-        ru_utime: timeval { tv_sec: 0, tv_usec: 0 },
-        ru_stime: timeval { tv_sec: 0, tv_usec: 0 },
+        ru_utime: timeval {
+            tv_sec: 0,
+            tv_usec: 0,
+        },
+        ru_stime: timeval {
+            tv_sec: 0,
+            tv_usec: 0,
+        },
         c2rust_unnamed: C2RustUnnamed_1 { ru_maxrss: 0 },
         c2rust_unnamed_0: C2RustUnnamed_14 { ru_ixrss: 0 },
         c2rust_unnamed_1: C2RustUnnamed_13 { ru_idrss: 0 },
@@ -22130,9 +20743,8 @@ pub unsafe extern "C" fn _mi_prim_process_info(mut pinfo: *mut mi_process_info_t
     (*pinfo).utime = timeval_secs(&mut rusage.ru_utime);
     (*pinfo).stime = timeval_secs(&mut rusage.ru_stime);
     (*pinfo).page_faults = rusage.c2rust_unnamed_4.ru_majflt as size_t;
-    (*pinfo)
-        .peak_rss = (rusage.c2rust_unnamed.ru_maxrss
-        * 1024 as libc::c_int as libc::c_long) as size_t;
+    (*pinfo).peak_rss =
+        (rusage.c2rust_unnamed.ru_maxrss * 1024 as libc::c_int as libc::c_long) as size_t;
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_prim_out_stderr(mut msg: *const libc::c_char) {
@@ -22182,7 +20794,7 @@ pub unsafe extern "C" fn _mi_prim_random_buf(
     mut buf_len: size_t,
 ) -> bool {
     static mut no_getrandom: uintptr_t = 0;
-    if ::core::intrinsics::atomic_load_acquire(&mut no_getrandom as *mut uintptr_t)
+    if ::core::intrinsics::atomic_load_acquire(&raw mut no_getrandom as *mut uintptr_t)
         == 0 as libc::c_int as uintptr_t
     {
         let mut ret: ssize_t = syscall(
@@ -22197,17 +20809,12 @@ pub unsafe extern "C" fn _mi_prim_random_buf(
         if *__errno_location() != 38 as libc::c_int {
             return 0 as libc::c_int != 0;
         }
-        ::core::intrinsics::atomic_store_release(
-            &mut no_getrandom,
-            1 as libc::c_int as uintptr_t,
-        );
+        ::core::intrinsics::atomic_store_release(&raw mut no_getrandom, 1 as libc::c_int as uintptr_t);
     }
     let mut flags: libc::c_int = 0 as libc::c_int;
     flags |= 0o2000000 as libc::c_int;
-    let mut fd: libc::c_int = mi_prim_open(
-        b"/dev/urandom\0" as *const u8 as *const libc::c_char,
-        flags,
-    );
+    let mut fd: libc::c_int =
+        mi_prim_open(b"/dev/urandom\0" as *const u8 as *const libc::c_char, flags);
     if fd < 0 as libc::c_int {
         return 0 as libc::c_int != 0;
     }
@@ -22219,9 +20826,7 @@ pub unsafe extern "C" fn _mi_prim_random_buf(
             buf_len.wrapping_sub(count),
         );
         if ret_0 <= 0 as libc::c_int as ssize_t {
-            if *__errno_location() != 11 as libc::c_int
-                && *__errno_location() != 4 as libc::c_int
-            {
+            if *__errno_location() != 11 as libc::c_int && *__errno_location() != 4 as libc::c_int {
                 break;
             }
         } else {
@@ -22232,8 +20837,7 @@ pub unsafe extern "C" fn _mi_prim_random_buf(
     return count == buf_len;
 }
 #[unsafe(no_mangle)]
-pub static mut _mi_heap_default_key: pthread_key_t = -(1 as libc::c_int)
-    as pthread_key_t;
+pub static mut _mi_heap_default_key: pthread_key_t = -(1 as libc::c_int) as pthread_key_t;
 unsafe extern "C" fn mi_pthread_done(mut value: *mut libc::c_void) {
     if !value.is_null() {
         _mi_thread_done(value as *mut mi_heap_t);
@@ -22241,21 +20845,20 @@ unsafe extern "C" fn mi_pthread_done(mut value: *mut libc::c_void) {
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_prim_thread_init_auto_done() {
-    if _mi_heap_default_key == -(1 as libc::c_int) as pthread_key_t {} else {
+    if _mi_heap_default_key == -(1 as libc::c_int) as pthread_key_t {
+    } else {
         _mi_assert_fail(
-            b"_mi_heap_default_key == (pthread_key_t)(-1)\0" as *const u8
-                as *const libc::c_char,
+            b"_mi_heap_default_key == (pthread_key_t)(-1)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
             11701 as libc::c_int as libc::c_uint,
-            (*::core::mem::transmute::<
-                &[u8; 31],
-                &[libc::c_char; 31],
-            >(b"_mi_prim_thread_init_auto_done\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 31], &[libc::c_char; 31]>(
+                b"_mi_prim_thread_init_auto_done\0",
+            ))
+            .as_ptr(),
         );
     };
     pthread_key_create(
-        &mut _mi_heap_default_key,
+        &raw mut _mi_heap_default_key,
         Some(mi_pthread_done as unsafe extern "C" fn(*mut libc::c_void) -> ()),
     );
 }
@@ -22266,9 +20869,7 @@ pub unsafe extern "C" fn _mi_prim_thread_done_auto_done() {
     }
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn _mi_prim_thread_associate_default_heap(
-    mut heap: *mut mi_heap_t,
-) {
+pub unsafe extern "C" fn _mi_prim_thread_associate_default_heap(mut heap: *mut mi_heap_t) {
     if _mi_heap_default_key != -(1 as libc::c_int) as pthread_key_t {
         pthread_setspecific(_mi_heap_default_key, heap as *const libc::c_void);
     }
@@ -22278,9 +20879,7 @@ pub unsafe extern "C" fn _mi_is_redirected() -> bool {
     return 0 as libc::c_int != 0;
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn _mi_allocator_init(
-    mut message: *mut *const libc::c_char,
-) -> bool {
+pub unsafe extern "C" fn _mi_allocator_init(mut message: *mut *const libc::c_char) -> bool {
     if !message.is_null() {
         *message = 0 as *const libc::c_char;
     }
@@ -22372,8 +20971,8 @@ unsafe extern "C" fn run_static_initializers() {
                 init
             },
             page_count: 0 as libc::c_int as size_t,
-            page_retired_min: (73 as libc::c_uint)
-                .wrapping_add(1 as libc::c_int as libc::c_uint) as size_t,
+            page_retired_min: (73 as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
+                as size_t,
             page_retired_max: 0 as libc::c_int as size_t,
             next: 0 as *mut mi_heap_t,
             no_reclaim: 0 as libc::c_int != 0,
@@ -22516,9 +21115,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (1 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22527,9 +21124,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (1 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22538,9 +21133,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (2 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22549,9 +21142,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (3 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22560,9 +21151,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (4 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22571,9 +21160,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (5 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22582,9 +21169,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (6 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22593,9 +21178,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (7 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22604,9 +21187,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (8 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22615,9 +21196,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (10 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22626,9 +21205,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (12 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22637,9 +21214,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (14 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22648,9 +21223,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (16 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22659,9 +21232,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (20 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22670,9 +21241,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (24 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22681,9 +21250,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (28 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22692,9 +21259,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (32 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22703,9 +21268,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (40 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22714,9 +21277,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (48 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22725,9 +21286,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (56 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22736,9 +21295,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (64 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22747,9 +21304,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (80 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22758,9 +21313,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (96 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22769,9 +21322,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (112 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22780,9 +21331,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (128 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22791,9 +21340,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (160 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22802,9 +21349,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (192 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22813,9 +21358,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (224 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22824,9 +21367,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (256 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22835,9 +21376,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (320 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22846,9 +21385,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (384 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22857,9 +21394,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (448 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22868,9 +21403,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (512 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22879,9 +21412,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (640 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22890,9 +21421,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (768 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22901,9 +21430,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (896 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22912,9 +21439,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (1024 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22923,9 +21448,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (1280 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22934,9 +21457,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (1536 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22945,9 +21466,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (1792 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22956,9 +21475,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (2048 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22967,9 +21484,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (2560 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22978,9 +21493,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (3072 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -22989,9 +21502,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (3584 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23000,9 +21511,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (4096 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23011,9 +21520,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (5120 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23022,9 +21529,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (6144 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23033,9 +21538,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (7168 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23044,9 +21547,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (8192 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23055,9 +21556,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (10240 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23066,9 +21565,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (12288 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23077,9 +21574,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (14336 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23088,9 +21583,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (16384 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23099,9 +21592,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (20480 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23110,9 +21601,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (24576 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23121,9 +21610,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (28672 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23132,9 +21619,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (32768 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23143,9 +21628,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (40960 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23154,9 +21637,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (49152 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23165,9 +21646,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (57344 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23176,9 +21655,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (65536 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23187,9 +21664,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (81920 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23198,9 +21673,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (98304 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23209,9 +21682,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (114688 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23220,9 +21691,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (131072 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23231,9 +21700,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (163840 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23242,9 +21709,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (196608 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23253,9 +21718,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (229376 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23264,9 +21727,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (262144 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23275,9 +21736,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (327680 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23286,9 +21745,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (393216 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23297,9 +21754,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (458752 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23308,9 +21763,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (524288 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -23320,18 +21773,14 @@ unsafe extern "C" fn run_static_initializers() {
                         last: 0 as *mut mi_page_t,
                         block_size: ((1 as libc::c_ulonglong)
                             << 3 as libc::c_int
-                                + (3 as libc::c_int
-                                    + (13 as libc::c_int + 3 as libc::c_int)))
+                                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
                             .wrapping_div(2 as libc::c_int as libc::c_ulonglong)
                             .wrapping_div(
-                                ((1 as libc::c_int) << 3 as libc::c_int)
-                                    as libc::c_ulonglong,
+                                ((1 as libc::c_int) << 3 as libc::c_int) as libc::c_ulonglong,
                             )
                             .wrapping_add(1 as libc::c_int as libc::c_ulonglong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong
-                                    as libc::c_ulonglong,
-                            ) as size_t,
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong
+                                as libc::c_ulonglong) as size_t,
                     };
                     init
                 },
@@ -23341,18 +21790,14 @@ unsafe extern "C" fn run_static_initializers() {
                         last: 0 as *mut mi_page_t,
                         block_size: ((1 as libc::c_ulonglong)
                             << 3 as libc::c_int
-                                + (3 as libc::c_int
-                                    + (13 as libc::c_int + 3 as libc::c_int)))
+                                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
                             .wrapping_div(2 as libc::c_int as libc::c_ulonglong)
                             .wrapping_div(
-                                ((1 as libc::c_int) << 3 as libc::c_int)
-                                    as libc::c_ulonglong,
+                                ((1 as libc::c_int) << 3 as libc::c_int) as libc::c_ulonglong,
                             )
                             .wrapping_add(2 as libc::c_int as libc::c_ulonglong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong
-                                    as libc::c_ulonglong,
-                            ) as size_t,
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong
+                                as libc::c_ulonglong) as size_t,
                     };
                     init
                 },
@@ -23364,8 +21809,8 @@ unsafe extern "C" fn run_static_initializers() {
         let mut init = mi_tld_s {
             heartbeat: 0 as libc::c_int as libc::c_ulonglong,
             recurse: 0 as libc::c_int != 0,
-            heap_backing: &mut _mi_heap_main,
-            heaps: &mut _mi_heap_main,
+            heap_backing: &raw mut _mi_heap_main,
+            heaps: &raw mut _mi_heap_main,
             segments: {
                 let mut init = mi_segments_tld_s {
                     small_free: {
@@ -23395,16 +21840,16 @@ unsafe extern "C" fn run_static_initializers() {
                     current_size: 0 as libc::c_int as size_t,
                     peak_size: 0 as libc::c_int as size_t,
                     reclaim_count: 0 as libc::c_int as size_t,
-                    subproc: &mut mi_subproc_default,
-                    stats: &mut tld_main.stats,
-                    os: &mut tld_main.os,
+                    subproc: &raw mut mi_subproc_default,
+                    stats: &raw mut tld_main.stats,
+                    os: &raw mut tld_main.os,
                 };
                 init
             },
             os: {
                 let mut init = mi_os_tld_s {
                     region_idx: 0 as libc::c_int as size_t,
-                    stats: &mut tld_main.stats,
+                    stats: &raw mut tld_main.stats,
                 };
                 init
             },
@@ -24189,7 +22634,7 @@ unsafe extern "C" fn run_static_initializers() {
     };
     _mi_heap_main = {
         let mut init = mi_heap_s {
-            tld: &mut tld_main,
+            tld: &raw mut tld_main,
             thread_delayed_free: 0 as *mut mi_block_t,
             thread_id: 0 as libc::c_int as mi_threadid_t,
             arena_id: 0 as libc::c_int,
@@ -24239,8 +22684,8 @@ unsafe extern "C" fn run_static_initializers() {
                 init
             },
             page_count: 0 as libc::c_int as size_t,
-            page_retired_min: (73 as libc::c_uint)
-                .wrapping_add(1 as libc::c_int as libc::c_uint) as size_t,
+            page_retired_min: (73 as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
+                as size_t,
             page_retired_max: 0 as libc::c_int as size_t,
             next: 0 as *mut mi_heap_t,
             no_reclaim: 0 as libc::c_int != 0,
@@ -24383,9 +22828,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (1 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24394,9 +22837,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (1 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24405,9 +22846,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (2 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24416,9 +22855,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (3 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24427,9 +22864,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (4 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24438,9 +22873,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (5 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24449,9 +22882,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (6 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24460,9 +22891,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (7 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24471,9 +22900,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (8 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24482,9 +22909,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (10 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24493,9 +22918,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (12 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24504,9 +22927,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (14 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24515,9 +22936,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (16 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24526,9 +22945,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (20 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24537,9 +22954,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (24 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24548,9 +22963,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (28 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24559,9 +22972,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (32 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24570,9 +22981,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (40 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24581,9 +22990,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (48 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24592,9 +22999,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (56 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24603,9 +23008,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (64 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24614,9 +23017,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (80 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24625,9 +23026,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (96 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24636,9 +23035,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (112 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24647,9 +23044,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (128 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24658,9 +23053,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (160 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24669,9 +23062,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (192 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24680,9 +23071,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (224 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24691,9 +23080,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (256 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24702,9 +23089,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (320 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24713,9 +23098,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (384 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24724,9 +23107,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (448 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24735,9 +23116,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (512 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24746,9 +23125,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (640 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24757,9 +23134,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (768 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24768,9 +23143,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (896 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24779,9 +23152,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (1024 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24790,9 +23161,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (1280 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24801,9 +23170,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (1536 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24812,9 +23179,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (1792 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24823,9 +23188,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (2048 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24834,9 +23197,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (2560 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24845,9 +23206,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (3072 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24856,9 +23215,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (3584 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24867,9 +23224,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (4096 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24878,9 +23233,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (5120 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24889,9 +23242,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (6144 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24900,9 +23251,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (7168 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24911,9 +23260,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (8192 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24922,9 +23269,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (10240 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24933,9 +23278,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (12288 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24944,9 +23287,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (14336 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24955,9 +23296,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (16384 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24966,9 +23305,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (20480 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24977,9 +23314,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (24576 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24988,9 +23323,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (28672 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -24999,9 +23332,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (32768 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -25010,9 +23341,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (40960 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -25021,9 +23350,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (49152 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -25032,9 +23359,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (57344 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -25043,9 +23368,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (65536 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -25054,9 +23377,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (81920 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -25065,9 +23386,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (98304 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -25076,9 +23395,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (114688 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -25087,9 +23404,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (131072 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -25098,9 +23413,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (163840 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -25109,9 +23422,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (196608 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -25120,9 +23431,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (229376 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -25131,9 +23440,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (262144 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -25142,9 +23449,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (327680 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -25153,9 +23458,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (393216 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -25164,9 +23467,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (458752 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -25175,9 +23476,7 @@ unsafe extern "C" fn run_static_initializers() {
                         first: 0 as *mut mi_page_t,
                         last: 0 as *mut mi_page_t,
                         block_size: (524288 as libc::c_int as libc::c_ulong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong,
-                            ),
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong),
                     };
                     init
                 },
@@ -25187,18 +23486,14 @@ unsafe extern "C" fn run_static_initializers() {
                         last: 0 as *mut mi_page_t,
                         block_size: ((1 as libc::c_ulonglong)
                             << 3 as libc::c_int
-                                + (3 as libc::c_int
-                                    + (13 as libc::c_int + 3 as libc::c_int)))
+                                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
                             .wrapping_div(2 as libc::c_int as libc::c_ulonglong)
                             .wrapping_div(
-                                ((1 as libc::c_int) << 3 as libc::c_int)
-                                    as libc::c_ulonglong,
+                                ((1 as libc::c_int) << 3 as libc::c_int) as libc::c_ulonglong,
                             )
                             .wrapping_add(1 as libc::c_int as libc::c_ulonglong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong
-                                    as libc::c_ulonglong,
-                            ) as size_t,
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong
+                                as libc::c_ulonglong) as size_t,
                     };
                     init
                 },
@@ -25208,18 +23503,14 @@ unsafe extern "C" fn run_static_initializers() {
                         last: 0 as *mut mi_page_t,
                         block_size: ((1 as libc::c_ulonglong)
                             << 3 as libc::c_int
-                                + (3 as libc::c_int
-                                    + (13 as libc::c_int + 3 as libc::c_int)))
+                                + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
                             .wrapping_div(2 as libc::c_int as libc::c_ulonglong)
                             .wrapping_div(
-                                ((1 as libc::c_int) << 3 as libc::c_int)
-                                    as libc::c_ulonglong,
+                                ((1 as libc::c_int) << 3 as libc::c_int) as libc::c_ulonglong,
                             )
                             .wrapping_add(2 as libc::c_int as libc::c_ulonglong)
-                            .wrapping_mul(
-                                ::core::mem::size_of::<uintptr_t>() as libc::c_ulong
-                                    as libc::c_ulonglong,
-                            ) as size_t,
+                            .wrapping_mul(::core::mem::size_of::<uintptr_t>() as libc::c_ulong
+                                as libc::c_ulonglong) as size_t,
                     };
                     init
                 },
@@ -25484,8 +23775,7 @@ unsafe extern "C" fn run_static_initializers() {
                 init: UNINIT,
                 option: mi_option_purge_extend_delay,
                 name: b"purge_extend_delay\0" as *const u8 as *const libc::c_char,
-                legacy_name: b"decommit_extend_delay\0" as *const u8
-                    as *const libc::c_char,
+                legacy_name: b"decommit_extend_delay\0" as *const u8 as *const libc::c_char,
             };
             init
         },
@@ -25586,8 +23876,7 @@ unsafe extern "C" fn run_static_initializers() {
                 value: 0 as libc::c_int as libc::c_long,
                 init: UNINIT,
                 option: mi_option_target_segments_per_thread,
-                name: b"target_segments_per_thread\0" as *const u8
-                    as *const libc::c_char,
+                name: b"target_segments_per_thread\0" as *const u8 as *const libc::c_char,
                 legacy_name: 0 as *const libc::c_char,
             };
             init
@@ -25598,12 +23887,11 @@ unsafe extern "C" fn run_static_initializers() {
             page_size: 4096 as libc::c_int as size_t,
             large_page_size: 0 as libc::c_int as size_t,
             alloc_granularity: 4096 as libc::c_int as size_t,
-            physical_memory: (32 as libc::c_int as libc::c_ulonglong)
-                .wrapping_mul(
-                    (1024 as libc::c_ulonglong)
-                        .wrapping_mul(1024 as libc::c_ulonglong)
-                        .wrapping_mul(1024 as libc::c_ulonglong),
-                ) as size_t,
+            physical_memory: (32 as libc::c_int as libc::c_ulonglong).wrapping_mul(
+                (1024 as libc::c_ulonglong)
+                    .wrapping_mul(1024 as libc::c_ulonglong)
+                    .wrapping_mul(1024 as libc::c_ulonglong),
+            ) as size_t,
             virtual_address_bits: 48 as libc::c_int as size_t,
             has_overcommit: 1 as libc::c_int != 0,
             has_partial_free: 0 as libc::c_int != 0,
@@ -25613,7 +23901,7 @@ unsafe extern "C" fn run_static_initializers() {
     };
 }
 #[used]
-#[cfg_attr(target_os = "linux", unsafe(unsafe(link_section = ".init_array")))]
-#[cfg_attr(target_os = "windows", unsafe(unsafe(link_section = ".CRT$XIB")))]
-#[cfg_attr(target_os = "macos", unsafe(unsafe(link_section = "__DATA,__mod_init_func")))]
+#[cfg_attr(target_os = "linux", unsafe(link_section = ".init_array"))]
+#[cfg_attr(target_os = "windows", unsafe(link_section = ".CRT$XIB"))]
+#[cfg_attr(target_os = "macos", unsafe(link_section = "__DATA,__mod_init_func"))]
 static INIT_ARRAY: [unsafe extern "C" fn(); 1] = [run_static_initializers];
