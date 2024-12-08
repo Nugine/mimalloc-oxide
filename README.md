@@ -11,6 +11,7 @@ OS: Ubuntu 22.04
 |      [Rust](https://rustup.rs/)       | ^1.81.0  |
 |                Python                 | ^3.10.12 |
 | [just](https://github.com/casey/just) | ^1.36.0  |
+| [bear](https://github.com/rizsotto/Bear) | - |
 | c2rust requirements | https://github.com/immunant/c2rust |
 
 ## Reproduction
@@ -38,6 +39,7 @@ Transpile mimalloc to Rust:
 
 ```bash
 just preprocess
+just c2rust
 just postprocess
 ```
 
