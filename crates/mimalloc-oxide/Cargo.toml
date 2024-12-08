@@ -1,0 +1,11 @@
+[package]
+name = "mimalloc-oxide"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies.c2rust-bitfields]
+git = "https://github.com/Nugine/c2rust.git"
+rev = "54b3c4198d6c6e17bee3e74683631e26e9afe061"
+
+[dependencies]

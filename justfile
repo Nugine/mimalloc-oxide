@@ -18,3 +18,6 @@ transpile:
 
 c2rust:
     ./scripts/c2rust.sh
+
+postprocess:
+    ./scripts/postprocess.py

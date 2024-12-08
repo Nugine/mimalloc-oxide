@@ -13,4 +13,4 @@ rm compile_commands.json
 bear --output compile_commands.json -- just build-preprocess
 
 $C2RUST transpile compile_commands.json
-mv preprocess/mimalloc.rs transpile/
+mv preprocess/mimalloc.rs transpile/mimalloc.stage0.rs
