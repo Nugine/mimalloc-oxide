@@ -11,3 +11,7 @@ build-preprocess:
     ./scripts/preprocess.py
     mkdir -p build/preprocess
     just compile preprocess/mimalloc.c build/preprocess/libmimalloc.so
+
+transpile:
+    mkdir -p temp
+    cargo run -p transpile -- preprocess/mimalloc.stage3.c | tee temp/transpile.stdout.log

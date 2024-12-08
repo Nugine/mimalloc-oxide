@@ -1,0 +1,11 @@
+[package]
+name = "transpile"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies.chumsky]
+git = "https://github.com/zesterer/chumsky.git"
+rev = "758065d4c6211fbfd20071d414eac83b5bcc4918"
+
+[dependencies]
