@@ -1,0 +1,4 @@
+[submodule "c2rust"]
+	path = c2rust
+	url = git@github.com:Nugine/c2rust.git
+	branch = mimalloc
