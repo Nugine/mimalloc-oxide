@@ -83,6 +83,7 @@ def transform(lines: Iterable[str]):
             line = line.replace("stdsimd,", "link_llvm_intrinsics,")
             yield line
 
+            yield "#![no_std]"
             yield "#![allow(internal_features)]"
             yield "#![allow(unsafe_op_in_unsafe_fn)]"
             yield "#![allow(path_statements)]"

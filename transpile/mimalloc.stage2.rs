@@ -14,6 +14,7 @@
     link_llvm_intrinsics,
     thread_local
 )]
+#![no_std]
 #![allow(internal_features)]
 #![allow(unsafe_op_in_unsafe_fn)]
 #![allow(path_statements)]
