@@ -84,13 +84,12 @@ def transform(lines: Iterable[str]):
             yield line
 
             yield "#![allow(internal_features)]"
+            yield "#![allow(unsafe_op_in_unsafe_fn)]"
+            yield "#![allow(path_statements)]"
             yield
 
-            yield "use c2rust_bitfields::BitfieldStruct;"
-            yield
-
-            yield '#[cfg(not(all(target_arch = "x86_64", target_os = "linux", target_env = "gnu", target_pointer_width = "64")))]'
-            yield 'compile_error!("mimalloc_oxide only supports x86_64-unknown-linux-gnu now");'
+            yield "#![allow(clippy::missing_safety_doc)]"
+            yield "#![allow(clippy::needless_return)]"
             yield
 
             yield 'include!("./extra.rs");'

@@ -15,16 +15,10 @@
     thread_local
 )]
 #![allow(internal_features)]
-
-use c2rust_bitfields::BitfieldStruct;
-
-#[cfg(not(all(
-    target_arch = "x86_64",
-    target_os = "linux",
-    target_env = "gnu",
-    target_pointer_width = "64"
-)))]
-compile_error!("mimalloc_oxide only supports x86_64-unknown-linux-gnu now");
+#![allow(unsafe_op_in_unsafe_fn)]
+#![allow(path_statements)]
+#![allow(clippy::missing_safety_doc)]
+#![allow(clippy::needless_return)]
 
 include!("./extra.rs");
 

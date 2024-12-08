@@ -1,11 +1,11 @@
 #![allow(dead_code, mutable_transmutes, non_camel_case_types, non_snake_case, non_upper_case_globals, unused_assignments, unused_mut)]
 #![feature(c_variadic, core_intrinsics, extern_types, link_llvm_intrinsics, thread_local)]
 #![allow(internal_features)]
+#![allow(unsafe_op_in_unsafe_fn)]
+#![allow(path_statements)]
 
-use c2rust_bitfields::BitfieldStruct;
-
-#[cfg(not(all(target_arch = "x86_64", target_os = "linux", target_env = "gnu", target_pointer_width = "64")))]
-compile_error!("mimalloc_oxide only supports x86_64-unknown-linux-gnu now");
+#![allow(clippy::missing_safety_doc)]
+#![allow(clippy::needless_return)]
 
 include!("./extra.rs");
 
