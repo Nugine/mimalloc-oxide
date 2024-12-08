@@ -43,7 +43,7 @@ def dict_get(d, *keys):
     return d
 
 
-def transform(lines: Iterable[str]):
+def transform1(lines: Iterable[str]):
     if Path("temp/oxide.jsonl").exists():
         with open("temp/oxide.jsonl") as f:
             for msg in f.read().splitlines():
@@ -106,6 +106,10 @@ def transform(lines: Iterable[str]):
             yield line.replace('extern "C"', 'unsafe extern "C"')
             continue
 
+        if line.strip().startswith('unsafe extern "C" fn mi_'):
+            yield line.replace('unsafe extern "C"', 'pub unsafe extern "C"')
+            continue
+
         if line.strip() == "#[no_mangle]":
             yield "#[unsafe(no_mangle)]"
             continue
@@ -122,6 +126,14 @@ def transform(lines: Iterable[str]):
         yield line
 
 
+def transform2(content: str):
+    content = content.replace(
+        '#[inline]\npub unsafe extern "C" fn mi_',
+        'pub unsafe extern "C" fn mi_',
+    )
+    return content
+
+
 def transform_lines(from_path: str, to_path: str, f):
     with open(from_path) as src:
         with open(to_path, "w") as dst:
@@ -132,16 +144,28 @@ def transform_lines(from_path: str, to_path: str, f):
                     dst.write(line + "\n")
 
 
+def transform_whole(from_path: str, to_path: str, f):
+    with open(from_path) as src:
+        content = src.read()
+
+    with open(to_path, "w") as dst:
+        dst.write(f(content))
+
+
 def main():
-    to_path = "transpile/mimalloc.stage0.rs"
-    shutil.copyfile(to_path, "crates/mimalloc-oxide/src/lib.rs")
+    from_path = "transpile/mimalloc.stage0.rs"
+    lib_path = "crates/mimalloc-oxide/src/lib.rs"
+    shutil.copyfile(from_path, lib_path)
 
     for stage_id in [1, 2, 3]:
         from_path = "crates/mimalloc-oxide/src/lib.rs"
         to_path = f"transpile/mimalloc.stage{stage_id}.rs"
-        transform_lines(from_path, to_path, transform)
+        transform_lines(from_path, to_path, transform1)
 
-        shutil.copyfile(to_path, "crates/mimalloc-oxide/src/lib.rs")
+        shutil.copyfile(to_path, lib_path)
+        subprocess.run("cargo fmt", shell=True, check=True)
+
+        transform_whole(lib_path, lib_path, transform2)
         subprocess.run("cargo fmt", shell=True, check=True)
 
         subprocess.run(
