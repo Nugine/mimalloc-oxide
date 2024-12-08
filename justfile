@@ -21,3 +21,16 @@ c2rust:
 
 postprocess:
     ./scripts/postprocess.py
+    cargo fmt
+    -cargo build -p mimalloc-oxide --message-format=json 1>temp/oxide.jsonl
+
+    ./scripts/postprocess.py
+    cargo fmt
+    -cargo build -p mimalloc-oxide --message-format=json 1>temp/oxide.jsonl
+
+    ./scripts/postprocess.py
+    cargo fmt
+    -cargo build -p mimalloc-oxide --message-format=json 1>temp/oxide.jsonl
+
+    cargo build -p mimalloc-oxide 2>temp/oxide.stderr.log
+

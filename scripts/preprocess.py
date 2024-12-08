@@ -24,7 +24,7 @@ def transform1(lines: Iterable[str]):
         "#if defined(__sun)",
         "#if MI_MALLOC_VERSION >= 182",
         "#if MI_OSX_ZONE",
-        "#elif MI_USE_BUILTIN_THREAD_POINTER"
+        "#elif MI_USE_BUILTIN_THREAD_POINTER",
     ]
 
     def is_discarded(line: str):
@@ -92,7 +92,10 @@ def transform_lines(from_path: str, to_path: str, f):
     with open(from_path) as src:
         with open(to_path, "w") as dst:
             for line in f(src.read().splitlines()):
-                dst.write(line + "\n")
+                if line is None:
+                    dst.write("\n")
+                else:
+                    dst.write(line + "\n")
 
 
 def main():

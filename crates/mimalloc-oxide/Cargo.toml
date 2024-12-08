@@ -9,3 +9,4 @@ git = "https://github.com/Nugine/c2rust.git"
 rev = "54b3c4198d6c6e17bee3e74683631e26e9afe061"
 
 [dependencies]
+libc = "0.2.167"
