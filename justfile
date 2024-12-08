@@ -23,6 +23,14 @@ postprocess:
     ./scripts/postprocess.py
     RUSTFLAGS="-Awarnings" cargo build -p mimalloc-oxide 2>temp/oxide.stderr.log
 
+build:
+    RUSTFLAGS="-Awarnings" cargo build -p mimalloc-oxide --release
+
 test:
+    just build
     ./scripts/build-mimalloc.sh
     ./scripts/test.sh
+
+dump-symbols:
+    just build
+    nm -C ./target/release/libmimalloc_oxide.so > temp/symbols.txt

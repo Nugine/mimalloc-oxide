@@ -1,6 +1,4 @@
 #!/bin/bash -ex
-RUSTFLAGS="-Awarnings" cargo build -p mimalloc-oxide --release
-
 OUT_DIR="$(pwd)/build/release"
 rm -rf $OUT_DIR
 mkdir -p $OUT_DIR
