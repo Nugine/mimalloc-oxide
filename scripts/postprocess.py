@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from typing import Iterable
 from pathlib import Path
+import subprocess
 import shutil
 import json
 import re
@@ -30,27 +31,43 @@ def dict_get(d, *keys):
     return d
 
 
-def transform1(lines: Iterable[str]):
+def transform(lines: Iterable[str]):
     if Path("temp/oxide.jsonl").exists():
         with open("temp/oxide.jsonl") as f:
             for msg in f.read().splitlines():
                 msg = json.loads(msg)
                 if dict_get(msg, "message", "code", "code") == "static_mut_refs":
-                    text = dict_get(msg, "message", "spans", 0, "text", 0, "text")
+                    text = dict_get(msg, "message", "spans", 0, "text", 0)
                     if text is None:
                         continue
-                    assert isinstance(text, str)
-                    patterns = [
-                        r"^ *(.+?): &mut (.+?)$",
-                        r"^ *&mut ([^:.]+?)$",
+                    text = text["text"][
+                        text["highlight_start"] - 1 : text["highlight_end"] - 1
                     ]
-                    if any(re.match(pat, text) is not None for pat in patterns):
+                    assert isinstance(text, str)
+                    print(f"TEXT: {text}")
+
+                    patterns_type1 = [
+                        r"^ *(.+?): &mut (.+?)$",
+                        r"^ *&mut ([A-Za-z_]+?).+$",
+                    ]
+                    if any(re.match(pat, text) is not None for pat in patterns_type1):
                         correct = text.replace("&mut ", "&raw mut ")
                         REPLACEMENTS.append((text.strip(), correct))
                         print(f"REPLACEMENT: {text.strip()} -> {correct}")
+                        continue
+
+                    if re.match(r"^ *([A-Za-z_]+?)\.([A-Za-z_]+?)\(\).*$", text):
+                        correct = re.sub(
+                            r"([A-Za-z_]+?)\.([A-Za-z_]+?)\(\)",
+                            r"(*(&raw mut \1)).\2()",
+                            text,
+                        )
+                        REPLACEMENTS.append((text.strip(), correct))
+                        print(f"REPLACEMENT: {text.strip()} -> {correct}")
+                        continue
 
     for line in lines:
-        if line.startswith("#![feature"):  # injection point
+        if line.startswith("#![feature") and "stdsimd" in line:
             line = line.replace("stdsimd,", "")
             line = line.replace("asm,", "")
             yield line
@@ -107,10 +124,25 @@ def transform_lines(from_path: str, to_path: str, f):
 def main():
     stage0 = "transpile/mimalloc.stage0.rs"
     stage1 = "transpile/mimalloc.stage1.rs"
+    stage2 = "transpile/mimalloc.stage2.rs"
 
-    transform_lines(stage0, stage1, transform1)
+    transform_lines(stage0, stage1, transform)
+    subprocess.run(
+        "cargo build -p mimalloc-oxide --message-format=json 1>temp/oxide.jsonl",
+        shell=True,
+        check=False,
+    )
 
-    shutil.copyfile(stage1, "crates/mimalloc-oxide/src/lib.rs")
+    transform_lines(stage1, stage2, transform)
+    subprocess.run(
+        "cargo build -p mimalloc-oxide --message-format=json 1>temp/oxide.jsonl",
+        shell=True,
+        check=False,
+    )
+
+    shutil.copyfile(stage2, "crates/mimalloc-oxide/src/lib.rs")
+
+    subprocess.run("cargo fmt", shell=True, check=True)
 
 
 if __name__ == "__main__":
