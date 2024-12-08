@@ -2230,10 +2230,7 @@ static inline mi_threadid_t _mi_prim_thread_id(void) mi_attr_noexcept {
 static inline mi_threadid_t _mi_prim_thread_id(void) mi_attr_noexcept {
   return (uintptr_t)NtCurrentTeb();
 }
-#elif MI_USE_BUILTIN_THREAD_POINTER
-static inline mi_threadid_t _mi_prim_thread_id(void) mi_attr_noexcept {
-  return (uintptr_t)__builtin_thread_pointer();
-}
+#elif 0
 #elif defined(MI_HAS_TLS_SLOT)
 static inline mi_threadid_t _mi_prim_thread_id(void) mi_attr_noexcept {
   #if defined(__BIONIC__)

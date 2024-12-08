@@ -15,3 +15,6 @@ build-preprocess:
 transpile:
     mkdir -p temp
     cargo run -p transpile -- preprocess/mimalloc.stage3.c | tee temp/transpile.stdout.log
+
+c2rust:
+    ./scripts/c2rust.sh

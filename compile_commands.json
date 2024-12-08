@@ -1,0 +1,17 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-c",
+      "-O3",
+      "-std=c17",
+      "-fPIC",
+      "-o",
+      "build/preprocess/libmimalloc.so",
+      "preprocess/mimalloc.c"
+    ],
+    "directory": "/home/nugine/projects/mimalloc-oxide",
+    "file": "/home/nugine/projects/mimalloc-oxide/preprocess/mimalloc.c",
+    "output": "/home/nugine/projects/mimalloc-oxide/build/preprocess/libmimalloc.so"
+  }
+]

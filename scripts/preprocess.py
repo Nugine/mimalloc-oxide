@@ -24,6 +24,7 @@ def transform1(lines: Iterable[str]):
         "#if defined(__sun)",
         "#if MI_MALLOC_VERSION >= 182",
         "#if MI_OSX_ZONE",
+        "#elif MI_USE_BUILTIN_THREAD_POINTER"
     ]
 
     def is_discarded(line: str):
