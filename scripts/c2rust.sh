@@ -10,7 +10,7 @@ rm -rf transpile
 mkdir -p transpile
 
 rm compile_commands.json
-bear --output compile_commands.json -- just build-preprocess
+bear --output compile_commands.json -- just preprocess
 
 $C2RUST transpile compile_commands.json
 mv preprocess/mimalloc.rs transpile/mimalloc.stage0.rs

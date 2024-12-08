@@ -1,10 +1,9 @@
 #![allow(dead_code, mutable_transmutes, non_camel_case_types, non_snake_case, non_upper_case_globals, unused_assignments, unused_mut)]
-#![feature(asm, c_variadic, core_intrinsics, extern_types, stdsimd, thread_local)]
+#![feature(c_variadic, core_intrinsics, extern_types, stdsimd, thread_local)]
 #[cfg(target_arch = "x86")]
 pub use core::arch::x86::_mm_pause;
 #[cfg(target_arch = "x86_64")]
 pub use core::arch::x86_64::_mm_pause;
-use core::arch::asm;
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
@@ -1957,21 +1956,6 @@ unsafe extern "C" fn _mi_memzero_aligned(mut dst: *mut libc::c_void, mut n: size
     _mi_memzero(adst, n);
 }
 #[inline]
-unsafe extern "C" fn mi_prim_tls_slot(mut slot: size_t) -> *mut libc::c_void {
-    let mut res: *mut libc::c_void = 0 as *mut libc::c_void;
-    let ofs: size_t = slot
-        .wrapping_mul(::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong);
-    asm!(
-        "movq %fs:[{1}], {0}", lateout(reg) res, in (reg) & * (ofs as * mut * mut
-        libc::c_void), options(preserves_flags, pure, readonly, att_syntax)
-    );
-    return res;
-}
-#[inline]
-unsafe extern "C" fn _mi_prim_thread_id() -> mi_threadid_t {
-    return mi_prim_tls_slot(0 as libc::c_int as size_t) as uintptr_t;
-}
-#[inline]
 unsafe extern "C" fn mi_prim_get_default_heap() -> *mut mi_heap_t {
     return _mi_heap_default;
 }
@@ -2014,7 +1998,7 @@ pub unsafe extern "C" fn _mi_page_ptr_unalign(
         _mi_assert_fail(
             b"page!=NULL && p!=NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            2392 as libc::c_int as libc::c_uint,
+            2395 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 21],
                 &[libc::c_char; 21],
@@ -2173,7 +2157,7 @@ pub unsafe extern "C" fn _mi_free_delayed_block(mut block: *mut mi_block_t) -> b
         _mi_assert_fail(
             b"block!=NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            2476 as libc::c_int as libc::c_uint,
+            2479 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 23],
                 &[libc::c_char; 23],
@@ -2187,7 +2171,7 @@ pub unsafe extern "C" fn _mi_free_delayed_block(mut block: *mut mi_block_t) -> b
             b"_mi_ptr_cookie(segment) == segment->cookie\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            2478 as libc::c_int as libc::c_uint,
+            2481 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 23],
                 &[libc::c_char; 23],
@@ -2200,7 +2184,7 @@ pub unsafe extern "C" fn _mi_free_delayed_block(mut block: *mut mi_block_t) -> b
             b"_mi_thread_id() == segment->thread_id\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            2479 as libc::c_int as libc::c_uint,
+            2482 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 23],
                 &[libc::c_char; 23],
@@ -2256,7 +2240,7 @@ unsafe extern "C" fn mi_free_block_delayed_mt(
             _mi_assert_fail(
                 b"heap != NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                2505 as libc::c_int as libc::c_uint,
+                2508 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 25],
                     &[libc::c_char; 25],
@@ -2296,7 +2280,7 @@ unsafe extern "C" fn mi_free_block_delayed_mt(
                     b"mi_tf_delayed(tfree) == MI_DELAYED_FREEING\0" as *const u8
                         as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    2515 as libc::c_int as libc::c_uint,
+                    2518 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 25],
                         &[libc::c_char; 25],
@@ -2341,7 +2325,7 @@ unsafe extern "C" fn mi_free_block_mt(
                     b"_mi_thread_id() == mi_atomic_load_relaxed(&segment->thread_id)\0"
                         as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    2530 as libc::c_int as libc::c_uint,
+                    2533 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 17],
                         &[libc::c_char; 17],
@@ -2355,7 +2339,7 @@ unsafe extern "C" fn mi_free_block_mt(
                     b"mi_heap_get_default()->tld->segments.subproc == segment->subproc\0"
                         as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    2531 as libc::c_int as libc::c_uint,
+                    2534 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 17],
                         &[libc::c_char; 17],
@@ -2401,7 +2385,7 @@ unsafe extern "C" fn mi_page_usable_aligned_size_of(
             b"adjust >= 0 && (size_t)adjust <= size\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            2559 as libc::c_int as libc::c_uint,
+            2562 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 31],
                 &[libc::c_char; 31],
@@ -2443,7 +2427,7 @@ pub unsafe extern "C" fn mi_free_size(mut p: *mut libc::c_void, mut size: size_t
             b"p == NULL || size <= _mi_usable_size(p,\"mi_free_size\")\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            2585 as libc::c_int as libc::c_uint,
+            2588 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -2464,7 +2448,7 @@ pub unsafe extern "C" fn mi_free_size_aligned(
         _mi_assert_fail(
             b"((uintptr_t)p % alignment) == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            2590 as libc::c_int as libc::c_uint,
+            2593 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 21],
                 &[libc::c_char; 21],
@@ -2484,7 +2468,7 @@ pub unsafe extern "C" fn mi_free_aligned(
         _mi_assert_fail(
             b"((uintptr_t)p % alignment) == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            2595 as libc::c_int as libc::c_uint,
+            2598 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 16],
                 &[libc::c_char; 16],
@@ -2581,7 +2565,7 @@ unsafe extern "C" fn mi_page_usable_size_of(
         _mi_assert_fail(
             b"ok\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            2652 as libc::c_int as libc::c_uint,
+            2655 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 23],
                 &[libc::c_char; 23],
@@ -2593,7 +2577,7 @@ unsafe extern "C" fn mi_page_usable_size_of(
         _mi_assert_fail(
             b"delta <= bsize\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            2652 as libc::c_int as libc::c_uint,
+            2655 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 23],
                 &[libc::c_char; 23],
@@ -2620,7 +2604,7 @@ pub unsafe extern "C" fn _mi_padding_shrink(
         _mi_assert_fail(
             b"ok\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            2659 as libc::c_int as libc::c_uint,
+            2662 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 19],
                 &[libc::c_char; 19],
@@ -2635,7 +2619,7 @@ pub unsafe extern "C" fn _mi_padding_shrink(
         _mi_assert_fail(
             b"bsize >= min_size\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            2661 as libc::c_int as libc::c_uint,
+            2664 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 19],
                 &[libc::c_char; 19],
@@ -2651,7 +2635,7 @@ pub unsafe extern "C" fn _mi_padding_shrink(
         _mi_assert_fail(
             b"new_delta < bsize\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            2664 as libc::c_int as libc::c_uint,
+            2667 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 19],
                 &[libc::c_char; 19],
@@ -2681,7 +2665,7 @@ unsafe extern "C" fn mi_verify_padding(
         _mi_assert_fail(
             b"bsize >= delta\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            2688 as libc::c_int as libc::c_uint,
+            2691 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 18],
                 &[libc::c_char; 18],
@@ -2772,7 +2756,7 @@ unsafe extern "C" fn _mi_page_malloc_zero(
             b"page->block_size == 0 || mi_page_block_size(page) >= size\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            2764 as libc::c_int as libc::c_uint,
+            2767 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 21],
                 &[libc::c_char; 21],
@@ -2789,7 +2773,7 @@ unsafe extern "C" fn _mi_page_malloc_zero(
             b"block != NULL && _mi_ptr_page(block) == page\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            2769 as libc::c_int as libc::c_uint,
+            2772 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 21],
                 &[libc::c_char; 21],
@@ -2807,7 +2791,7 @@ unsafe extern "C" fn _mi_page_malloc_zero(
             b"page->free == NULL || _mi_ptr_page(page->free) == page\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            2772 as libc::c_int as libc::c_uint,
+            2775 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 21],
                 &[libc::c_char; 21],
@@ -2823,7 +2807,7 @@ unsafe extern "C" fn _mi_page_malloc_zero(
             b"page->block_size < MI_MAX_ALIGN_SIZE || _mi_is_aligned(block, MI_MAX_ALIGN_SIZE)\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            2773 as libc::c_int as libc::c_uint,
+            2776 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 21],
                 &[libc::c_char; 21],
@@ -2836,7 +2820,7 @@ unsafe extern "C" fn _mi_page_malloc_zero(
             _mi_assert_fail(
                 b"page->block_size != 0\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                2781 as libc::c_int as libc::c_uint,
+                2784 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 21],
                     &[libc::c_char; 21],
@@ -2848,7 +2832,7 @@ unsafe extern "C" fn _mi_page_malloc_zero(
             _mi_assert_fail(
                 b"!mi_page_is_huge(page)\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                2782 as libc::c_int as libc::c_uint,
+                2785 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 21],
                     &[libc::c_char; 21],
@@ -2862,7 +2846,7 @@ unsafe extern "C" fn _mi_page_malloc_zero(
                 b"page->block_size >= MI_PADDING_SIZE\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                2784 as libc::c_int as libc::c_uint,
+                2787 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 21],
                     &[libc::c_char; 21],
@@ -2924,7 +2908,7 @@ unsafe extern "C" fn _mi_page_malloc_zero(
             b"delta >= 0 && mi_page_usable_block_size(page) >= (size - MI_PADDING_SIZE + delta)\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            2816 as libc::c_int as libc::c_uint,
+            2819 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 21],
                 &[libc::c_char; 21],
@@ -2981,7 +2965,7 @@ unsafe extern "C" fn mi_heap_malloc_small_zero(
         _mi_assert_fail(
             b"heap != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            2841 as libc::c_int as libc::c_uint,
+            2844 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 26],
                 &[libc::c_char; 26],
@@ -2996,7 +2980,7 @@ unsafe extern "C" fn mi_heap_malloc_small_zero(
         _mi_assert_fail(
             b"size <= MI_SMALL_SIZE_MAX\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            2842 as libc::c_int as libc::c_uint,
+            2845 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 26],
                 &[libc::c_char; 26],
@@ -3011,7 +2995,7 @@ unsafe extern "C" fn mi_heap_malloc_small_zero(
             b"heap->thread_id == 0 || heap->thread_id == tid\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            2845 as libc::c_int as libc::c_uint,
+            2848 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 26],
                 &[libc::c_char; 26],
@@ -3037,7 +3021,7 @@ unsafe extern "C" fn mi_heap_malloc_small_zero(
             _mi_assert_fail(
                 b"mi_usable_size(p)==(size)\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                2857 as libc::c_int as libc::c_uint,
+                2860 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 26],
                     &[libc::c_char; 26],
@@ -3070,7 +3054,7 @@ unsafe extern "C" fn _mi_heap_malloc_zero_ex(
             _mi_assert_fail(
                 b"huge_alignment == 0\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                2879 as libc::c_int as libc::c_uint,
+                2882 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 24],
                     &[libc::c_char; 24],
@@ -3084,7 +3068,7 @@ unsafe extern "C" fn _mi_heap_malloc_zero_ex(
             _mi_assert_fail(
                 b"heap!=NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                2888 as libc::c_int as libc::c_uint,
+                2891 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 24],
                     &[libc::c_char; 24],
@@ -3099,7 +3083,7 @@ unsafe extern "C" fn _mi_heap_malloc_zero_ex(
                 b"heap->thread_id == 0 || heap->thread_id == _mi_thread_id()\0"
                     as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                2889 as libc::c_int as libc::c_uint,
+                2892 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 24],
                     &[libc::c_char; 24],
@@ -3118,7 +3102,7 @@ unsafe extern "C" fn _mi_heap_malloc_zero_ex(
                 _mi_assert_fail(
                     b"mi_usable_size(p)==(size)\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    2891 as libc::c_int as libc::c_uint,
+                    2894 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 24],
                         &[libc::c_char; 24],
@@ -3237,7 +3221,7 @@ pub unsafe extern "C" fn _mi_heap_realloc_zero(
             _mi_assert_fail(
                 b"p!=NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                2954 as libc::c_int as libc::c_uint,
+                2957 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 22],
                     &[libc::c_char; 22],
@@ -3605,7 +3589,7 @@ unsafe extern "C" fn mi_malloc_is_naturally_aligned(
             b"_mi_is_power_of_two(alignment) && (alignment > 0)\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3242 as libc::c_int as libc::c_uint,
+            3245 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 31],
                 &[libc::c_char; 31],
@@ -3650,7 +3634,7 @@ unsafe extern "C" fn mi_heap_malloc_zero_aligned_at_overalloc(
             b"size <= (MI_MAX_ALLOC_SIZE - MI_PADDING_SIZE)\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3273 as libc::c_int as libc::c_uint,
+            3276 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 41],
                 &[libc::c_char; 41],
@@ -3665,7 +3649,7 @@ unsafe extern "C" fn mi_heap_malloc_zero_aligned_at_overalloc(
             b"alignment != 0 && _mi_is_power_of_two(alignment)\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3274 as libc::c_int as libc::c_uint,
+            3277 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 41],
                 &[libc::c_char; 41],
@@ -3729,7 +3713,7 @@ unsafe extern "C" fn mi_heap_malloc_zero_aligned_at_overalloc(
         _mi_assert_fail(
             b"adjust < alignment\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3297 as libc::c_int as libc::c_uint,
+            3300 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 41],
                 &[libc::c_char; 41],
@@ -3748,7 +3732,7 @@ unsafe extern "C" fn mi_heap_malloc_zero_aligned_at_overalloc(
             b"mi_page_usable_block_size(page) >= adjust + size\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3309 as libc::c_int as libc::c_uint,
+            3312 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 41],
                 &[libc::c_char; 41],
@@ -3763,7 +3747,7 @@ unsafe extern "C" fn mi_heap_malloc_zero_aligned_at_overalloc(
             b"((uintptr_t)aligned_p + offset) % alignment == 0\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3310 as libc::c_int as libc::c_uint,
+            3313 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 41],
                 &[libc::c_char; 41],
@@ -3775,7 +3759,7 @@ unsafe extern "C" fn mi_heap_malloc_zero_aligned_at_overalloc(
         _mi_assert_fail(
             b"mi_usable_size(aligned_p)>=size\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3311 as libc::c_int as libc::c_uint,
+            3314 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 41],
                 &[libc::c_char; 41],
@@ -3788,7 +3772,7 @@ unsafe extern "C" fn mi_heap_malloc_zero_aligned_at_overalloc(
             b"mi_usable_size(p) == mi_usable_size(aligned_p)+adjust\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3312 as libc::c_int as libc::c_uint,
+            3315 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 41],
                 &[libc::c_char; 41],
@@ -3803,7 +3787,7 @@ unsafe extern "C" fn mi_heap_malloc_zero_aligned_at_overalloc(
         _mi_assert_fail(
             b"p == unalign_p\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3316 as libc::c_int as libc::c_uint,
+            3319 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 41],
                 &[libc::c_char; 41],
@@ -3839,7 +3823,7 @@ unsafe extern "C" fn mi_heap_malloc_zero_aligned_at_generic(
             b"alignment != 0 && _mi_is_power_of_two(alignment)\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3334 as libc::c_int as libc::c_uint,
+            3337 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 39],
                 &[libc::c_char; 39],
@@ -3873,7 +3857,7 @@ unsafe extern "C" fn mi_heap_malloc_zero_aligned_at_generic(
                 b"p == NULL || ((uintptr_t)p % alignment) == 0\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                3343 as libc::c_int as libc::c_uint,
+                3346 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 39],
                     &[libc::c_char; 39],
@@ -3891,7 +3875,7 @@ unsafe extern "C" fn mi_heap_malloc_zero_aligned_at_generic(
                 _mi_assert_fail(
                     b"false\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    3349 as libc::c_int as libc::c_uint,
+                    3352 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 39],
                         &[libc::c_char; 39],
@@ -3946,7 +3930,7 @@ unsafe extern "C" fn mi_heap_malloc_zero_aligned_at(
                     _mi_assert_fail(
                         b"p != NULL\0" as *const u8 as *const libc::c_char,
                         b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                        3380 as libc::c_int as libc::c_uint,
+                        3383 as libc::c_int as libc::c_uint,
                         (*::core::mem::transmute::<
                             &[u8; 31],
                             &[libc::c_char; 31],
@@ -3961,7 +3945,7 @@ unsafe extern "C" fn mi_heap_malloc_zero_aligned_at(
                         b"((uintptr_t)p + offset) % alignment == 0\0" as *const u8
                             as *const libc::c_char,
                         b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                        3381 as libc::c_int as libc::c_uint,
+                        3384 as libc::c_int as libc::c_uint,
                         (*::core::mem::transmute::<
                             &[u8; 31],
                             &[libc::c_char; 31],
@@ -3976,7 +3960,7 @@ unsafe extern "C" fn mi_heap_malloc_zero_aligned_at(
                                 as *const libc::c_char,
                             b"preprocess/mimalloc.c\0" as *const u8
                                 as *const libc::c_char,
-                            3382 as libc::c_int as libc::c_uint,
+                            3385 as libc::c_int as libc::c_uint,
                             (*::core::mem::transmute::<
                                 &[u8; 31],
                                 &[libc::c_char; 31],
@@ -4141,7 +4125,7 @@ unsafe extern "C" fn mi_heap_realloc_zero_aligned_at(
         _mi_assert_fail(
             b"alignment > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3428 as libc::c_int as libc::c_uint,
+            3431 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 32],
                 &[libc::c_char; 32],
@@ -4201,7 +4185,7 @@ unsafe extern "C" fn mi_heap_realloc_zero_aligned(
         _mi_assert_fail(
             b"alignment > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3450 as libc::c_int as libc::c_uint,
+            3453 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 29],
                 &[libc::c_char; 29],
@@ -4431,7 +4415,7 @@ pub unsafe extern "C" fn mi_posix_memalign(
         _mi_assert_fail(
             b"((uintptr_t)q % alignment) == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3526 as libc::c_int as libc::c_uint,
+            3529 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 18],
                 &[libc::c_char; 18],
@@ -4453,7 +4437,7 @@ pub unsafe extern "C" fn mi_memalign(
         _mi_assert_fail(
             b"((uintptr_t)p % alignment) == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3532 as libc::c_int as libc::c_uint,
+            3535 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<&[u8; 12], &[libc::c_char; 12]>(b"mi_memalign\0"))
                 .as_ptr(),
         );
@@ -4484,7 +4468,7 @@ pub unsafe extern "C" fn mi_aligned_alloc(
         _mi_assert_fail(
             b"((uintptr_t)p % alignment) == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3546 as libc::c_int as libc::c_uint,
+            3549 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 17],
                 &[libc::c_char; 17],
@@ -4516,7 +4500,7 @@ pub unsafe extern "C" fn mi_reallocarr(
         _mi_assert_fail(
             b"p != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3555 as libc::c_int as libc::c_uint,
+            3558 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 14],
                 &[libc::c_char; 14],
@@ -4641,7 +4625,7 @@ unsafe extern "C" fn mi_bitmap_index_create_ex(
         _mi_assert_fail(
             b"bitidx <= MI_BITMAP_FIELD_BITS\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3632 as libc::c_int as libc::c_uint,
+            3635 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 26],
                 &[libc::c_char; 26],
@@ -4663,7 +4647,7 @@ unsafe extern "C" fn mi_bitmap_index_create(
         _mi_assert_fail(
             b"bitidx < MI_BITMAP_FIELD_BITS\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3636 as libc::c_int as libc::c_uint,
+            3639 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 23],
                 &[libc::c_char; 23],
@@ -4705,7 +4689,7 @@ unsafe extern "C" fn mi_arena_segment_os_clear_abandoned(
             b"segment->memid.memkind != MI_MEM_ARENA\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3696 as libc::c_int as libc::c_uint,
+            3699 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 36],
                 &[libc::c_char; 36],
@@ -4774,7 +4758,7 @@ pub unsafe extern "C" fn _mi_arena_segment_clear_abandoned(
         _mi_assert_fail(
             b"arena != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3739 as libc::c_int as libc::c_uint,
+            3742 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 34],
                 &[libc::c_char; 34],
@@ -4797,7 +4781,7 @@ pub unsafe extern "C" fn _mi_arena_segment_clear_abandoned(
                 b"mi_atomic_load_acquire(&segment->thread_id) == 0\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                3742 as libc::c_int as libc::c_uint,
+                3745 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 34],
                     &[libc::c_char; 34],
@@ -4826,7 +4810,7 @@ pub unsafe extern "C" fn _mi_arena_segment_clear_abandoned(
             b"!was_marked || _mi_bitmap_is_claimed(arena->blocks_inuse, arena->field_count, 1, bitmap_idx)\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3746 as libc::c_int as libc::c_uint,
+            3749 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 34],
                 &[libc::c_char; 34],
@@ -4844,7 +4828,7 @@ unsafe extern "C" fn mi_arena_segment_os_mark_abandoned(mut segment: *mut mi_seg
             b"segment->memid.memkind != MI_MEM_ARENA\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3750 as libc::c_int as libc::c_uint,
+            3753 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 35],
                 &[libc::c_char; 35],
@@ -4866,7 +4850,7 @@ unsafe extern "C" fn mi_arena_segment_os_mark_abandoned(mut segment: *mut mi_seg
                 b"prev == NULL || prev->abandoned_os_next == NULL\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                3757 as libc::c_int as libc::c_uint,
+                3760 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 35],
                     &[libc::c_char; 35],
@@ -4879,7 +4863,7 @@ unsafe extern "C" fn mi_arena_segment_os_mark_abandoned(mut segment: *mut mi_seg
                 b"segment->abandoned_os_prev == NULL\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                3758 as libc::c_int as libc::c_uint,
+                3761 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 35],
                     &[libc::c_char; 35],
@@ -4892,7 +4876,7 @@ unsafe extern "C" fn mi_arena_segment_os_mark_abandoned(mut segment: *mut mi_seg
                 b"segment->abandoned_os_next == NULL\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                3759 as libc::c_int as libc::c_uint,
+                3762 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 35],
                     &[libc::c_char; 35],
@@ -4927,7 +4911,7 @@ pub unsafe extern "C" fn _mi_arena_segment_mark_abandoned(
         _mi_assert_fail(
             b"segment->used == segment->abandoned\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3773 as libc::c_int as libc::c_uint,
+            3776 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 33],
                 &[libc::c_char; 33],
@@ -4954,7 +4938,7 @@ pub unsafe extern "C" fn _mi_arena_segment_mark_abandoned(
         _mi_assert_fail(
             b"arena != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3783 as libc::c_int as libc::c_uint,
+            3786 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 33],
                 &[libc::c_char; 33],
@@ -4980,7 +4964,7 @@ pub unsafe extern "C" fn _mi_arena_segment_mark_abandoned(
         _mi_assert_fail(
             b"was_unmarked\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3787 as libc::c_int as libc::c_uint,
+            3790 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 33],
                 &[libc::c_char; 33],
@@ -4999,7 +4983,7 @@ pub unsafe extern "C" fn _mi_arena_segment_mark_abandoned(
             b"_mi_bitmap_is_claimed(arena->blocks_inuse, arena->field_count, 1, bitmap_idx)\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3788 as libc::c_int as libc::c_uint,
+            3791 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 33],
                 &[libc::c_char; 33],
@@ -5020,7 +5004,7 @@ pub unsafe extern "C" fn _mi_arena_field_cursor_init(
             b"heap == NULL || heap->tld->segments.subproc == subproc\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3791 as libc::c_int as libc::c_uint,
+            3794 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 28],
                 &[libc::c_char; 28],
@@ -5064,7 +5048,7 @@ pub unsafe extern "C" fn _mi_arena_field_cursor_init(
         _mi_assert_fail(
             b"current->start <= max_arena\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3815 as libc::c_int as libc::c_uint,
+            3818 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 28],
                 &[libc::c_char; 28],
@@ -5106,7 +5090,7 @@ unsafe extern "C" fn mi_arena_segment_clear_abandoned_at(
             b"_mi_bitmap_is_claimed(arena->blocks_inuse, arena->field_count, 1, bitmap_idx)\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3825 as libc::c_int as libc::c_uint,
+            3828 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 36],
                 &[libc::c_char; 36],
@@ -5124,7 +5108,7 @@ unsafe extern "C" fn mi_arena_segment_clear_abandoned_at(
             b"mi_atomic_load_relaxed(&segment->thread_id) == 0\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3827 as libc::c_int as libc::c_uint,
+            3830 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 36],
                 &[libc::c_char; 36],
@@ -5144,7 +5128,7 @@ unsafe extern "C" fn mi_arena_segment_clear_abandoned_at(
             _mi_assert_fail(
                 b"was_zero\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                3830 as libc::c_int as libc::c_uint,
+                3833 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 36],
                     &[libc::c_char; 36],
@@ -5214,7 +5198,7 @@ unsafe extern "C" fn mi_arena_segment_clear_abandoned_next_field(
                                 as *const u8 as *const libc::c_char,
                             b"preprocess/mimalloc.c\0" as *const u8
                                 as *const libc::c_char,
-                            3859 as libc::c_int as libc::c_uint,
+                            3862 as libc::c_int as libc::c_uint,
                             (*::core::mem::transmute::<
                                 &[u8; 44],
                                 &[libc::c_char; 44],
@@ -5321,7 +5305,7 @@ unsafe extern "C" fn mi_arena_segment_clear_abandoned_next_list(
         _mi_assert_fail(
             b"previous->os_list_count == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3906 as libc::c_int as libc::c_uint,
+            3909 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 43],
                 &[libc::c_char; 43],
@@ -5347,7 +5331,7 @@ pub unsafe extern "C" fn _mi_arena_segment_clear_abandoned_next(
         _mi_assert_fail(
             b"previous->start == previous->end\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3914 as libc::c_int as libc::c_uint,
+            3917 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 39],
                 &[libc::c_char; 39],
@@ -5415,7 +5399,7 @@ unsafe extern "C" fn mi_arena_id_create(mut arena_index: size_t) -> mi_arena_id_
         _mi_assert_fail(
             b"arena_index < MI_MAX_ARENAS\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3938 as libc::c_int as libc::c_uint,
+            3941 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 19],
                 &[libc::c_char; 19],
@@ -5466,7 +5450,7 @@ pub unsafe extern "C" fn mi_arena_from_index(mut idx: size_t) -> *mut mi_arena_t
         _mi_assert_fail(
             b"idx < mi_arena_get_count()\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3960 as libc::c_int as libc::c_uint,
+            3963 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -5519,7 +5503,7 @@ pub unsafe extern "C" fn mi_arena_memid_indices(
         _mi_assert_fail(
             b"memid.memkind == MI_MEM_ARENA\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            3980 as libc::c_int as libc::c_uint,
+            3983 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 23],
                 &[libc::c_char; 23],
@@ -5635,7 +5619,7 @@ pub unsafe extern "C" fn _mi_arena_meta_free(
             _mi_assert_fail(
                 b"memid.memkind == MI_MEM_STATIC\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                4026 as libc::c_int as libc::c_uint,
+                4029 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 20],
                     &[libc::c_char; 20],
@@ -5691,7 +5675,7 @@ unsafe extern "C" fn mi_arena_try_alloc_at(
             b"mi_arena_id_index(arena->id) == arena_index\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4045 as libc::c_int as libc::c_uint,
+            4048 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -5782,7 +5766,7 @@ unsafe extern "C" fn mi_arena_try_alloc_at_id(
         _mi_assert_fail(
             b"alignment <= MI_SEGMENT_ALIGN\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4083 as libc::c_int as libc::c_uint,
+            4086 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 25],
                 &[libc::c_char; 25],
@@ -5799,7 +5783,7 @@ unsafe extern "C" fn mi_arena_try_alloc_at_id(
             b"arena_index < mi_atomic_load_relaxed(&mi_arena_count)\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4086 as libc::c_int as libc::c_uint,
+            4089 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 25],
                 &[libc::c_char; 25],
@@ -5811,7 +5795,7 @@ unsafe extern "C" fn mi_arena_try_alloc_at_id(
         _mi_assert_fail(
             b"size <= mi_arena_block_size(bcount)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4087 as libc::c_int as libc::c_uint,
+            4090 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 25],
                 &[libc::c_char; 25],
@@ -5853,7 +5837,7 @@ unsafe extern "C" fn mi_arena_try_alloc_at_id(
             b"p == NULL || _mi_is_aligned(p, alignment)\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4098 as libc::c_int as libc::c_uint,
+            4101 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 25],
                 &[libc::c_char; 25],
@@ -5882,7 +5866,7 @@ unsafe extern "C" fn mi_arena_try_alloc(
         _mi_assert_fail(
             b"alignment <= MI_SEGMENT_ALIGN\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4106 as libc::c_int as libc::c_uint,
+            4109 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 19],
                 &[libc::c_char; 19],
@@ -6043,7 +6027,7 @@ pub unsafe extern "C" fn _mi_arena_alloc_aligned(
         _mi_assert_fail(
             b"memid != NULL && tld != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4158 as libc::c_int as libc::c_uint,
+            4161 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 24],
                 &[libc::c_char; 24],
@@ -6055,7 +6039,7 @@ pub unsafe extern "C" fn _mi_arena_alloc_aligned(
         _mi_assert_fail(
             b"size > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4159 as libc::c_int as libc::c_uint,
+            4162 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 24],
                 &[libc::c_char; 24],
@@ -6101,7 +6085,7 @@ pub unsafe extern "C" fn _mi_arena_alloc_aligned(
                                 as *const libc::c_char,
                             b"preprocess/mimalloc.c\0" as *const u8
                                 as *const libc::c_char,
-                            4169 as libc::c_int as libc::c_uint,
+                            4172 as libc::c_int as libc::c_uint,
                             (*::core::mem::transmute::<
                                 &[u8; 24],
                                 &[libc::c_char; 24],
@@ -6214,7 +6198,7 @@ unsafe extern "C" fn mi_arena_purge(
         _mi_assert_fail(
             b"arena->blocks_committed != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4204 as libc::c_int as libc::c_uint,
+            4207 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 15],
                 &[libc::c_char; 15],
@@ -6226,7 +6210,7 @@ unsafe extern "C" fn mi_arena_purge(
         _mi_assert_fail(
             b"arena->blocks_purge != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4205 as libc::c_int as libc::c_uint,
+            4208 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 15],
                 &[libc::c_char; 15],
@@ -6238,7 +6222,7 @@ unsafe extern "C" fn mi_arena_purge(
         _mi_assert_fail(
             b"!arena->memid.is_pinned\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4206 as libc::c_int as libc::c_uint,
+            4209 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 15],
                 &[libc::c_char; 15],
@@ -6262,7 +6246,7 @@ unsafe extern "C" fn mi_arena_purge(
                 b"mi_option_is_enabled(mi_option_purge_decommits)\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                4214 as libc::c_int as libc::c_uint,
+                4217 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 15],
                     &[libc::c_char; 15],
@@ -6300,7 +6284,7 @@ unsafe extern "C" fn mi_arena_schedule_purge(
         _mi_assert_fail(
             b"arena->blocks_purge != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4224 as libc::c_int as libc::c_uint,
+            4227 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 24],
                 &[libc::c_char; 24],
@@ -6538,7 +6522,7 @@ pub unsafe extern "C" fn _mi_arena_free(
         _mi_assert_fail(
             b"size > 0 && stats != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4326 as libc::c_int as libc::c_uint,
+            4329 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 15],
                 &[libc::c_char; 15],
@@ -6550,7 +6534,7 @@ pub unsafe extern "C" fn _mi_arena_free(
         _mi_assert_fail(
             b"committed_size <= size\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4327 as libc::c_int as libc::c_uint,
+            4330 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 15],
                 &[libc::c_char; 15],
@@ -6580,7 +6564,7 @@ pub unsafe extern "C" fn _mi_arena_free(
             _mi_assert_fail(
                 b"arena_idx < MI_MAX_ARENAS\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                4342 as libc::c_int as libc::c_uint,
+                4345 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 15],
                     &[libc::c_char; 15],
@@ -6596,7 +6580,7 @@ pub unsafe extern "C" fn _mi_arena_free(
             _mi_assert_fail(
                 b"arena != NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                4344 as libc::c_int as libc::c_uint,
+                4347 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 15],
                     &[libc::c_char; 15],
@@ -6621,7 +6605,7 @@ pub unsafe extern "C" fn _mi_arena_free(
                 b"arena->field_count > mi_bitmap_index_field(bitmap_idx)\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                4350 as libc::c_int as libc::c_uint,
+                4353 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 15],
                     &[libc::c_char; 15],
@@ -6647,7 +6631,7 @@ pub unsafe extern "C" fn _mi_arena_free(
                 _mi_assert_fail(
                     b"all_committed\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    4356 as libc::c_int as libc::c_uint,
+                    4359 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 15],
                         &[libc::c_char; 15],
@@ -6661,7 +6645,7 @@ pub unsafe extern "C" fn _mi_arena_free(
                     b"arena->blocks_committed != NULL\0" as *const u8
                         as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    4359 as libc::c_int as libc::c_uint,
+                    4362 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 15],
                         &[libc::c_char; 15],
@@ -6673,7 +6657,7 @@ pub unsafe extern "C" fn _mi_arena_free(
                 _mi_assert_fail(
                     b"arena->blocks_purge != NULL\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    4360 as libc::c_int as libc::c_uint,
+                    4363 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 15],
                         &[libc::c_char; 15],
@@ -6716,7 +6700,7 @@ pub unsafe extern "C" fn _mi_arena_free(
             _mi_assert_fail(
                 b"memid.memkind < MI_MEM_OS\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                4377 as libc::c_int as libc::c_uint,
+                4380 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 15],
                     &[libc::c_char; 15],
@@ -6813,7 +6797,7 @@ unsafe extern "C" fn mi_arena_add(
         _mi_assert_fail(
             b"arena != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4419 as libc::c_int as libc::c_uint,
+            4422 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -6833,7 +6817,7 @@ unsafe extern "C" fn mi_arena_add(
             b"(uintptr_t)mi_atomic_load_ptr_relaxed(uint8_t,&arena->start) % MI_SEGMENT_ALIGN == 0\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4420 as libc::c_int as libc::c_uint,
+            4423 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -6845,7 +6829,7 @@ unsafe extern "C" fn mi_arena_add(
         _mi_assert_fail(
             b"arena->block_count > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4421 as libc::c_int as libc::c_uint,
+            4424 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -6905,7 +6889,7 @@ unsafe extern "C" fn mi_manage_os_memory_ex2(
                 b"memid.initially_committed && memid.is_pinned\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                4439 as libc::c_int as libc::c_uint,
+                4442 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 24],
                     &[libc::c_char; 24],
@@ -7012,7 +6996,7 @@ unsafe extern "C" fn mi_manage_os_memory_ex2(
         _mi_assert_fail(
             b"post >= 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4469 as libc::c_int as libc::c_uint,
+            4472 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 24],
                 &[libc::c_char; 24],
@@ -7498,7 +7482,7 @@ unsafe extern "C" fn mi_bitmap_mask_(mut count: size_t, mut bitidx: size_t) -> s
             b"count + bitidx <= MI_BITMAP_FIELD_BITS\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4606 as libc::c_int as libc::c_uint,
+            4609 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 16],
                 &[libc::c_char; 16],
@@ -7510,7 +7494,7 @@ unsafe extern "C" fn mi_bitmap_mask_(mut count: size_t, mut bitidx: size_t) -> s
         _mi_assert_fail(
             b"count > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4607 as libc::c_int as libc::c_uint,
+            4610 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 16],
                 &[libc::c_char; 16],
@@ -7538,7 +7522,7 @@ pub unsafe extern "C" fn _mi_bitmap_try_find_claim_field(
         _mi_assert_fail(
             b"bitmap_idx != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4614 as libc::c_int as libc::c_uint,
+            4617 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 32],
                 &[libc::c_char; 32],
@@ -7551,7 +7535,7 @@ pub unsafe extern "C" fn _mi_bitmap_try_find_claim_field(
         _mi_assert_fail(
             b"count <= MI_BITMAP_FIELD_BITS\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4615 as libc::c_int as libc::c_uint,
+            4618 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 32],
                 &[libc::c_char; 32],
@@ -7578,7 +7562,7 @@ pub unsafe extern "C" fn _mi_bitmap_try_find_claim_field(
                 _mi_assert_fail(
                     b"(m >> bitidx) == mask\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    4630 as libc::c_int as libc::c_uint,
+                    4633 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 32],
                         &[libc::c_char; 32],
@@ -7592,7 +7576,7 @@ pub unsafe extern "C" fn _mi_bitmap_try_find_claim_field(
                     b"(newmap^map) >> bitidx == mask\0" as *const u8
                         as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    4632 as libc::c_int as libc::c_uint,
+                    4635 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 32],
                         &[libc::c_char; 32],
@@ -7616,7 +7600,7 @@ pub unsafe extern "C" fn _mi_bitmap_try_find_claim_field(
                 _mi_assert_fail(
                     b"mapm != 0\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    4643 as libc::c_int as libc::c_uint,
+                    4646 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 32],
                         &[libc::c_char; 32],
@@ -7635,7 +7619,7 @@ pub unsafe extern "C" fn _mi_bitmap_try_find_claim_field(
                 _mi_assert_fail(
                     b"shift > 0 && shift <= count\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    4645 as libc::c_int as libc::c_uint,
+                    4648 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 32],
                         &[libc::c_char; 32],
@@ -7687,7 +7671,7 @@ pub unsafe extern "C" fn _mi_bitmap_unclaim(
         _mi_assert_fail(
             b"bitmap_fields > idx\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4669 as libc::c_int as libc::c_uint,
+            4672 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 19],
                 &[libc::c_char; 19],
@@ -7716,7 +7700,7 @@ pub unsafe extern "C" fn _mi_bitmap_claim(
         _mi_assert_fail(
             b"bitmap_fields > idx\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4677 as libc::c_int as libc::c_uint,
+            4680 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 17],
                 &[libc::c_char; 17],
@@ -7747,7 +7731,7 @@ unsafe extern "C" fn mi_bitmap_is_claimedx(
         _mi_assert_fail(
             b"bitmap_fields > idx\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4686 as libc::c_int as libc::c_uint,
+            4689 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -7777,7 +7761,7 @@ pub unsafe extern "C" fn _mi_bitmap_try_claim(
         _mi_assert_fail(
             b"bitmap_fields > idx\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4695 as libc::c_int as libc::c_uint,
+            4698 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 21],
                 &[libc::c_char; 21],
@@ -7806,7 +7790,7 @@ pub unsafe extern "C" fn _mi_bitmap_try_claim(
         _mi_assert_fail(
             b"(expected & mask) == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4701 as libc::c_int as libc::c_uint,
+            4704 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 21],
                 &[libc::c_char; 21],
@@ -7856,7 +7840,7 @@ unsafe extern "C" fn mi_bitmap_try_find_claim_field_across(
         _mi_assert_fail(
             b"bitmap_idx != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4714 as libc::c_int as libc::c_uint,
+            4717 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 38],
                 &[libc::c_char; 38],
@@ -7873,7 +7857,7 @@ unsafe extern "C" fn mi_bitmap_try_find_claim_field_across(
         _mi_assert_fail(
             b"initial <= MI_BITMAP_FIELD_BITS\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4718 as libc::c_int as libc::c_uint,
+            4721 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 38],
                 &[libc::c_char; 38],
@@ -7918,7 +7902,7 @@ unsafe extern "C" fn mi_bitmap_try_find_claim_field_across(
                 b"mask_bits > 0 && mask_bits <= MI_BITMAP_FIELD_BITS\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                4728 as libc::c_int as libc::c_uint,
+                4731 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 38],
                     &[libc::c_char; 38],
@@ -7937,7 +7921,7 @@ unsafe extern "C" fn mi_bitmap_try_find_claim_field_across(
         _mi_assert_fail(
             b"field < &bitmap[bitmap_fields]\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4733 as libc::c_int as libc::c_uint,
+            4736 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 38],
                 &[libc::c_char; 38],
@@ -7959,7 +7943,7 @@ unsafe extern "C" fn mi_bitmap_try_find_claim_field_across(
     loop {
         newmap = map | initial_mask;
         if map & initial_mask != 0 as libc::c_int as size_t {
-            current_block = 6638229613705292009;
+            current_block = 13491598897034542160;
             break;
         }
         let fresh14 = ::core::intrinsics::atomic_cxchg_acqrel_acquire(
@@ -7975,7 +7959,7 @@ unsafe extern "C" fn mi_bitmap_try_find_claim_field_across(
     }
     's_114: loop {
         match current_block {
-            6638229613705292009 => {
+            13491598897034542160 => {
                 loop {
                     field = field.offset(-1);
                     if !(field > initial_field) {
@@ -7993,7 +7977,7 @@ unsafe extern "C" fn mi_bitmap_try_find_claim_field_across(
                                 as *const libc::c_char,
                             b"preprocess/mimalloc.c\0" as *const u8
                                 as *const libc::c_char,
-                            4764 as libc::c_int as libc::c_uint,
+                            4767 as libc::c_int as libc::c_uint,
                             (*::core::mem::transmute::<
                                 &[u8; 38],
                                 &[libc::c_char; 38],
@@ -8012,7 +7996,7 @@ unsafe extern "C" fn mi_bitmap_try_find_claim_field_across(
                                     as *const libc::c_char,
                                 b"preprocess/mimalloc.c\0" as *const u8
                                     as *const libc::c_char,
-                                4770 as libc::c_int as libc::c_uint,
+                                4773 as libc::c_int as libc::c_uint,
                                 (*::core::mem::transmute::<
                                     &[u8; 38],
                                     &[libc::c_char; 38],
@@ -8066,7 +8050,7 @@ unsafe extern "C" fn mi_bitmap_try_find_claim_field_across(
                     );
                     *(&mut map as *mut size_t) = fresh15.0;
                     if !fresh15.1 {
-                        current_block = 6638229613705292009;
+                        current_block = 13491598897034542160;
                     } else {
                         current_block = 14576567515993809846;
                     }
@@ -8077,7 +8061,7 @@ unsafe extern "C" fn mi_bitmap_try_find_claim_field_across(
                                 as *const libc::c_char,
                             b"preprocess/mimalloc.c\0" as *const u8
                                 as *const libc::c_char,
-                            4751 as libc::c_int as libc::c_uint,
+                            4754 as libc::c_int as libc::c_uint,
                             (*::core::mem::transmute::<
                                 &[u8; 38],
                                 &[libc::c_char; 38],
@@ -8089,7 +8073,7 @@ unsafe extern "C" fn mi_bitmap_try_find_claim_field_across(
                     loop {
                         newmap = map | final_mask;
                         if map & final_mask != 0 as libc::c_int as size_t {
-                            current_block = 6638229613705292009;
+                            current_block = 13491598897034542160;
                             continue 's_114;
                         }
                         let fresh16 = ::core::intrinsics::atomic_cxchg_acqrel_acquire(
@@ -8126,7 +8110,7 @@ pub unsafe extern "C" fn _mi_bitmap_try_find_from_claim_across(
         _mi_assert_fail(
             b"count > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4783 as libc::c_int as libc::c_uint,
+            4786 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 38],
                 &[libc::c_char; 38],
@@ -8188,7 +8172,7 @@ unsafe extern "C" fn mi_bitmap_mask_across(
                 b"mi_bitmap_index_field(bitmap_idx) < bitmap_fields\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                4803 as libc::c_int as libc::c_uint,
+                4806 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 22],
                     &[libc::c_char; 22],
@@ -8205,7 +8189,7 @@ unsafe extern "C" fn mi_bitmap_mask_across(
             _mi_assert_fail(
                 b"pre_bits < count\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                4808 as libc::c_int as libc::c_uint,
+                4811 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 22],
                     &[libc::c_char; 22],
@@ -8239,7 +8223,7 @@ unsafe extern "C" fn mi_bitmap_mask_across(
                 b"mi_bitmap_index_field(bitmap_idx) + mid_count + (count==0 ? 0 : 1) < bitmap_fields\0"
                     as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                4815 as libc::c_int as libc::c_uint,
+                4818 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 22],
                     &[libc::c_char; 22],
@@ -8481,7 +8465,7 @@ unsafe extern "C" fn mi_heap_visit_pages(
                 _mi_assert_fail(
                     b"mi_page_heap(page) == heap\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    4914 as libc::c_int as libc::c_uint,
+                    4917 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 20],
                         &[libc::c_char; 20],
@@ -8503,7 +8487,7 @@ unsafe extern "C" fn mi_heap_visit_pages(
         _mi_assert_fail(
             b"count == total\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4922 as libc::c_int as libc::c_uint,
+            4925 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -8524,7 +8508,7 @@ unsafe extern "C" fn mi_heap_page_is_valid(
         _mi_assert_fail(
             b"mi_page_heap(page) == heap\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4930 as libc::c_int as libc::c_uint,
+            4933 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -8538,7 +8522,7 @@ unsafe extern "C" fn mi_heap_page_is_valid(
             b"segment->thread_id == heap->thread_id\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4932 as libc::c_int as libc::c_uint,
+            4935 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -8567,7 +8551,7 @@ unsafe extern "C" fn mi_heap_page_collect(
             b"mi_heap_page_is_valid(heap, pq, page, NULL, NULL)\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4952 as libc::c_int as libc::c_uint,
+            4955 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 21],
                 &[libc::c_char; 21],
@@ -8662,7 +8646,7 @@ unsafe extern "C" fn mi_heap_collect_ex(
             b"collect != MI_ABANDON || mi_atomic_load_ptr_acquire(mi_block_t,&heap->thread_delayed_free) == NULL\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            4993 as libc::c_int as libc::c_uint,
+            4996 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 19],
                 &[libc::c_char; 19],
@@ -8718,7 +8702,7 @@ pub unsafe extern "C" fn mi_heap_get_backing() -> *mut mi_heap_t {
         _mi_assert_fail(
             b"heap!=NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5018 as libc::c_int as libc::c_uint,
+            5021 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -8731,7 +8715,7 @@ pub unsafe extern "C" fn mi_heap_get_backing() -> *mut mi_heap_t {
         _mi_assert_fail(
             b"bheap!=NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5020 as libc::c_int as libc::c_uint,
+            5023 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -8743,7 +8727,7 @@ pub unsafe extern "C" fn mi_heap_get_backing() -> *mut mi_heap_t {
         _mi_assert_fail(
             b"bheap->thread_id == _mi_thread_id()\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5021 as libc::c_int as libc::c_uint,
+            5024 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -8801,7 +8785,7 @@ pub unsafe extern "C" fn mi_heap_new_ex(
         _mi_assert_fail(
             b"heap_tag >= 0 && heap_tag < 256\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5048 as libc::c_int as libc::c_uint,
+            5051 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 15],
                 &[libc::c_char; 15],
@@ -8838,7 +8822,7 @@ unsafe extern "C" fn mi_heap_reset_pages(mut heap: *mut mi_heap_t) {
         _mi_assert_fail(
             b"heap != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5065 as libc::c_int as libc::c_uint,
+            5068 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -8850,7 +8834,7 @@ unsafe extern "C" fn mi_heap_reset_pages(mut heap: *mut mi_heap_t) {
         _mi_assert_fail(
             b"mi_heap_is_initialized(heap)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5066 as libc::c_int as libc::c_uint,
+            5069 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -8877,7 +8861,7 @@ unsafe extern "C" fn mi_heap_free(mut heap: *mut mi_heap_t) {
         _mi_assert_fail(
             b"heap != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5073 as libc::c_int as libc::c_uint,
+            5076 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -8889,7 +8873,7 @@ unsafe extern "C" fn mi_heap_free(mut heap: *mut mi_heap_t) {
         _mi_assert_fail(
             b"mi_heap_is_initialized(heap)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5074 as libc::c_int as libc::c_uint,
+            5077 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -8916,7 +8900,7 @@ unsafe extern "C" fn mi_heap_free(mut heap: *mut mi_heap_t) {
         _mi_assert_fail(
             b"curr == heap\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5086 as libc::c_int as libc::c_uint,
+            5089 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -8935,7 +8919,7 @@ unsafe extern "C" fn mi_heap_free(mut heap: *mut mi_heap_t) {
         _mi_assert_fail(
             b"heap->tld->heaps != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5091 as libc::c_int as libc::c_uint,
+            5094 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -9002,7 +8986,7 @@ unsafe extern "C" fn _mi_heap_page_destroy(
         _mi_assert_fail(
             b"mi_page_thread_free(page) == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5126 as libc::c_int as libc::c_uint,
+            5129 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -9041,7 +9025,7 @@ pub unsafe extern "C" fn mi_heap_destroy(mut heap: *mut mi_heap_t) {
         _mi_assert_fail(
             b"heap != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5145 as libc::c_int as libc::c_uint,
+            5148 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 16],
                 &[libc::c_char; 16],
@@ -9053,7 +9037,7 @@ pub unsafe extern "C" fn mi_heap_destroy(mut heap: *mut mi_heap_t) {
         _mi_assert_fail(
             b"mi_heap_is_initialized(heap)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5146 as libc::c_int as libc::c_uint,
+            5149 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 16],
                 &[libc::c_char; 16],
@@ -9065,7 +9049,7 @@ pub unsafe extern "C" fn mi_heap_destroy(mut heap: *mut mi_heap_t) {
         _mi_assert_fail(
             b"heap->no_reclaim\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5147 as libc::c_int as libc::c_uint,
+            5150 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 16],
                 &[libc::c_char; 16],
@@ -9107,7 +9091,7 @@ unsafe extern "C" fn mi_heap_absorb(mut heap: *mut mi_heap_t, mut from: *mut mi_
         _mi_assert_fail(
             b"heap!=NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5182 as libc::c_int as libc::c_uint,
+            5185 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 15],
                 &[libc::c_char; 15],
@@ -9139,7 +9123,7 @@ unsafe extern "C" fn mi_heap_absorb(mut heap: *mut mi_heap_t, mut from: *mut mi_
         _mi_assert_fail(
             b"from->page_count == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5192 as libc::c_int as libc::c_uint,
+            5195 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 15],
                 &[libc::c_char; 15],
@@ -9157,7 +9141,7 @@ unsafe extern "C" fn mi_heap_absorb(mut heap: *mut mi_heap_t, mut from: *mut mi_
             b"mi_atomic_load_ptr_relaxed(mi_block_t,&from->thread_delayed_free) == NULL\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5195 as libc::c_int as libc::c_uint,
+            5198 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 15],
                 &[libc::c_char; 15],
@@ -9173,7 +9157,7 @@ pub unsafe extern "C" fn mi_heap_delete(mut heap: *mut mi_heap_t) {
         _mi_assert_fail(
             b"heap != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5201 as libc::c_int as libc::c_uint,
+            5204 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 15],
                 &[libc::c_char; 15],
@@ -9185,7 +9169,7 @@ pub unsafe extern "C" fn mi_heap_delete(mut heap: *mut mi_heap_t) {
         _mi_assert_fail(
             b"mi_heap_is_initialized(heap)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5202 as libc::c_int as libc::c_uint,
+            5205 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 15],
                 &[libc::c_char; 15],
@@ -9205,7 +9189,7 @@ pub unsafe extern "C" fn mi_heap_delete(mut heap: *mut mi_heap_t) {
         _mi_assert_fail(
             b"heap->page_count==0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5211 as libc::c_int as libc::c_uint,
+            5214 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 15],
                 &[libc::c_char; 15],
@@ -9223,7 +9207,7 @@ pub unsafe extern "C" fn mi_heap_set_default(
         _mi_assert_fail(
             b"heap != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5215 as libc::c_int as libc::c_uint,
+            5218 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -9235,7 +9219,7 @@ pub unsafe extern "C" fn mi_heap_set_default(
         _mi_assert_fail(
             b"mi_heap_is_initialized(heap)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5216 as libc::c_int as libc::c_uint,
+            5219 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -9261,7 +9245,7 @@ unsafe extern "C" fn mi_heap_of_block(mut p: *const libc::c_void) -> *mut mi_hea
         _mi_assert_fail(
             b"valid\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5227 as libc::c_int as libc::c_uint,
+            5230 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 17],
                 &[libc::c_char; 17],
@@ -9283,7 +9267,7 @@ pub unsafe extern "C" fn mi_heap_contains_block(
         _mi_assert_fail(
             b"heap != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5232 as libc::c_int as libc::c_uint,
+            5235 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 23],
                 &[libc::c_char; 23],
@@ -9320,7 +9304,7 @@ pub unsafe extern "C" fn mi_heap_check_owned(
         _mi_assert_fail(
             b"heap != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5246 as libc::c_int as libc::c_uint,
+            5249 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -9386,7 +9370,7 @@ unsafe extern "C" fn mi_get_fast_divisor(
             b"divisor > 0 && divisor <= UINT32_MAX\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5268 as libc::c_int as libc::c_uint,
+            5271 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -9410,7 +9394,7 @@ unsafe extern "C" fn mi_fast_divide(
         _mi_assert_fail(
             b"n <= UINT32_MAX\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5273 as libc::c_int as libc::c_uint,
+            5276 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 15],
                 &[libc::c_char; 15],
@@ -9432,7 +9416,7 @@ pub unsafe extern "C" fn _mi_heap_area_visit_blocks(
         _mi_assert_fail(
             b"area != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5278 as libc::c_int as libc::c_uint,
+            5281 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 27],
                 &[libc::c_char; 27],
@@ -9447,7 +9431,7 @@ pub unsafe extern "C" fn _mi_heap_area_visit_blocks(
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5280 as libc::c_int as libc::c_uint,
+            5283 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 27],
                 &[libc::c_char; 27],
@@ -9463,7 +9447,7 @@ pub unsafe extern "C" fn _mi_heap_area_visit_blocks(
         _mi_assert_fail(
             b"page->local_free == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5283 as libc::c_int as libc::c_uint,
+            5286 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 27],
                 &[libc::c_char; 27],
@@ -9490,7 +9474,7 @@ pub unsafe extern "C" fn _mi_heap_area_visit_blocks(
                 b"page->used == 1 && page->free == NULL\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                5291 as libc::c_int as libc::c_uint,
+                5294 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 27],
                     &[libc::c_char; 27],
@@ -9507,7 +9491,7 @@ pub unsafe extern "C" fn _mi_heap_area_visit_blocks(
         _mi_assert_fail(
             b"bsize <= UINT32_MAX\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5294 as libc::c_int as libc::c_uint,
+            5297 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 27],
                 &[libc::c_char; 27],
@@ -9566,7 +9550,7 @@ pub unsafe extern "C" fn _mi_heap_area_visit_blocks(
                 b"(uint8_t*)block >= pstart && (uint8_t*)block < (pstart + psize)\0"
                     as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                5322 as libc::c_int as libc::c_uint,
+                5325 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 27],
                     &[libc::c_char; 27],
@@ -9580,7 +9564,7 @@ pub unsafe extern "C" fn _mi_heap_area_visit_blocks(
             _mi_assert_fail(
                 b"offset % bsize == 0\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                5324 as libc::c_int as libc::c_uint,
+                5327 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 27],
                     &[libc::c_char; 27],
@@ -9592,7 +9576,7 @@ pub unsafe extern "C" fn _mi_heap_area_visit_blocks(
             _mi_assert_fail(
                 b"offset <= UINT32_MAX\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                5325 as libc::c_int as libc::c_uint,
+                5328 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 27],
                     &[libc::c_char; 27],
@@ -9605,7 +9589,7 @@ pub unsafe extern "C" fn _mi_heap_area_visit_blocks(
             _mi_assert_fail(
                 b"blockidx == offset / bsize\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                5327 as libc::c_int as libc::c_uint,
+                5330 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 27],
                     &[libc::c_char; 27],
@@ -9623,7 +9607,7 @@ pub unsafe extern "C" fn _mi_heap_area_visit_blocks(
             _mi_assert_fail(
                 b"blockidx < MI_MAX_BLOCKS\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                5328 as libc::c_int as libc::c_uint,
+                5331 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 27],
                     &[libc::c_char; 27],
@@ -9648,7 +9632,7 @@ pub unsafe extern "C" fn _mi_heap_area_visit_blocks(
             b"page->capacity == (free_count + page->used)\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5333 as libc::c_int as libc::c_uint,
+            5336 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 27],
                 &[libc::c_char; 27],
@@ -9713,7 +9697,7 @@ pub unsafe extern "C" fn _mi_heap_area_visit_blocks(
         _mi_assert_fail(
             b"page->used == used_count\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5361 as libc::c_int as libc::c_uint,
+            5364 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 27],
                 &[libc::c_char; 27],
@@ -11033,7 +11017,7 @@ pub unsafe extern "C" fn mi_subproc_add_current_thread(mut subproc_id: mi_subpro
             b"heap->tld->segments.subproc == &mi_subproc_default\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5616 as libc::c_int as libc::c_uint,
+            5619 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 30],
                 &[libc::c_char; 30],
@@ -11232,7 +11216,7 @@ unsafe extern "C" fn _mi_thread_heap_done(mut heap: *mut mi_heap_t) -> bool {
                 _mi_assert_fail(
                     b"!mi_heap_is_backing(curr)\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    5716 as libc::c_int as libc::c_uint,
+                    5719 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 21],
                         &[libc::c_char; 21],
@@ -11249,7 +11233,7 @@ unsafe extern "C" fn _mi_thread_heap_done(mut heap: *mut mi_heap_t) -> bool {
             b"heap->tld->heaps == heap && heap->next == NULL\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5721 as libc::c_int as libc::c_uint,
+            5724 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 21],
                 &[libc::c_char; 21],
@@ -11261,7 +11245,7 @@ unsafe extern "C" fn _mi_thread_heap_done(mut heap: *mut mi_heap_t) -> bool {
         _mi_assert_fail(
             b"mi_heap_is_backing(heap)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5722 as libc::c_int as libc::c_uint,
+            5725 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 21],
                 &[libc::c_char; 21],
@@ -11281,7 +11265,7 @@ unsafe extern "C" fn _mi_thread_heap_done(mut heap: *mut mi_heap_t) -> bool {
                 b"heap->tld->segments.count == 0 || heap->thread_id != _mi_thread_id()\0"
                     as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                5728 as libc::c_int as libc::c_uint,
+                5731 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 21],
                     &[libc::c_char; 21],
@@ -11357,7 +11341,7 @@ pub unsafe extern "C" fn _mi_heap_set_default_direct(mut heap: *mut mi_heap_t) {
         _mi_assert_fail(
             b"heap != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5778 as libc::c_int as libc::c_uint,
+            5781 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 28],
                 &[libc::c_char; 28],
@@ -11382,7 +11366,7 @@ pub unsafe extern "C" fn _mi_process_load() {
         _mi_assert_fail(
             b"_mi_is_main_thread()\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            5800 as libc::c_int as libc::c_uint,
+            5803 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 17],
                 &[libc::c_char; 17],
@@ -11975,7 +11959,7 @@ pub unsafe extern "C" fn _mi_vsnprintf(
                 _mi_assert_fail(
                     b"out <= end\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    6084 as libc::c_int as libc::c_uint,
+                    6087 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 14],
                         &[libc::c_char; 14],
@@ -11987,7 +11971,7 @@ pub unsafe extern "C" fn _mi_vsnprintf(
                 _mi_assert_fail(
                     b"out >= start\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    6085 as libc::c_int as libc::c_uint,
+                    6088 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 14],
                         &[libc::c_char; 14],
@@ -12008,7 +11992,7 @@ pub unsafe extern "C" fn _mi_vsnprintf(
         _mi_assert_fail(
             b"out <= end\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6095 as libc::c_int as libc::c_uint,
+            6098 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 14],
                 &[libc::c_char; 14],
@@ -12083,7 +12067,7 @@ pub unsafe extern "C" fn _mi_option_get_fast(mut option: mi_option_t) -> libc::c
             b"option >= 0 && option < _mi_option_last\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6245 as libc::c_int as libc::c_uint,
+            6248 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -12098,7 +12082,7 @@ pub unsafe extern "C" fn _mi_option_get_fast(mut option: mi_option_t) -> libc::c
         _mi_assert_fail(
             b"desc->option == option\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6247 as libc::c_int as libc::c_uint,
+            6250 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -12117,7 +12101,7 @@ pub unsafe extern "C" fn mi_option_get(mut option: mi_option_t) -> libc::c_long 
             b"option >= 0 && option < _mi_option_last\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6251 as libc::c_int as libc::c_uint,
+            6254 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 14],
                 &[libc::c_char; 14],
@@ -12137,7 +12121,7 @@ pub unsafe extern "C" fn mi_option_get(mut option: mi_option_t) -> libc::c_long 
         _mi_assert_fail(
             b"desc->option == option\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6254 as libc::c_int as libc::c_uint,
+            6257 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 14],
                 &[libc::c_char; 14],
@@ -12187,7 +12171,7 @@ pub unsafe extern "C" fn mi_option_set(
             b"option >= 0 && option < _mi_option_last\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6273 as libc::c_int as libc::c_uint,
+            6276 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 14],
                 &[libc::c_char; 14],
@@ -12207,7 +12191,7 @@ pub unsafe extern "C" fn mi_option_set(
         _mi_assert_fail(
             b"desc->option == option\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6276 as libc::c_int as libc::c_uint,
+            6279 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 14],
                 &[libc::c_char; 14],
@@ -12241,7 +12225,7 @@ pub unsafe extern "C" fn mi_option_set_default(
             b"option >= 0 && option < _mi_option_last\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6287 as libc::c_int as libc::c_uint,
+            6290 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -12415,7 +12399,7 @@ unsafe extern "C" fn mi_add_stderr_output() {
         _mi_assert_fail(
             b"mi_out_default == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6360 as libc::c_int as libc::c_uint,
+            6363 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 21],
                 &[libc::c_char; 21],
@@ -12864,7 +12848,7 @@ unsafe extern "C" fn mi_option_init(mut desc: *mut mi_option_desc_t) {
             _mi_assert_fail(
                 b"desc->init != UNINIT\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                6560 as libc::c_int as libc::c_uint,
+                6563 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 15],
                     &[libc::c_char; 15],
@@ -12979,7 +12963,7 @@ unsafe extern "C" fn _mi_align_down(
         _mi_assert_fail(
             b"alignment != 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6622 as libc::c_int as libc::c_uint,
+            6625 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 15],
                 &[libc::c_char; 15],
@@ -13067,7 +13051,7 @@ unsafe extern "C" fn mi_os_prim_free(
         _mi_assert_fail(
             b"(size % _mi_os_page_size()) == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6672 as libc::c_int as libc::c_uint,
+            6675 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 16],
                 &[libc::c_char; 16],
@@ -13113,7 +13097,7 @@ pub unsafe extern "C" fn _mi_os_free_ex(
                 _mi_assert_fail(
                     b"memid.mem.os.base <= addr\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    6687 as libc::c_int as libc::c_uint,
+                    6690 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 15],
                         &[libc::c_char; 15],
@@ -13128,7 +13112,7 @@ pub unsafe extern "C" fn _mi_os_free_ex(
                     b"(uint8_t*)memid.mem.os.base + memid.mem.os.alignment >= (uint8_t*)addr\0"
                         as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    6688 as libc::c_int as libc::c_uint,
+                    6691 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 15],
                         &[libc::c_char; 15],
@@ -13149,7 +13133,7 @@ pub unsafe extern "C" fn _mi_os_free_ex(
                 _mi_assert_fail(
                     b"memid.is_pinned\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    6693 as libc::c_int as libc::c_uint,
+                    6696 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 15],
                         &[libc::c_char; 15],
@@ -13167,7 +13151,7 @@ pub unsafe extern "C" fn _mi_os_free_ex(
             _mi_assert_fail(
                 b"memid.memkind < MI_MEM_OS\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                6701 as libc::c_int as libc::c_uint,
+                6704 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 15],
                     &[libc::c_char; 15],
@@ -13206,7 +13190,7 @@ unsafe extern "C" fn mi_os_prim_alloc_at(
             b"size > 0 && (size % _mi_os_page_size()) == 0\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6709 as libc::c_int as libc::c_uint,
+            6712 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -13218,7 +13202,7 @@ unsafe extern "C" fn mi_os_prim_alloc_at(
         _mi_assert_fail(
             b"is_zero != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6710 as libc::c_int as libc::c_uint,
+            6713 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -13230,7 +13214,7 @@ unsafe extern "C" fn mi_os_prim_alloc_at(
         _mi_assert_fail(
             b"is_large != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6711 as libc::c_int as libc::c_uint,
+            6714 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -13320,7 +13304,7 @@ unsafe extern "C" fn mi_os_prim_alloc_aligned(
             b"alignment >= _mi_os_page_size() && ((alignment & (alignment - 1)) == 0)\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6740 as libc::c_int as libc::c_uint,
+            6743 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 25],
                 &[libc::c_char; 25],
@@ -13335,7 +13319,7 @@ unsafe extern "C" fn mi_os_prim_alloc_aligned(
             b"size > 0 && (size % _mi_os_page_size()) == 0\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6741 as libc::c_int as libc::c_uint,
+            6744 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 25],
                 &[libc::c_char; 25],
@@ -13347,7 +13331,7 @@ unsafe extern "C" fn mi_os_prim_alloc_aligned(
         _mi_assert_fail(
             b"is_large != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6742 as libc::c_int as libc::c_uint,
+            6745 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 25],
                 &[libc::c_char; 25],
@@ -13359,7 +13343,7 @@ unsafe extern "C" fn mi_os_prim_alloc_aligned(
         _mi_assert_fail(
             b"is_zero != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6743 as libc::c_int as libc::c_uint,
+            6746 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 25],
                 &[libc::c_char; 25],
@@ -13371,7 +13355,7 @@ unsafe extern "C" fn mi_os_prim_alloc_aligned(
         _mi_assert_fail(
             b"base != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6744 as libc::c_int as libc::c_uint,
+            6747 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 25],
                 &[libc::c_char; 25],
@@ -13461,7 +13445,7 @@ unsafe extern "C" fn mi_os_prim_alloc_aligned(
                     b"pre_size < over_size&& post_size < over_size&& mid_size >= size\0"
                         as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    6776 as libc::c_int as libc::c_uint,
+                    6779 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 25],
                         &[libc::c_char; 25],
@@ -13494,7 +13478,7 @@ unsafe extern "C" fn mi_os_prim_alloc_aligned(
             b"p == NULL || (p != NULL && *base != NULL && ((uintptr_t)p % alignment) == 0)\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6783 as libc::c_int as libc::c_uint,
+            6786 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 25],
                 &[libc::c_char; 25],
@@ -13594,7 +13578,7 @@ pub unsafe extern "C" fn _mi_os_alloc_aligned_at_offset(
         _mi_assert_fail(
             b"offset <= MI_SEGMENT_SIZE\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6819 as libc::c_int as libc::c_uint,
+            6822 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 31],
                 &[libc::c_char; 31],
@@ -13606,7 +13590,7 @@ pub unsafe extern "C" fn _mi_os_alloc_aligned_at_offset(
         _mi_assert_fail(
             b"offset <= size\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6820 as libc::c_int as libc::c_uint,
+            6823 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 31],
                 &[libc::c_char; 31],
@@ -13619,7 +13603,7 @@ pub unsafe extern "C" fn _mi_os_alloc_aligned_at_offset(
             b"(alignment % _mi_os_page_size()) == 0\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6821 as libc::c_int as libc::c_uint,
+            6824 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 31],
                 &[libc::c_char; 31],
@@ -13665,7 +13649,7 @@ pub unsafe extern "C" fn _mi_os_alloc_aligned_at_offset(
                 b"_mi_is_aligned((uint8_t*)p + offset, alignment)\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                6834 as libc::c_int as libc::c_uint,
+                6837 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 31],
                     &[libc::c_char; 31],
@@ -13689,7 +13673,7 @@ unsafe extern "C" fn mi_os_page_align_areax(
         _mi_assert_fail(
             b"addr != NULL && size > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6842 as libc::c_int as libc::c_uint,
+            6845 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 23],
                 &[libc::c_char; 23],
@@ -13731,7 +13715,7 @@ unsafe extern "C" fn mi_os_page_align_areax(
             b"(conservative && (size_t)diff <= size) || (!conservative && (size_t)diff >= size)\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6851 as libc::c_int as libc::c_uint,
+            6854 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 23],
                 &[libc::c_char; 23],
@@ -13803,7 +13787,7 @@ unsafe extern "C" fn mi_os_decommit_ex(
         _mi_assert_fail(
             b"needs_recommit!=NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6886 as libc::c_int as libc::c_uint,
+            6889 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 18],
                 &[libc::c_char; 18],
@@ -13837,7 +13821,7 @@ unsafe extern "C" fn mi_os_decommit_ex(
         _mi_assert_fail(
             b"err == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            6896 as libc::c_int as libc::c_uint,
+            6899 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 18],
                 &[libc::c_char; 18],
@@ -14001,7 +13985,7 @@ unsafe extern "C" fn mi_os_claim_huge_pages(
             _mi_assert_fail(
                 b"end % MI_SEGMENT_SIZE == 0\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                6975 as libc::c_int as libc::c_uint,
+                6978 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 23],
                     &[libc::c_char; 23],
@@ -14150,7 +14134,7 @@ pub unsafe extern "C" fn _mi_os_alloc_huge_os_pages(
         _mi_assert_fail(
             b"page*MI_HUGE_OS_PAGE_SIZE <= size\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7031 as libc::c_int as libc::c_uint,
+            7034 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 27],
                 &[libc::c_char; 27],
@@ -14174,7 +14158,7 @@ pub unsafe extern "C" fn _mi_os_alloc_huge_os_pages(
             _mi_assert_fail(
                 b"start != NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                7035 as libc::c_int as libc::c_uint,
+                7038 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 27],
                     &[libc::c_char; 27],
@@ -14192,7 +14176,7 @@ pub unsafe extern "C" fn _mi_os_alloc_huge_os_pages(
             _mi_assert_fail(
                 b"memid->is_pinned\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                7038 as libc::c_int as libc::c_uint,
+                7041 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 27],
                     &[libc::c_char; 27],
@@ -14338,7 +14322,7 @@ unsafe extern "C" fn mi_bin(mut size: size_t) -> uint8_t {
             _mi_assert_fail(
                 b"bin < MI_BIN_HUGE\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                7129 as libc::c_int as libc::c_uint,
+                7132 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<&[u8; 7], &[libc::c_char; 7]>(b"mi_bin\0"))
                     .as_ptr(),
             );
@@ -14349,7 +14333,7 @@ unsafe extern "C" fn mi_bin(mut size: size_t) -> uint8_t {
         _mi_assert_fail(
             b"bin > 0 && bin <= MI_BIN_HUGE\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7131 as libc::c_int as libc::c_uint,
+            7134 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<&[u8; 7], &[libc::c_char; 7]>(b"mi_bin\0"))
                 .as_ptr(),
         );
@@ -14395,7 +14379,7 @@ unsafe extern "C" fn mi_page_queue_contains(
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7150 as libc::c_int as libc::c_uint,
+            7153 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 23],
                 &[libc::c_char; 23],
@@ -14410,7 +14394,7 @@ unsafe extern "C" fn mi_page_queue_contains(
                 b"list->next == NULL || list->next->prev == list\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                7153 as libc::c_int as libc::c_uint,
+                7156 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 23],
                     &[libc::c_char; 23],
@@ -14423,7 +14407,7 @@ unsafe extern "C" fn mi_page_queue_contains(
                 b"list->prev == NULL || list->prev->next == list\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                7154 as libc::c_int as libc::c_uint,
+                7157 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 23],
                     &[libc::c_char; 23],
@@ -14461,7 +14445,7 @@ unsafe extern "C" fn mi_heap_page_queue_of(
         _mi_assert_fail(
             b"heap!=NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7167 as libc::c_int as libc::c_uint,
+            7170 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -14482,7 +14466,7 @@ unsafe extern "C" fn mi_heap_page_queue_of(
         _mi_assert_fail(
             b"bin <= MI_BIN_FULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7169 as libc::c_int as libc::c_uint,
+            7172 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -14503,7 +14487,7 @@ unsafe extern "C" fn mi_heap_page_queue_of(
             b"(mi_page_block_size(page) == pq->block_size) || (mi_page_is_huge(page) && mi_page_queue_is_huge(pq)) || (mi_page_is_in_full(page) && mi_page_queue_is_full(pq))\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7173 as libc::c_int as libc::c_uint,
+            7176 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -14529,7 +14513,7 @@ unsafe extern "C" fn mi_heap_queue_first_update(
         _mi_assert_fail(
             b"mi_heap_contains_queue(heap,pq)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7183 as libc::c_int as libc::c_uint,
+            7186 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 27],
                 &[libc::c_char; 27],
@@ -14577,7 +14561,7 @@ unsafe extern "C" fn mi_heap_queue_first_update(
         _mi_assert_fail(
             b"start <= idx\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7204 as libc::c_int as libc::c_uint,
+            7207 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 27],
                 &[libc::c_char; 27],
@@ -14601,7 +14585,7 @@ unsafe extern "C" fn mi_page_queue_remove(
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7210 as libc::c_int as libc::c_uint,
+            7213 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 21],
                 &[libc::c_char; 21],
@@ -14619,7 +14603,7 @@ unsafe extern "C" fn mi_page_queue_remove(
             b"mi_page_block_size(page) == queue->block_size || (mi_page_is_huge(page) && mi_page_queue_is_huge(queue)) || (mi_page_is_in_full(page) && mi_page_queue_is_full(queue))\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7214 as libc::c_int as libc::c_uint,
+            7217 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 21],
                 &[libc::c_char; 21],
@@ -14644,7 +14628,7 @@ unsafe extern "C" fn mi_page_queue_remove(
                 b"mi_heap_contains_queue(heap, queue)\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                7221 as libc::c_int as libc::c_uint,
+                7224 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 21],
                     &[libc::c_char; 21],
@@ -14669,7 +14653,7 @@ unsafe extern "C" fn mi_page_queue_push(
         _mi_assert_fail(
             b"mi_page_heap(page) == heap\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7230 as libc::c_int as libc::c_uint,
+            7233 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 19],
                 &[libc::c_char; 19],
@@ -14682,7 +14666,7 @@ unsafe extern "C" fn mi_page_queue_push(
             b"!mi_page_queue_contains(queue, page)\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7231 as libc::c_int as libc::c_uint,
+            7234 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 19],
                 &[libc::c_char; 19],
@@ -14700,7 +14684,7 @@ unsafe extern "C" fn mi_page_queue_push(
             b"mi_page_block_size(page) == queue->block_size || (mi_page_is_huge(page) && mi_page_queue_is_huge(queue)) || (mi_page_is_in_full(page) && mi_page_queue_is_full(queue))\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7237 as libc::c_int as libc::c_uint,
+            7240 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 19],
                 &[libc::c_char; 19],
@@ -14716,7 +14700,7 @@ unsafe extern "C" fn mi_page_queue_push(
             _mi_assert_fail(
                 b"queue->first->prev == NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                7242 as libc::c_int as libc::c_uint,
+                7245 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 19],
                     &[libc::c_char; 19],
@@ -14743,7 +14727,7 @@ unsafe extern "C" fn mi_page_queue_move_to_front(
         _mi_assert_fail(
             b"mi_page_heap(page) == heap\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7253 as libc::c_int as libc::c_uint,
+            7256 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 28],
                 &[libc::c_char; 28],
@@ -14755,7 +14739,7 @@ unsafe extern "C" fn mi_page_queue_move_to_front(
         _mi_assert_fail(
             b"mi_page_queue_contains(queue, page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7254 as libc::c_int as libc::c_uint,
+            7257 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 28],
                 &[libc::c_char; 28],
@@ -14772,7 +14756,7 @@ unsafe extern "C" fn mi_page_queue_move_to_front(
         _mi_assert_fail(
             b"queue->first == page\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7258 as libc::c_int as libc::c_uint,
+            7261 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 28],
                 &[libc::c_char; 28],
@@ -14791,7 +14775,7 @@ unsafe extern "C" fn mi_page_queue_enqueue_from_ex(
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7261 as libc::c_int as libc::c_uint,
+            7264 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 30],
                 &[libc::c_char; 30],
@@ -14812,7 +14796,7 @@ unsafe extern "C" fn mi_page_queue_enqueue_from_ex(
             b"(bsize == to->block_size && bsize == from->block_size) || (bsize == to->block_size && mi_page_queue_is_full(from)) || (bsize == from->block_size && mi_page_queue_is_full(to)) || (mi_page_is_huge(page) && mi_page_queue_is_huge(to)) || (mi_page_is_huge(page) && mi_page_queue_is_full(to))\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7270 as libc::c_int as libc::c_uint,
+            7273 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 30],
                 &[libc::c_char; 30],
@@ -14837,7 +14821,7 @@ unsafe extern "C" fn mi_page_queue_enqueue_from_ex(
                 b"mi_heap_contains_queue(heap, from)\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                7277 as libc::c_int as libc::c_uint,
+                7280 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 30],
                     &[libc::c_char; 30],
@@ -14856,7 +14840,7 @@ unsafe extern "C" fn mi_page_queue_enqueue_from_ex(
                     b"heap == mi_page_heap(to->last)\0" as *const u8
                         as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    7284 as libc::c_int as libc::c_uint,
+                    7287 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 30],
                         &[libc::c_char; 30],
@@ -14876,7 +14860,7 @@ unsafe extern "C" fn mi_page_queue_enqueue_from_ex(
             _mi_assert_fail(
                 b"heap == mi_page_heap(to->first)\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                7296 as libc::c_int as libc::c_uint,
+                7299 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 30],
                     &[libc::c_char; 30],
@@ -14926,7 +14910,7 @@ pub unsafe extern "C" fn _mi_page_queue_append(
         _mi_assert_fail(
             b"mi_heap_contains_queue(heap,pq)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7325 as libc::c_int as libc::c_uint,
+            7328 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -14939,7 +14923,7 @@ pub unsafe extern "C" fn _mi_page_queue_append(
             b"pq->block_size == append->block_size\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7326 as libc::c_int as libc::c_uint,
+            7329 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -14964,7 +14948,7 @@ pub unsafe extern "C" fn _mi_page_queue_append(
             _mi_assert_fail(
                 b"pq->first==NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                7335 as libc::c_int as libc::c_uint,
+                7338 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 22],
                     &[libc::c_char; 22],
@@ -14980,7 +14964,7 @@ pub unsafe extern "C" fn _mi_page_queue_append(
             _mi_assert_fail(
                 b"pq->last!=NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                7341 as libc::c_int as libc::c_uint,
+                7344 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 22],
                     &[libc::c_char; 22],
@@ -14992,7 +14976,7 @@ pub unsafe extern "C" fn _mi_page_queue_append(
             _mi_assert_fail(
                 b"append->first!=NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                7342 as libc::c_int as libc::c_uint,
+                7345 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 22],
                     &[libc::c_char; 22],
@@ -15017,7 +15001,7 @@ unsafe extern "C" fn mi_page_block_at(
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7352 as libc::c_int as libc::c_uint,
+            7355 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 17],
                 &[libc::c_char; 17],
@@ -15029,7 +15013,7 @@ unsafe extern "C" fn mi_page_block_at(
         _mi_assert_fail(
             b"i <= page->reserved\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7353 as libc::c_int as libc::c_uint,
+            7356 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 17],
                 &[libc::c_char; 17],
@@ -15159,7 +15143,7 @@ pub unsafe extern "C" fn _mi_page_free_collect(
         _mi_assert_fail(
             b"page!=NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7491 as libc::c_int as libc::c_uint,
+            7494 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -15195,7 +15179,7 @@ pub unsafe extern "C" fn _mi_page_free_collect(
         _mi_assert_fail(
             b"!force || page->local_free == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7513 as libc::c_int as libc::c_uint,
+            7516 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -15213,7 +15197,7 @@ pub unsafe extern "C" fn _mi_page_reclaim(
         _mi_assert_fail(
             b"mi_page_heap(page) == heap\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7517 as libc::c_int as libc::c_uint,
+            7520 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 17],
                 &[libc::c_char; 17],
@@ -15228,7 +15212,7 @@ pub unsafe extern "C" fn _mi_page_reclaim(
             b"mi_page_thread_free_flag(page) != MI_NEVER_DELAYED_FREE\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7518 as libc::c_int as libc::c_uint,
+            7521 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 17],
                 &[libc::c_char; 17],
@@ -15249,7 +15233,7 @@ unsafe extern "C" fn mi_page_fresh_alloc(
         _mi_assert_fail(
             b"pq != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7528 as libc::c_int as libc::c_uint,
+            7531 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -15261,7 +15245,7 @@ unsafe extern "C" fn mi_page_fresh_alloc(
         _mi_assert_fail(
             b"mi_heap_contains_queue(heap, pq)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7529 as libc::c_int as libc::c_uint,
+            7532 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -15281,7 +15265,7 @@ unsafe extern "C" fn mi_page_fresh_alloc(
             b"page_alignment > 0 || block_size > MI_LARGE_OBJ_SIZE_MAX || block_size == pq->block_size\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7530 as libc::c_int as libc::c_uint,
+            7533 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -15304,7 +15288,7 @@ unsafe extern "C" fn mi_page_fresh_alloc(
             b"pq!=NULL || mi_page_block_size(page) >= block_size\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7539 as libc::c_int as libc::c_uint,
+            7542 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -15323,7 +15307,7 @@ unsafe extern "C" fn mi_page_fresh_alloc(
         _mi_assert_fail(
             b"full_block_size >= block_size\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7541 as libc::c_int as libc::c_uint,
+            7544 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -15346,7 +15330,7 @@ unsafe extern "C" fn mi_page_fresh(
         _mi_assert_fail(
             b"mi_heap_contains_queue(heap, pq)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7549 as libc::c_int as libc::c_uint,
+            7552 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 14],
                 &[libc::c_char; 14],
@@ -15368,7 +15352,7 @@ unsafe extern "C" fn mi_page_fresh(
             b"pq->block_size==mi_page_block_size(page)\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7552 as libc::c_int as libc::c_uint,
+            7555 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 14],
                 &[libc::c_char; 14],
@@ -15381,7 +15365,7 @@ unsafe extern "C" fn mi_page_fresh(
             b"pq==mi_page_queue(heap, mi_page_block_size(page))\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7553 as libc::c_int as libc::c_uint,
+            7556 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 14],
                 &[libc::c_char; 14],
@@ -15455,7 +15439,7 @@ pub unsafe extern "C" fn _mi_page_unfull(mut page: *mut mi_page_t) {
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7579 as libc::c_int as libc::c_uint,
+            7582 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 16],
                 &[libc::c_char; 16],
@@ -15467,7 +15451,7 @@ pub unsafe extern "C" fn _mi_page_unfull(mut page: *mut mi_page_t) {
         _mi_assert_fail(
             b"mi_page_is_in_full(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7581 as libc::c_int as libc::c_uint,
+            7584 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 16],
                 &[libc::c_char; 16],
@@ -15497,7 +15481,7 @@ unsafe extern "C" fn mi_page_to_full(
         _mi_assert_fail(
             b"pq == mi_page_queue_of(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7591 as libc::c_int as libc::c_uint,
+            7594 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 16],
                 &[libc::c_char; 16],
@@ -15509,7 +15493,7 @@ unsafe extern "C" fn mi_page_to_full(
         _mi_assert_fail(
             b"!mi_page_immediate_available(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7592 as libc::c_int as libc::c_uint,
+            7595 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 16],
                 &[libc::c_char; 16],
@@ -15521,7 +15505,7 @@ unsafe extern "C" fn mi_page_to_full(
         _mi_assert_fail(
             b"!mi_page_is_in_full(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7593 as libc::c_int as libc::c_uint,
+            7596 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 16],
                 &[libc::c_char; 16],
@@ -15555,7 +15539,7 @@ pub unsafe extern "C" fn _mi_page_abandon(
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7599 as libc::c_int as libc::c_uint,
+            7602 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 17],
                 &[libc::c_char; 17],
@@ -15567,7 +15551,7 @@ pub unsafe extern "C" fn _mi_page_abandon(
         _mi_assert_fail(
             b"pq == mi_page_queue_of(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7601 as libc::c_int as libc::c_uint,
+            7604 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 17],
                 &[libc::c_char; 17],
@@ -15579,7 +15563,7 @@ pub unsafe extern "C" fn _mi_page_abandon(
         _mi_assert_fail(
             b"mi_page_heap(page) != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7602 as libc::c_int as libc::c_uint,
+            7605 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 17],
                 &[libc::c_char; 17],
@@ -15597,7 +15581,7 @@ pub unsafe extern "C" fn _mi_page_abandon(
             b"mi_page_thread_free_flag(page)==MI_NEVER_DELAYED_FREE\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7606 as libc::c_int as libc::c_uint,
+            7609 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 17],
                 &[libc::c_char; 17],
@@ -15612,7 +15596,7 @@ pub unsafe extern "C" fn _mi_page_abandon(
             _mi_assert_fail(
                 b"_mi_ptr_page(block) != page\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                7610 as libc::c_int as libc::c_uint,
+                7613 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 17],
                     &[libc::c_char; 17],
@@ -15630,7 +15614,7 @@ pub unsafe extern "C" fn _mi_page_abandon(
         _mi_assert_fail(
             b"mi_page_heap(page) == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7613 as libc::c_int as libc::c_uint,
+            7616 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 17],
                 &[libc::c_char; 17],
@@ -15665,7 +15649,7 @@ pub unsafe extern "C" fn _mi_page_free(
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7630 as libc::c_int as libc::c_uint,
+            7633 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 14],
                 &[libc::c_char; 14],
@@ -15677,7 +15661,7 @@ pub unsafe extern "C" fn _mi_page_free(
         _mi_assert_fail(
             b"pq == mi_page_queue_of(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7632 as libc::c_int as libc::c_uint,
+            7635 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 14],
                 &[libc::c_char; 14],
@@ -15689,7 +15673,7 @@ pub unsafe extern "C" fn _mi_page_free(
         _mi_assert_fail(
             b"mi_page_all_free(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7633 as libc::c_int as libc::c_uint,
+            7636 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 14],
                 &[libc::c_char; 14],
@@ -15704,7 +15688,7 @@ pub unsafe extern "C" fn _mi_page_free(
             b"mi_page_thread_free_flag(page)!=MI_DELAYED_FREEING\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7634 as libc::c_int as libc::c_uint,
+            7637 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 14],
                 &[libc::c_char; 14],
@@ -15727,7 +15711,7 @@ pub unsafe extern "C" fn _mi_page_retire(mut page: *mut mi_page_t) {
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7644 as libc::c_int as libc::c_uint,
+            7647 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 16],
                 &[libc::c_char; 16],
@@ -15739,7 +15723,7 @@ pub unsafe extern "C" fn _mi_page_retire(mut page: *mut mi_page_t) {
         _mi_assert_fail(
             b"mi_page_all_free(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7646 as libc::c_int as libc::c_uint,
+            7649 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 16],
                 &[libc::c_char; 16],
@@ -15773,7 +15757,7 @@ pub unsafe extern "C" fn _mi_page_retire(mut page: *mut mi_page_t) {
                 _mi_assert_fail(
                     b"pq >= heap->pages\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    7656 as libc::c_int as libc::c_uint,
+                    7659 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 16],
                         &[libc::c_char; 16],
@@ -15791,7 +15775,7 @@ pub unsafe extern "C" fn _mi_page_retire(mut page: *mut mi_page_t) {
                     b"index < MI_BIN_FULL && index < MI_BIN_HUGE\0" as *const u8
                         as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    7658 as libc::c_int as libc::c_uint,
+                    7661 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 16],
                         &[libc::c_char; 16],
@@ -15809,7 +15793,7 @@ pub unsafe extern "C" fn _mi_page_retire(mut page: *mut mi_page_t) {
                 _mi_assert_fail(
                     b"mi_page_all_free(page)\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    7661 as libc::c_int as libc::c_uint,
+                    7664 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 16],
                         &[libc::c_char; 16],
@@ -15874,7 +15858,7 @@ unsafe extern "C" fn mi_page_free_list_extend_secure(
         _mi_assert_fail(
             b"page->free == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7699 as libc::c_int as libc::c_uint,
+            7702 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 32],
                 &[libc::c_char; 32],
@@ -15886,7 +15870,7 @@ unsafe extern "C" fn mi_page_free_list_extend_secure(
         _mi_assert_fail(
             b"page->local_free == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7700 as libc::c_int as libc::c_uint,
+            7703 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 32],
                 &[libc::c_char; 32],
@@ -15900,7 +15884,7 @@ unsafe extern "C" fn mi_page_free_list_extend_secure(
             b"page->capacity + extend <= page->reserved\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7702 as libc::c_int as libc::c_uint,
+            7705 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 32],
                 &[libc::c_char; 32],
@@ -15912,7 +15896,7 @@ unsafe extern "C" fn mi_page_free_list_extend_secure(
         _mi_assert_fail(
             b"bsize == mi_page_block_size(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7703 as libc::c_int as libc::c_uint,
+            7706 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 32],
                 &[libc::c_char; 32],
@@ -15932,7 +15916,7 @@ unsafe extern "C" fn mi_page_free_list_extend_secure(
         _mi_assert_fail(
             b"slice_extend >= 1\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7711 as libc::c_int as libc::c_uint,
+            7714 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 32],
                 &[libc::c_char; 32],
@@ -16005,7 +15989,7 @@ unsafe extern "C" fn mi_page_free_list_extend(
         _mi_assert_fail(
             b"page->free == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7745 as libc::c_int as libc::c_uint,
+            7748 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 25],
                 &[libc::c_char; 25],
@@ -16017,7 +16001,7 @@ unsafe extern "C" fn mi_page_free_list_extend(
         _mi_assert_fail(
             b"page->local_free == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7746 as libc::c_int as libc::c_uint,
+            7749 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 25],
                 &[libc::c_char; 25],
@@ -16031,7 +16015,7 @@ unsafe extern "C" fn mi_page_free_list_extend(
             b"page->capacity + extend <= page->reserved\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7748 as libc::c_int as libc::c_uint,
+            7751 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 25],
                 &[libc::c_char; 25],
@@ -16043,7 +16027,7 @@ unsafe extern "C" fn mi_page_free_list_extend(
         _mi_assert_fail(
             b"bsize == mi_page_block_size(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7749 as libc::c_int as libc::c_uint,
+            7752 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 25],
                 &[libc::c_char; 25],
@@ -16085,7 +16069,7 @@ unsafe extern "C" fn mi_page_extend_free(
         _mi_assert_fail(
             b"page->free == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7771 as libc::c_int as libc::c_uint,
+            7774 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -16097,7 +16081,7 @@ unsafe extern "C" fn mi_page_extend_free(
         _mi_assert_fail(
             b"page->local_free == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7772 as libc::c_int as libc::c_uint,
+            7775 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -16124,7 +16108,7 @@ unsafe extern "C" fn mi_page_extend_free(
         _mi_assert_fail(
             b"extend > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7781 as libc::c_int as libc::c_uint,
+            7784 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -16146,7 +16130,7 @@ unsafe extern "C" fn mi_page_extend_free(
         _mi_assert_fail(
             b"max_extend > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7784 as libc::c_int as libc::c_uint,
+            7787 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -16164,7 +16148,7 @@ unsafe extern "C" fn mi_page_extend_free(
             b"extend > 0 && extend + page->capacity <= page->reserved\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7788 as libc::c_int as libc::c_uint,
+            7791 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -16176,7 +16160,7 @@ unsafe extern "C" fn mi_page_extend_free(
         _mi_assert_fail(
             b"extend < (1UL<<16)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7789 as libc::c_int as libc::c_uint,
+            7792 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 20],
                 &[libc::c_char; 20],
@@ -16204,7 +16188,7 @@ unsafe extern "C" fn mi_page_init(
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7801 as libc::c_int as libc::c_uint,
+            7804 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -16217,7 +16201,7 @@ unsafe extern "C" fn mi_page_init(
         _mi_assert_fail(
             b"segment != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7803 as libc::c_int as libc::c_uint,
+            7806 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -16229,7 +16213,7 @@ unsafe extern "C" fn mi_page_init(
         _mi_assert_fail(
             b"block_size > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7804 as libc::c_int as libc::c_uint,
+            7807 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -16246,7 +16230,7 @@ unsafe extern "C" fn mi_page_init(
         _mi_assert_fail(
             b"page_size / block_size < (1L<<16)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7810 as libc::c_int as libc::c_uint,
+            7813 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -16259,7 +16243,7 @@ unsafe extern "C" fn mi_page_init(
         _mi_assert_fail(
             b"page->reserved > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7812 as libc::c_int as libc::c_uint,
+            7815 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -16281,7 +16265,7 @@ unsafe extern "C" fn mi_page_init(
         _mi_assert_fail(
             b"page->capacity == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7830 as libc::c_int as libc::c_uint,
+            7833 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -16293,7 +16277,7 @@ unsafe extern "C" fn mi_page_init(
         _mi_assert_fail(
             b"page->free == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7831 as libc::c_int as libc::c_uint,
+            7834 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -16305,7 +16289,7 @@ unsafe extern "C" fn mi_page_init(
         _mi_assert_fail(
             b"page->used == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7832 as libc::c_int as libc::c_uint,
+            7835 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -16317,7 +16301,7 @@ unsafe extern "C" fn mi_page_init(
         _mi_assert_fail(
             b"page->xthread_free == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7833 as libc::c_int as libc::c_uint,
+            7836 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -16329,7 +16313,7 @@ unsafe extern "C" fn mi_page_init(
         _mi_assert_fail(
             b"page->next == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7834 as libc::c_int as libc::c_uint,
+            7837 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -16341,7 +16325,7 @@ unsafe extern "C" fn mi_page_init(
         _mi_assert_fail(
             b"page->prev == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7835 as libc::c_int as libc::c_uint,
+            7838 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -16353,7 +16337,7 @@ unsafe extern "C" fn mi_page_init(
         _mi_assert_fail(
             b"page->retire_expire == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7836 as libc::c_int as libc::c_uint,
+            7839 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -16365,7 +16349,7 @@ unsafe extern "C" fn mi_page_init(
         _mi_assert_fail(
             b"!mi_page_has_aligned(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7837 as libc::c_int as libc::c_uint,
+            7840 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -16377,7 +16361,7 @@ unsafe extern "C" fn mi_page_init(
         _mi_assert_fail(
             b"page->keys[0] != 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7839 as libc::c_int as libc::c_uint,
+            7842 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -16389,7 +16373,7 @@ unsafe extern "C" fn mi_page_init(
         _mi_assert_fail(
             b"page->keys[1] != 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7840 as libc::c_int as libc::c_uint,
+            7843 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -16405,7 +16389,7 @@ unsafe extern "C" fn mi_page_init(
             b"page->block_size_shift == 0 || (block_size == ((size_t)1 << page->block_size_shift))\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7842 as libc::c_int as libc::c_uint,
+            7845 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -16418,7 +16402,7 @@ unsafe extern "C" fn mi_page_init(
         _mi_assert_fail(
             b"mi_page_immediate_available(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7845 as libc::c_int as libc::c_uint,
+            7848 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -16432,7 +16416,7 @@ unsafe extern "C" fn mi_page_is_expandable(mut page: *const mi_page_t) -> bool {
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7849 as libc::c_int as libc::c_uint,
+            7852 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -16444,7 +16428,7 @@ unsafe extern "C" fn mi_page_is_expandable(mut page: *const mi_page_t) -> bool {
         _mi_assert_fail(
             b"page->capacity <= page->reserved\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7850 as libc::c_int as libc::c_uint,
+            7853 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -16477,7 +16461,7 @@ unsafe extern "C" fn mi_page_queue_find_free_ex(
                     b"!mi_page_is_in_full(page) && !mi_page_immediate_available(page)\0"
                         as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    7872 as libc::c_int as libc::c_uint,
+                    7875 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 27],
                         &[libc::c_char; 27],
@@ -16502,7 +16486,7 @@ unsafe extern "C" fn mi_page_queue_find_free_ex(
                     _mi_assert_fail(
                         b"page_candidate!=NULL\0" as *const u8 as *const libc::c_char,
                         b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                        7884 as libc::c_int as libc::c_uint,
+                        7887 as libc::c_int as libc::c_uint,
                         (*::core::mem::transmute::<
                             &[u8; 27],
                             &[libc::c_char; 27],
@@ -16524,7 +16508,7 @@ unsafe extern "C" fn mi_page_queue_find_free_ex(
             _mi_assert_fail(
                 b"mi_page_is_expandable(page)\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                7902 as libc::c_int as libc::c_uint,
+                7905 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 27],
                     &[libc::c_char; 27],
@@ -16549,7 +16533,7 @@ unsafe extern "C" fn mi_page_queue_find_free_ex(
             b"page == NULL || mi_page_immediate_available(page)\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7916 as libc::c_int as libc::c_uint,
+            7919 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 27],
                 &[libc::c_char; 27],
@@ -16619,7 +16603,7 @@ unsafe extern "C" fn mi_huge_page_alloc(
             b"mi_bin(block_size) == MI_BIN_HUGE || page_alignment > 0\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7956 as libc::c_int as libc::c_uint,
+            7959 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 19],
                 &[libc::c_char; 19],
@@ -16639,7 +16623,7 @@ unsafe extern "C" fn mi_huge_page_alloc(
         _mi_assert_fail(
             b"mi_page_queue_is_huge(pq)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7961 as libc::c_int as libc::c_uint,
+            7964 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 19],
                 &[libc::c_char; 19],
@@ -16659,7 +16643,7 @@ unsafe extern "C" fn mi_huge_page_alloc(
                 b"mi_page_block_size(page) >= size\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                7965 as libc::c_int as libc::c_uint,
+                7968 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 19],
                     &[libc::c_char; 19],
@@ -16672,7 +16656,7 @@ unsafe extern "C" fn mi_huge_page_alloc(
                 b"mi_page_immediate_available(page)\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                7966 as libc::c_int as libc::c_uint,
+                7969 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 19],
                     &[libc::c_char; 19],
@@ -16684,7 +16668,7 @@ unsafe extern "C" fn mi_huge_page_alloc(
             _mi_assert_fail(
                 b"mi_page_is_huge(page)\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                7967 as libc::c_int as libc::c_uint,
+                7970 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 19],
                     &[libc::c_char; 19],
@@ -16699,7 +16683,7 @@ unsafe extern "C" fn mi_huge_page_alloc(
                 b"_mi_page_segment(page)->page_kind == MI_PAGE_HUGE\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                7968 as libc::c_int as libc::c_uint,
+                7971 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 19],
                     &[libc::c_char; 19],
@@ -16711,7 +16695,7 @@ unsafe extern "C" fn mi_huge_page_alloc(
             _mi_assert_fail(
                 b"_mi_page_segment(page)->used==1\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                7969 as libc::c_int as libc::c_uint,
+                7972 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 19],
                     &[libc::c_char; 19],
@@ -16763,7 +16747,7 @@ unsafe extern "C" fn mi_find_page(
             _mi_assert_fail(
                 b"size >= MI_PADDING_SIZE\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                7992 as libc::c_int as libc::c_uint,
+                7995 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 13],
                     &[libc::c_char; 13],
@@ -16785,7 +16769,7 @@ pub unsafe extern "C" fn _mi_malloc_generic(
         _mi_assert_fail(
             b"heap != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            7999 as libc::c_int as libc::c_uint,
+            8002 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 19],
                 &[libc::c_char; 19],
@@ -16803,7 +16787,7 @@ pub unsafe extern "C" fn _mi_malloc_generic(
         _mi_assert_fail(
             b"mi_heap_is_initialized(heap)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8004 as libc::c_int as libc::c_uint,
+            8007 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 19],
                 &[libc::c_char; 19],
@@ -16833,7 +16817,7 @@ pub unsafe extern "C" fn _mi_malloc_generic(
         _mi_assert_fail(
             b"mi_page_immediate_available(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8017 as libc::c_int as libc::c_uint,
+            8020 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 19],
                 &[libc::c_char; 19],
@@ -16845,7 +16829,7 @@ pub unsafe extern "C" fn _mi_malloc_generic(
         _mi_assert_fail(
             b"mi_page_block_size(page) >= size\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8018 as libc::c_int as libc::c_uint,
+            8021 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 19],
                 &[libc::c_char; 19],
@@ -16861,7 +16845,7 @@ pub unsafe extern "C" fn _mi_malloc_generic(
             _mi_assert_fail(
                 b"p != NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                8021 as libc::c_int as libc::c_uint,
+                8024 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 19],
                     &[libc::c_char; 19],
@@ -17103,7 +17087,7 @@ unsafe extern "C" fn chacha_split(
             b"ctx->input[14] != ctx_new->input[14] || ctx->input[15] != ctx_new->input[15]\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8104 as libc::c_int as libc::c_uint,
+            8107 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 13],
                 &[libc::c_char; 13],
@@ -17126,7 +17110,7 @@ pub unsafe extern "C" fn _mi_random_split(
         _mi_assert_fail(
             b"mi_random_is_initialized(ctx)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8113 as libc::c_int as libc::c_uint,
+            8116 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 17],
                 &[libc::c_char; 17],
@@ -17138,7 +17122,7 @@ pub unsafe extern "C" fn _mi_random_split(
         _mi_assert_fail(
             b"ctx != ctx_new\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8114 as libc::c_int as libc::c_uint,
+            8117 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 17],
                 &[libc::c_char; 17],
@@ -17154,7 +17138,7 @@ pub unsafe extern "C" fn _mi_random_next(mut ctx: *mut mi_random_ctx_t) -> uintp
         _mi_assert_fail(
             b"mi_random_is_initialized(ctx)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8118 as libc::c_int as libc::c_uint,
+            8121 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 16],
                 &[libc::c_char; 16],
@@ -17186,7 +17170,7 @@ pub unsafe extern "C" fn _mi_os_random_weak(mut extra_seed: uintptr_t) -> uintpt
         _mi_assert_fail(
             b"x != 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8134 as libc::c_int as libc::c_uint,
+            8137 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 19],
                 &[libc::c_char; 19],
@@ -17271,7 +17255,7 @@ unsafe extern "C" fn mi_segment_enqueue(
             _mi_assert_fail(
                 b"queue->last->next == NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                8197 as libc::c_int as libc::c_uint,
+                8200 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 19],
                     &[libc::c_char; 19],
@@ -17331,7 +17315,7 @@ unsafe extern "C" fn mi_segment_page_size(mut segment: *const mi_segment_t) -> s
                 b"segment->page_kind <= MI_PAGE_MEDIUM\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                8226 as libc::c_int as libc::c_uint,
+                8229 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 21],
                     &[libc::c_char; 21],
@@ -17348,7 +17332,7 @@ unsafe extern "C" fn mi_segment_page_size(mut segment: *const mi_segment_t) -> s
                 b"segment->page_kind >= MI_PAGE_LARGE\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                8230 as libc::c_int as libc::c_uint,
+                8233 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 21],
                     &[libc::c_char; 21],
@@ -17380,7 +17364,7 @@ unsafe extern "C" fn mi_page_not_in_queue(
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8270 as libc::c_int as libc::c_uint,
+            8273 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 21],
                 &[libc::c_char; 21],
@@ -17394,7 +17378,7 @@ unsafe extern "C" fn mi_page_not_in_queue(
                 b"mi_pages_purge_contains(page, tld)\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                8272 as libc::c_int as libc::c_uint,
+                8275 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 21],
                     &[libc::c_char; 21],
@@ -17440,7 +17424,7 @@ unsafe extern "C" fn mi_segment_protect(
                 b"(segment->segment_info_size - os_psize) >= (sizeof(mi_segment_t) + ((segment->capacity - 1) * sizeof(mi_page_t)))\0"
                     as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                8290 as libc::c_int as libc::c_uint,
+                8293 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 19],
                     &[libc::c_char; 19],
@@ -17456,7 +17440,7 @@ unsafe extern "C" fn mi_segment_protect(
                 b"((uintptr_t)segment + segment->segment_info_size) % os_psize == 0\0"
                     as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                8291 as libc::c_int as libc::c_uint,
+                8294 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 19],
                     &[libc::c_char; 19],
@@ -17479,7 +17463,7 @@ unsafe extern "C" fn mi_segment_protect(
                 b"MI_SECURE <= 1 || segment->page_kind >= MI_PAGE_LARGE\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                8297 as libc::c_int as libc::c_uint,
+                8300 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 19],
                     &[libc::c_char; 19],
@@ -17519,7 +17503,7 @@ unsafe extern "C" fn mi_page_purge(
         _mi_assert_fail(
             b"page->is_committed\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8323 as libc::c_int as libc::c_uint,
+            8326 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 14],
                 &[libc::c_char; 14],
@@ -17531,7 +17515,7 @@ unsafe extern "C" fn mi_page_purge(
         _mi_assert_fail(
             b"!page->segment_in_use\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8324 as libc::c_int as libc::c_uint,
+            8327 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 14],
                 &[libc::c_char; 14],
@@ -17546,7 +17530,7 @@ unsafe extern "C" fn mi_page_purge(
         _mi_assert_fail(
             b"page->used == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8326 as libc::c_int as libc::c_uint,
+            8329 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 14],
                 &[libc::c_char; 14],
@@ -17558,7 +17542,7 @@ unsafe extern "C" fn mi_page_purge(
         _mi_assert_fail(
             b"page->free == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8327 as libc::c_int as libc::c_uint,
+            8330 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 14],
                 &[libc::c_char; 14],
@@ -17589,7 +17573,7 @@ unsafe extern "C" fn mi_page_ensure_committed(
         _mi_assert_fail(
             b"segment->allow_decommit\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8336 as libc::c_int as libc::c_uint,
+            8339 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 25],
                 &[libc::c_char; 25],
@@ -17638,7 +17622,7 @@ unsafe extern "C" fn mi_page_purge_set_expire(mut page: *mut mi_page_t) {
         _mi_assert_fail(
             b"mi_page_get_expire(page)==0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8360 as libc::c_int as libc::c_uint,
+            8363 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 25],
                 &[libc::c_char; 25],
@@ -17666,7 +17650,7 @@ unsafe extern "C" fn mi_segment_schedule_purge(
         _mi_assert_fail(
             b"!page->segment_in_use\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8369 as libc::c_int as libc::c_uint,
+            8372 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 26],
                 &[libc::c_char; 26],
@@ -17678,7 +17662,7 @@ unsafe extern "C" fn mi_segment_schedule_purge(
         _mi_assert_fail(
             b"mi_page_not_in_queue(page,tld)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8370 as libc::c_int as libc::c_uint,
+            8373 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 26],
                 &[libc::c_char; 26],
@@ -17690,7 +17674,7 @@ unsafe extern "C" fn mi_segment_schedule_purge(
         _mi_assert_fail(
             b"_mi_page_segment(page)==segment\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8372 as libc::c_int as libc::c_uint,
+            8375 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 26],
                 &[libc::c_char; 26],
@@ -17713,7 +17697,7 @@ unsafe extern "C" fn mi_segment_schedule_purge(
                 _mi_assert_fail(
                     b"pq->last == NULL\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    8383 as libc::c_int as libc::c_uint,
+                    8386 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 26],
                         &[libc::c_char; 26],
@@ -17741,7 +17725,7 @@ unsafe extern "C" fn mi_page_purge_remove(
         _mi_assert_fail(
             b"pq!=NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8395 as libc::c_int as libc::c_uint,
+            8398 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 21],
                 &[libc::c_char; 21],
@@ -17753,7 +17737,7 @@ unsafe extern "C" fn mi_page_purge_remove(
         _mi_assert_fail(
             b"!page->segment_in_use\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8396 as libc::c_int as libc::c_uint,
+            8399 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 21],
                 &[libc::c_char; 21],
@@ -17765,7 +17749,7 @@ unsafe extern "C" fn mi_page_purge_remove(
         _mi_assert_fail(
             b"mi_page_get_expire(page) != 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8397 as libc::c_int as libc::c_uint,
+            8400 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 21],
                 &[libc::c_char; 21],
@@ -17777,7 +17761,7 @@ unsafe extern "C" fn mi_page_purge_remove(
         _mi_assert_fail(
             b"mi_pages_purge_contains(page, tld)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8398 as libc::c_int as libc::c_uint,
+            8401 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 21],
                 &[libc::c_char; 21],
@@ -17827,7 +17811,7 @@ unsafe extern "C" fn mi_segment_remove_all_purges(
                     b"mi_page_not_in_queue(page,tld)\0" as *const u8
                         as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    8417 as libc::c_int as libc::c_uint,
+                    8420 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 29],
                         &[libc::c_char; 29],
@@ -17899,7 +17883,7 @@ unsafe extern "C" fn mi_segment_raw_page_start(
             b"page->block_size == 0 || _mi_ptr_page(p) == page\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8458 as libc::c_int as libc::c_uint,
+            8461 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 26],
                 &[libc::c_char; 26],
@@ -17912,7 +17896,7 @@ unsafe extern "C" fn mi_segment_raw_page_start(
         _mi_assert_fail(
             b"_mi_ptr_segment(p) == segment\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8459 as libc::c_int as libc::c_uint,
+            8462 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 26],
                 &[libc::c_char; 26],
@@ -17944,7 +17928,7 @@ pub unsafe extern "C" fn _mi_segment_page_start(
                 b"segment->page_kind <= MI_PAGE_MEDIUM\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                8468 as libc::c_int as libc::c_uint,
+                8471 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 23],
                     &[libc::c_char; 23],
@@ -17964,7 +17948,7 @@ pub unsafe extern "C" fn _mi_segment_page_start(
                     b"(uintptr_t)p % block_size == 0\0" as *const u8
                         as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    8473 as libc::c_int as libc::c_uint,
+                    8476 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 23],
                         &[libc::c_char; 23],
@@ -17981,7 +17965,7 @@ pub unsafe extern "C" fn _mi_segment_page_start(
             b"_mi_is_aligned(p, MI_MAX_ALIGN_SIZE)\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8476 as libc::c_int as libc::c_uint,
+            8479 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 23],
                 &[libc::c_char; 23],
@@ -18000,7 +17984,7 @@ pub unsafe extern "C" fn _mi_segment_page_start(
             b"block_size == 0 || block_size > MI_MAX_ALIGN_GUARANTEE || _mi_is_aligned(p,block_size)\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8477 as libc::c_int as libc::c_uint,
+            8480 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 23],
                 &[libc::c_char; 23],
@@ -18015,7 +17999,7 @@ pub unsafe extern "C" fn _mi_segment_page_start(
         _mi_assert_fail(
             b"_mi_ptr_page(p) == page\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8479 as libc::c_int as libc::c_uint,
+            8482 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 23],
                 &[libc::c_char; 23],
@@ -18028,7 +18012,7 @@ pub unsafe extern "C" fn _mi_segment_page_start(
         _mi_assert_fail(
             b"_mi_ptr_segment(p) == segment\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8480 as libc::c_int as libc::c_uint,
+            8483 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 23],
                 &[libc::c_char; 23],
@@ -18123,7 +18107,7 @@ unsafe extern "C" fn mi_segment_os_free(
             _mi_assert_fail(
                 b"!segment->memid.is_pinned\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                8521 as libc::c_int as libc::c_uint,
+                8524 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 19],
                     &[libc::c_char; 19],
@@ -18157,7 +18141,7 @@ unsafe extern "C" fn mi_segment_os_free(
             b"(fully_committed && committed_size == segment_size) || (!fully_committed && committed_size < segment_size)\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8533 as libc::c_int as libc::c_uint,
+            8536 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 19],
                 &[libc::c_char; 19],
@@ -18184,7 +18168,7 @@ pub unsafe extern "C" fn _mi_segments_collect(
             _mi_assert_fail(
                 b"tld->pages_purge.first == NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                8540 as libc::c_int as libc::c_uint,
+                8543 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 21],
                     &[libc::c_char; 21],
@@ -18196,7 +18180,7 @@ pub unsafe extern "C" fn _mi_segments_collect(
             _mi_assert_fail(
                 b"tld->pages_purge.last == NULL\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                8541 as libc::c_int as libc::c_uint,
+                8544 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 21],
                     &[libc::c_char; 21],
@@ -18263,7 +18247,7 @@ unsafe extern "C" fn mi_segment_os_alloc(
             _mi_assert_fail(
                 b"!memid.is_pinned\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                8563 as libc::c_int as libc::c_uint,
+                8566 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 20],
                     &[libc::c_char; 20],
@@ -18317,7 +18301,7 @@ unsafe extern "C" fn mi_segment_alloc(
             b"(required > 0 && page_kind > MI_PAGE_LARGE)|| (required==0 && page_kind <= MI_PAGE_LARGE)\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8583 as libc::c_int as libc::c_uint,
+            8586 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 17],
                 &[libc::c_char; 17],
@@ -18336,7 +18320,7 @@ unsafe extern "C" fn mi_segment_alloc(
                 b"page_shift == MI_SEGMENT_SHIFT + 1 && required > 0\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                8586 as libc::c_int as libc::c_uint,
+                8589 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 17],
                     &[libc::c_char; 17],
@@ -18353,7 +18337,7 @@ unsafe extern "C" fn mi_segment_alloc(
                 b"required == 0 && page_alignment == 0\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                8590 as libc::c_int as libc::c_uint,
+                8593 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 17],
                     &[libc::c_char; 17],
@@ -18376,7 +18360,7 @@ unsafe extern "C" fn mi_segment_alloc(
                 b"MI_SEGMENT_SIZE % page_size == 0\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                8593 as libc::c_int as libc::c_uint,
+                8596 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 17],
                     &[libc::c_char; 17],
@@ -18397,7 +18381,7 @@ unsafe extern "C" fn mi_segment_alloc(
                 b"capacity >= 1 && capacity <= MI_SMALL_PAGES_PER_SEGMENT\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                8594 as libc::c_int as libc::c_uint,
+                8597 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 17],
                     &[libc::c_char; 17],
@@ -18418,7 +18402,7 @@ unsafe extern "C" fn mi_segment_alloc(
         _mi_assert_fail(
             b"init_segment_size >= required\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8599 as libc::c_int as libc::c_uint,
+            8602 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 17],
                 &[libc::c_char; 17],
@@ -18459,7 +18443,7 @@ unsafe extern "C" fn mi_segment_alloc(
             b"segment != NULL && (uintptr_t)segment % MI_SEGMENT_SIZE == 0\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8607 as libc::c_int as libc::c_uint,
+            8610 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 17],
                 &[libc::c_char; 17],
@@ -18477,7 +18461,7 @@ unsafe extern "C" fn mi_segment_alloc(
             b"segment->memid.is_pinned ? segment->memid.initially_committed : true\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8608 as libc::c_int as libc::c_uint,
+            8611 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 17],
                 &[libc::c_char; 17],
@@ -18498,7 +18482,7 @@ unsafe extern "C" fn mi_segment_alloc(
             _mi_assert_fail(
                 b"i <= 255\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                8613 as libc::c_int as libc::c_uint,
+                8616 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 17],
                     &[libc::c_char; 17],
@@ -18537,7 +18521,7 @@ unsafe extern "C" fn mi_segment_free(
         _mi_assert_fail(
             b"segment != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8633 as libc::c_int as libc::c_uint,
+            8636 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 16],
                 &[libc::c_char; 16],
@@ -18554,7 +18538,7 @@ unsafe extern "C" fn mi_segment_free(
         _mi_assert_fail(
             b"segment->next == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8639 as libc::c_int as libc::c_uint,
+            8642 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 16],
                 &[libc::c_char; 16],
@@ -18566,7 +18550,7 @@ unsafe extern "C" fn mi_segment_free(
         _mi_assert_fail(
             b"segment->prev == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8640 as libc::c_int as libc::c_uint,
+            8643 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 16],
                 &[libc::c_char; 16],
@@ -18589,7 +18573,7 @@ unsafe extern "C" fn mi_segment_page_claim(
         _mi_assert_fail(
             b"_mi_page_segment(page) == segment\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8648 as libc::c_int as libc::c_uint,
+            8651 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -18601,7 +18585,7 @@ unsafe extern "C" fn mi_segment_page_claim(
         _mi_assert_fail(
             b"!page->segment_in_use\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8649 as libc::c_int as libc::c_uint,
+            8652 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -18625,7 +18609,7 @@ unsafe extern "C" fn mi_segment_page_claim(
             b"page->segment_in_use && page->is_committed && page->used==0 && !mi_pages_purge_contains(page,tld)\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8654 as libc::c_int as libc::c_uint,
+            8657 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -18637,7 +18621,7 @@ unsafe extern "C" fn mi_segment_page_claim(
         _mi_assert_fail(
             b"segment->used <= segment->capacity\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8655 as libc::c_int as libc::c_uint,
+            8658 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -18653,7 +18637,7 @@ unsafe extern "C" fn mi_segment_page_claim(
             _mi_assert_fail(
                 b"!mi_segment_has_free(segment)\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                8657 as libc::c_int as libc::c_uint,
+                8660 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 22],
                     &[libc::c_char; 22],
@@ -18674,7 +18658,7 @@ unsafe extern "C" fn mi_segment_page_clear(
         _mi_assert_fail(
             b"page->segment_in_use\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8665 as libc::c_int as libc::c_uint,
+            8668 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -18686,7 +18670,7 @@ unsafe extern "C" fn mi_segment_page_clear(
         _mi_assert_fail(
             b"mi_page_all_free(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8666 as libc::c_int as libc::c_uint,
+            8669 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -18698,7 +18682,7 @@ unsafe extern "C" fn mi_segment_page_clear(
         _mi_assert_fail(
             b"page->is_committed\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8667 as libc::c_int as libc::c_uint,
+            8670 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -18710,7 +18694,7 @@ unsafe extern "C" fn mi_segment_page_clear(
         _mi_assert_fail(
             b"mi_page_not_in_queue(page, tld)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8668 as libc::c_int as libc::c_uint,
+            8671 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -18757,7 +18741,7 @@ pub unsafe extern "C" fn _mi_segment_page_free(
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8695 as libc::c_int as libc::c_uint,
+            8698 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -18782,7 +18766,7 @@ pub unsafe extern "C" fn _mi_segment_page_free(
                 b"segment->page_kind <= MI_PAGE_MEDIUM\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                8708 as libc::c_int as libc::c_uint,
+                8711 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 22],
                     &[libc::c_char; 22],
@@ -18805,7 +18789,7 @@ unsafe extern "C" fn mi_segment_abandon(
         _mi_assert_fail(
             b"segment->used == segment->abandoned\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8716 as libc::c_int as libc::c_uint,
+            8719 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 19],
                 &[libc::c_char; 19],
@@ -18817,7 +18801,7 @@ unsafe extern "C" fn mi_segment_abandon(
         _mi_assert_fail(
             b"segment->used > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8717 as libc::c_int as libc::c_uint,
+            8720 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 19],
                 &[libc::c_char; 19],
@@ -18836,7 +18820,7 @@ unsafe extern "C" fn mi_segment_abandon(
             b"segment->next == NULL && segment->prev == NULL\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8723 as libc::c_int as libc::c_uint,
+            8726 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 19],
                 &[libc::c_char; 19],
@@ -18866,7 +18850,7 @@ pub unsafe extern "C" fn _mi_segment_page_abandon(
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8734 as libc::c_int as libc::c_uint,
+            8737 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 25],
                 &[libc::c_char; 25],
@@ -18881,7 +18865,7 @@ pub unsafe extern "C" fn _mi_segment_page_abandon(
             b"mi_page_thread_free_flag(page)==MI_NEVER_DELAYED_FREE\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8735 as libc::c_int as libc::c_uint,
+            8738 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 25],
                 &[libc::c_char; 25],
@@ -18893,7 +18877,7 @@ pub unsafe extern "C" fn _mi_segment_page_abandon(
         _mi_assert_fail(
             b"mi_page_heap(page) == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8736 as libc::c_int as libc::c_uint,
+            8739 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 25],
                 &[libc::c_char; 25],
@@ -18909,7 +18893,7 @@ pub unsafe extern "C" fn _mi_segment_page_abandon(
         _mi_assert_fail(
             b"segment->abandoned <= segment->used\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8742 as libc::c_int as libc::c_uint,
+            8745 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 25],
                 &[libc::c_char; 25],
@@ -18934,7 +18918,7 @@ unsafe extern "C" fn mi_segment_check_free(
             b"mi_atomic_load_relaxed(&segment->thread_id) == 0\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8749 as libc::c_int as libc::c_uint,
+            8752 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -18974,7 +18958,7 @@ unsafe extern "C" fn mi_segment_check_free(
             b"pages_used == segment->used && pages_used >= pages_used_empty\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8770 as libc::c_int as libc::c_uint,
+            8773 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -19009,7 +18993,7 @@ unsafe extern "C" fn mi_segment_reclaim(
             b"mi_atomic_load_relaxed(&segment->thread_id) == 0 || mi_atomic_load_relaxed(&segment->thread_id) == _mi_thread_id()\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8778 as libc::c_int as libc::c_uint,
+            8781 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 19],
                 &[libc::c_char; 19],
@@ -19022,7 +19006,7 @@ unsafe extern "C" fn mi_segment_reclaim(
             b"segment->subproc == heap->tld->segments.subproc\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8779 as libc::c_int as libc::c_uint,
+            8782 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 19],
                 &[libc::c_char; 19],
@@ -19041,7 +19025,7 @@ unsafe extern "C" fn mi_segment_reclaim(
             b"segment->next == NULL && segment->prev == NULL\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8785 as libc::c_int as libc::c_uint,
+            8788 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 19],
                 &[libc::c_char; 19],
@@ -19063,7 +19047,7 @@ unsafe extern "C" fn mi_segment_reclaim(
                 _mi_assert_fail(
                     b"page->is_committed\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    8791 as libc::c_int as libc::c_uint,
+                    8794 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 19],
                         &[libc::c_char; 19],
@@ -19076,7 +19060,7 @@ unsafe extern "C" fn mi_segment_reclaim(
                     b"mi_page_not_in_queue(page, tld)\0" as *const u8
                         as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    8792 as libc::c_int as libc::c_uint,
+                    8795 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 19],
                         &[libc::c_char; 19],
@@ -19091,7 +19075,7 @@ unsafe extern "C" fn mi_segment_reclaim(
                     b"mi_page_thread_free_flag(page)==MI_NEVER_DELAYED_FREE\0"
                         as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    8793 as libc::c_int as libc::c_uint,
+                    8796 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 19],
                         &[libc::c_char; 19],
@@ -19103,7 +19087,7 @@ unsafe extern "C" fn mi_segment_reclaim(
                 _mi_assert_fail(
                     b"mi_page_heap(page) == NULL\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    8794 as libc::c_int as libc::c_uint,
+                    8797 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 19],
                         &[libc::c_char; 19],
@@ -19117,7 +19101,7 @@ unsafe extern "C" fn mi_segment_reclaim(
                 _mi_assert_fail(
                     b"page->next == NULL\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    8796 as libc::c_int as libc::c_uint,
+                    8799 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 19],
                         &[libc::c_char; 19],
@@ -19167,7 +19151,7 @@ unsafe extern "C" fn mi_segment_reclaim(
         _mi_assert_fail(
             b"segment->abandoned == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8817 as libc::c_int as libc::c_uint,
+            8820 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 19],
                 &[libc::c_char; 19],
@@ -19181,7 +19165,7 @@ unsafe extern "C" fn mi_segment_reclaim(
                 b"right_page_reclaimed == NULL || !(*right_page_reclaimed)\0"
                     as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                8819 as libc::c_int as libc::c_uint,
+                8822 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 19],
                     &[libc::c_char; 19],
@@ -19243,7 +19227,7 @@ pub unsafe extern "C" fn _mi_segment_attempt_reclaim(
             _mi_assert_fail(
                 b"res == segment\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                8841 as libc::c_int as libc::c_uint,
+                8844 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 28],
                     &[libc::c_char; 28],
@@ -19386,7 +19370,7 @@ unsafe extern "C" fn mi_segment_try_reclaim(
                 b"segment->subproc == heap->tld->segments.subproc\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                8881 as libc::c_int as libc::c_uint,
+                8884 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 23],
                     &[libc::c_char; 23],
@@ -19442,7 +19426,7 @@ unsafe extern "C" fn mi_segment_force_abandon(
         _mi_assert_fail(
             b"segment->abandoned < segment->used\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8905 as libc::c_int as libc::c_uint,
+            8908 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 25],
                 &[libc::c_char; 25],
@@ -19454,7 +19438,7 @@ unsafe extern "C" fn mi_segment_force_abandon(
         _mi_assert_fail(
             b"!segment->dont_free\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8906 as libc::c_int as libc::c_uint,
+            8909 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 25],
                 &[libc::c_char; 25],
@@ -19473,7 +19457,7 @@ unsafe extern "C" fn mi_segment_force_abandon(
                 _mi_assert_fail(
                     b"segment->used > 0\0" as *const u8 as *const libc::c_char,
                     b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                    8911 as libc::c_int as libc::c_uint,
+                    8914 as libc::c_int as libc::c_uint,
                     (*::core::mem::transmute::<
                         &[u8; 25],
                         &[libc::c_char; 25],
@@ -19499,7 +19483,7 @@ unsafe extern "C" fn mi_segment_force_abandon(
         _mi_assert_fail(
             b"segment->used == segment->abandoned\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8923 as libc::c_int as libc::c_uint,
+            8926 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 25],
                 &[libc::c_char; 25],
@@ -19511,7 +19495,7 @@ unsafe extern "C" fn mi_segment_force_abandon(
         _mi_assert_fail(
             b"segment->used == 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8924 as libc::c_int as libc::c_uint,
+            8927 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 25],
                 &[libc::c_char; 25],
@@ -19562,7 +19546,7 @@ unsafe extern "C" fn mi_segments_try_abandon_to_target(
                 b"page != heap->pages[MI_BIN_FULL].first\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                8945 as libc::c_int as libc::c_uint,
+                8948 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 34],
                     &[libc::c_char; 34],
@@ -19617,7 +19601,7 @@ unsafe extern "C" fn mi_segment_reclaim_or_alloc(
         _mi_assert_fail(
             b"page_kind <= MI_PAGE_LARGE\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8965 as libc::c_int as libc::c_uint,
+            8968 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 28],
                 &[libc::c_char; 28],
@@ -19634,7 +19618,7 @@ unsafe extern "C" fn mi_segment_reclaim_or_alloc(
         _mi_assert_fail(
             b"block_size <= MI_LARGE_OBJ_SIZE_MAX\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8966 as libc::c_int as libc::c_uint,
+            8969 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 28],
                 &[libc::c_char; 28],
@@ -19659,7 +19643,7 @@ unsafe extern "C" fn mi_segment_reclaim_or_alloc(
             b"segment == NULL || _mi_arena_memid_is_suitable(segment->memid, heap->arena_id)\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8970 as libc::c_int as libc::c_uint,
+            8973 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 28],
                 &[libc::c_char; 28],
@@ -19676,7 +19660,7 @@ unsafe extern "C" fn mi_segment_reclaim_or_alloc(
                 b"segment != NULL && segment->page_kind == page_kind && page_kind <= MI_PAGE_LARGE\0"
                     as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                8972 as libc::c_int as libc::c_uint,
+                8975 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 28],
                     &[libc::c_char; 28],
@@ -19706,7 +19690,7 @@ unsafe extern "C" fn mi_segment_find_free(
         _mi_assert_fail(
             b"mi_segment_has_free(segment)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8981 as libc::c_int as libc::c_uint,
+            8984 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 21],
                 &[libc::c_char; 21],
@@ -19732,7 +19716,7 @@ unsafe extern "C" fn mi_segment_find_free(
         _mi_assert_fail(
             b"false\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8990 as libc::c_int as libc::c_uint,
+            8993 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 21],
                 &[libc::c_char; 21],
@@ -19750,7 +19734,7 @@ unsafe extern "C" fn mi_segment_page_alloc_in(
         _mi_assert_fail(
             b"mi_segment_has_free(segment)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            8994 as libc::c_int as libc::c_uint,
+            8997 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 25],
                 &[libc::c_char; 25],
@@ -19802,7 +19786,7 @@ unsafe extern "C" fn mi_segment_page_alloc(
             _mi_assert_fail(
                 b"segment->page_kind==kind\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                9011 as libc::c_int as libc::c_uint,
+                9014 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 22],
                     &[libc::c_char; 22],
@@ -19815,7 +19799,7 @@ unsafe extern "C" fn mi_segment_page_alloc(
                 b"segment->used < segment->capacity\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                9012 as libc::c_int as libc::c_uint,
+                9015 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 22],
                     &[libc::c_char; 22],
@@ -19830,7 +19814,7 @@ unsafe extern "C" fn mi_segment_page_alloc(
                 b"_mi_arena_memid_is_suitable(segment->memid, heap->arena_id)\0"
                     as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                9013 as libc::c_int as libc::c_uint,
+                9016 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 22],
                     &[libc::c_char; 22],
@@ -19844,7 +19828,7 @@ unsafe extern "C" fn mi_segment_page_alloc(
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            9016 as libc::c_int as libc::c_uint,
+            9019 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 22],
                 &[libc::c_char; 22],
@@ -19909,7 +19893,7 @@ unsafe extern "C" fn mi_segment_large_page_alloc(
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            9032 as libc::c_int as libc::c_uint,
+            9035 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 28],
                 &[libc::c_char; 28],
@@ -19956,7 +19940,7 @@ unsafe extern "C" fn mi_segment_huge_page_alloc(
             b"mi_segment_page_size(segment) - segment->segment_info_size - (2*(MI_SECURE == 0 ? 0 : _mi_os_page_size())) >= size\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            9042 as libc::c_int as libc::c_uint,
+            9045 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 27],
                 &[libc::c_char; 27],
@@ -19969,7 +19953,7 @@ unsafe extern "C" fn mi_segment_huge_page_alloc(
         _mi_assert_fail(
             b"page != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            9048 as libc::c_int as libc::c_uint,
+            9051 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 27],
                 &[libc::c_char; 27],
@@ -19981,7 +19965,7 @@ unsafe extern "C" fn mi_segment_huge_page_alloc(
         _mi_assert_fail(
             b"page->is_huge\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            9049 as libc::c_int as libc::c_uint,
+            9052 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 27],
                 &[libc::c_char; 27],
@@ -20007,7 +19991,7 @@ unsafe extern "C" fn mi_segment_huge_page_alloc(
                 b"_mi_is_aligned(aligned_p, page_alignment)\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                9055 as libc::c_int as libc::c_uint,
+                9058 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 27],
                     &[libc::c_char; 27],
@@ -20022,7 +20006,7 @@ unsafe extern "C" fn mi_segment_huge_page_alloc(
                 b"psize - (aligned_p - start) >= size\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                9056 as libc::c_int as libc::c_uint,
+                9059 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 27],
                     &[libc::c_char; 27],
@@ -20054,7 +20038,7 @@ pub unsafe extern "C" fn _mi_segment_huge_page_reset(
         _mi_assert_fail(
             b"segment->page_kind == MI_PAGE_HUGE\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            9088 as libc::c_int as libc::c_uint,
+            9091 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 28],
                 &[libc::c_char; 28],
@@ -20066,7 +20050,7 @@ pub unsafe extern "C" fn _mi_segment_huge_page_reset(
         _mi_assert_fail(
             b"segment == _mi_page_segment(page)\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            9089 as libc::c_int as libc::c_uint,
+            9092 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 28],
                 &[libc::c_char; 28],
@@ -20078,7 +20062,7 @@ pub unsafe extern "C" fn _mi_segment_huge_page_reset(
         _mi_assert_fail(
             b"page->used == 1\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            9090 as libc::c_int as libc::c_uint,
+            9093 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 28],
                 &[libc::c_char; 28],
@@ -20090,7 +20074,7 @@ pub unsafe extern "C" fn _mi_segment_huge_page_reset(
         _mi_assert_fail(
             b"page->free == NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            9091 as libc::c_int as libc::c_uint,
+            9094 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 28],
                 &[libc::c_char; 28],
@@ -20131,7 +20115,7 @@ pub unsafe extern "C" fn _mi_segment_page_alloc(
                 b"_mi_is_power_of_two(page_alignment)\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                9105 as libc::c_int as libc::c_uint,
+                9108 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 23],
                     &[libc::c_char; 23],
@@ -20148,7 +20132,7 @@ pub unsafe extern "C" fn _mi_segment_page_alloc(
                 b"page_alignment >= MI_SEGMENT_SIZE\0" as *const u8
                     as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                9106 as libc::c_int as libc::c_uint,
+                9109 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 23],
                     &[libc::c_char; 23],
@@ -20214,7 +20198,7 @@ pub unsafe extern "C" fn _mi_segment_page_alloc(
             b"page == NULL || (mi_segment_page_size(_mi_page_segment(page)) - (MI_SECURE == 0 ? 0 : _mi_os_page_size())) >= block_size\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            9123 as libc::c_int as libc::c_uint,
+            9126 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 23],
                 &[libc::c_char; 23],
@@ -20227,7 +20211,7 @@ pub unsafe extern "C" fn _mi_segment_page_alloc(
             b"page == NULL || mi_page_not_in_queue(page, tld)\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            9124 as libc::c_int as libc::c_uint,
+            9127 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 23],
                 &[libc::c_char; 23],
@@ -20240,7 +20224,7 @@ pub unsafe extern "C" fn _mi_segment_page_alloc(
             b"page == NULL || _mi_page_segment(page)->subproc == tld->subproc\0"
                 as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            9125 as libc::c_int as libc::c_uint,
+            9128 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 23],
                 &[libc::c_char; 23],
@@ -20320,7 +20304,7 @@ unsafe extern "C" fn mi_segment_map_index_of(
             b"_mi_ptr_segment(segment + 1) == segment\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            9169 as libc::c_int as libc::c_uint,
+            9172 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 24],
                 &[libc::c_char; 24],
@@ -20434,7 +20418,7 @@ unsafe extern "C" fn mi_segment_map_index_of(
         _mi_assert_fail(
             b"part != NULL\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            9188 as libc::c_int as libc::c_uint,
+            9191 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 24],
                 &[libc::c_char; 24],
@@ -20566,7 +20550,7 @@ unsafe extern "C" fn _mi_segment_of(mut p: *const libc::c_void) -> *mut mi_segme
             _mi_assert_fail(
                 b"cookie_ok\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                9229 as libc::c_int as libc::c_uint,
+                9232 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 15],
                     &[libc::c_char; 15],
@@ -21115,7 +21099,7 @@ unsafe extern "C" fn mi_buffered_out(
             _mi_assert_fail(
                 b"buf->used < buf->count\0" as *const u8 as *const libc::c_char,
                 b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-                9468 as libc::c_int as libc::c_uint,
+                9471 as libc::c_int as libc::c_uint,
                 (*::core::mem::transmute::<
                     &[u8; 16],
                     &[libc::c_char; 16],
@@ -21859,7 +21843,7 @@ pub unsafe extern "C" fn _mi_prim_alloc(
             b"size > 0 && (size % _mi_os_page_size()) == 0\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            11354 as libc::c_int as libc::c_uint,
+            11357 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 15],
                 &[libc::c_char; 15],
@@ -21871,7 +21855,7 @@ pub unsafe extern "C" fn _mi_prim_alloc(
         _mi_assert_fail(
             b"commit || !allow_large\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            11355 as libc::c_int as libc::c_uint,
+            11358 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 15],
                 &[libc::c_char; 15],
@@ -21883,7 +21867,7 @@ pub unsafe extern "C" fn _mi_prim_alloc(
         _mi_assert_fail(
             b"try_alignment > 0\0" as *const u8 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            11356 as libc::c_int as libc::c_uint,
+            11359 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 15],
                 &[libc::c_char; 15],
@@ -22237,7 +22221,7 @@ pub unsafe extern "C" fn _mi_prim_thread_init_auto_done() {
             b"_mi_heap_default_key == (pthread_key_t)(-1)\0" as *const u8
                 as *const libc::c_char,
             b"preprocess/mimalloc.c\0" as *const u8 as *const libc::c_char,
-            11701 as libc::c_int as libc::c_uint,
+            11704 as libc::c_int as libc::c_uint,
             (*::core::mem::transmute::<
                 &[u8; 31],
                 &[libc::c_char; 31],
