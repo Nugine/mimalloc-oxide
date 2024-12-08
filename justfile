@@ -20,6 +20,7 @@ c2rust:
     ./scripts/c2rust.sh
 
 postprocess:
+    mkdir -p temp
     ./scripts/postprocess.py
     RUSTFLAGS="-Awarnings" cargo build -p mimalloc-oxide 2>temp/oxide.stderr.log
 
