@@ -80,8 +80,7 @@ def transform(lines: Iterable[str]):
 
     for line in lines:
         if line.startswith("#![feature") and "stdsimd" in line:
-            line = line.replace("stdsimd,", "")
-            line = line.replace("asm,", "")
+            line = line.replace("stdsimd,", "link_llvm_intrinsics,")
             yield line
 
             yield "#![allow(internal_features)]"

@@ -1,5 +1,5 @@
 #![allow(dead_code, mutable_transmutes, non_camel_case_types, non_snake_case, non_upper_case_globals, unused_assignments, unused_mut)]
-#![feature(c_variadic, core_intrinsics, extern_types,  thread_local)]
+#![feature(c_variadic, core_intrinsics, extern_types, link_llvm_intrinsics, thread_local)]
 #![allow(internal_features)]
 
 use c2rust_bitfields::BitfieldStruct;

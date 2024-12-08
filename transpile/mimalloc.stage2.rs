@@ -7,7 +7,13 @@
     unused_assignments,
     unused_mut
 )]
-#![feature(c_variadic, core_intrinsics, extern_types, thread_local)]
+#![feature(
+    c_variadic,
+    core_intrinsics,
+    extern_types,
+    link_llvm_intrinsics,
+    thread_local
+)]
 #![allow(internal_features)]
 
 use c2rust_bitfields::BitfieldStruct;
@@ -1778,7 +1784,7 @@ unsafe extern "C" fn _mi_random_shuffle(mut x: uintptr_t) -> uintptr_t {
 }
 #[inline]
 unsafe extern "C" fn _mi_os_numa_node(mut tld: *mut mi_os_tld_t) -> libc::c_int {
-    if (::core::intrinsics::atomic_load_relaxed(&mut _mi_numa_node_count as *mut size_t)
+    if (::core::intrinsics::atomic_load_relaxed(&raw mut _mi_numa_node_count as *mut size_t)
         == 1 as libc::c_int as size_t) as libc::c_int as libc::c_long
         != 0
     {
@@ -1789,7 +1795,7 @@ unsafe extern "C" fn _mi_os_numa_node(mut tld: *mut mi_os_tld_t) -> libc::c_int 
 }
 #[inline]
 unsafe extern "C" fn _mi_os_numa_node_count() -> size_t {
-    let count: size_t = ::core::intrinsics::atomic_load_relaxed(&mut _mi_numa_node_count);
+    let count: size_t = ::core::intrinsics::atomic_load_relaxed(&raw mut _mi_numa_node_count);
     if (count > 0 as libc::c_int as size_t) as libc::c_int as libc::c_long != 0 {
         return count;
     } else {
@@ -5111,7 +5117,7 @@ pub unsafe extern "C" fn _mi_arena_memid_is_suitable(
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_arena_get_count() -> size_t {
-    return ::core::intrinsics::atomic_load_relaxed(&mut mi_arena_count);
+    return ::core::intrinsics::atomic_load_relaxed(&raw mut mi_arena_count);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_arena_from_index(mut idx: size_t) -> *mut mi_arena_t {
@@ -5126,7 +5132,7 @@ pub unsafe extern "C" fn mi_arena_from_index(mut idx: size_t) -> *mut mi_arena_t
         );
     };
     return ::core::intrinsics::atomic_load_acquire(
-        &mut *mi_arenas.as_mut_ptr().offset(idx as isize) as *mut *mut mi_arena_t,
+        &mut *(*(&raw mut mi_arenas)).as_mut_ptr().offset(idx as isize) as *mut *mut mi_arena_t,
     );
 }
 unsafe extern "C" fn mi_block_count_of_size(mut size: size_t) -> size_t {
@@ -5194,7 +5200,7 @@ unsafe extern "C" fn mi_arena_static_zalloc(
     {
         return 0 as *mut libc::c_void;
     }
-    let toplow: size_t = ::core::intrinsics::atomic_load_relaxed(&mut mi_arena_static_top);
+    let toplow: size_t = ::core::intrinsics::atomic_load_relaxed(&raw mut mi_arena_static_top);
     if toplow.wrapping_add(size) as libc::c_ulonglong
         > ((((1 as libc::c_int) << 3 as libc::c_int) / 2 as libc::c_int) as libc::c_ulonglong)
             .wrapping_mul(1024 as libc::c_ulonglong)
@@ -5213,14 +5219,14 @@ unsafe extern "C" fn mi_arena_static_zalloc(
     {
         return 0 as *mut libc::c_void;
     }
-    let oldtop: size_t = ::core::intrinsics::atomic_xadd_acqrel(&mut mi_arena_static_top, oversize);
+    let oldtop: size_t = ::core::intrinsics::atomic_xadd_acqrel(&raw mut mi_arena_static_top, oversize);
     let mut top: size_t = oldtop.wrapping_add(oversize);
     if top as libc::c_ulonglong
         > ((((1 as libc::c_int) << 3 as libc::c_int) / 2 as libc::c_int) as libc::c_ulonglong)
             .wrapping_mul(1024 as libc::c_ulonglong)
     {
         let fresh7 = ::core::intrinsics::atomic_cxchg_acqrel_acquire(
-            &mut mi_arena_static_top,
+            &raw mut mi_arena_static_top,
             *&mut top,
             oldtop,
         );
@@ -5231,7 +5237,7 @@ unsafe extern "C" fn mi_arena_static_zalloc(
     *memid = _mi_memid_create(MI_MEM_STATIC);
     (*memid).initially_zero = 1 as libc::c_int != 0;
     let start: size_t = _mi_align_up(oldtop, alignment);
-    let p: *mut uint8_t = &mut *mi_arena_static.as_mut_ptr().offset(start as isize) as *mut uint8_t;
+    let p: *mut uint8_t = &mut *(*(&raw mut mi_arena_static)).as_mut_ptr().offset(start as isize) as *mut uint8_t;
     _mi_memzero_aligned(p as *mut libc::c_void, size);
     return p as *mut libc::c_void;
 }
@@ -5245,7 +5251,7 @@ pub unsafe extern "C" fn _mi_arena_meta_zalloc(
     if !p.is_null() {
         return p;
     }
-    p = _mi_os_alloc(size, memid, &mut _mi_stats_main);
+    p = _mi_os_alloc(size, memid, &raw mut _mi_stats_main);
     if p.is_null() {
         return 0 as *mut libc::c_void;
     }
@@ -5262,7 +5268,7 @@ pub unsafe extern "C" fn _mi_arena_meta_free(
     mut size: size_t,
 ) {
     if mi_memkind_is_os(memid.memkind) {
-        _mi_os_free(p, size, memid, &mut _mi_stats_main);
+        _mi_os_free(p, size, memid, &raw mut _mi_stats_main);
     } else {
         if memid.memkind as libc::c_uint == MI_MEM_STATIC as libc::c_int as libc::c_uint {
         } else {
@@ -5416,7 +5422,7 @@ unsafe extern "C" fn mi_arena_try_alloc_at_id(
     };
     let bcount: size_t = mi_block_count_of_size(size);
     let arena_index: size_t = mi_arena_id_index(arena_id);
-    if arena_index < ::core::intrinsics::atomic_load_relaxed(&mut mi_arena_count as *mut size_t) {
+    if arena_index < ::core::intrinsics::atomic_load_relaxed(&raw mut mi_arena_count as *mut size_t) {
     } else {
         _mi_assert_fail(
             b"arena_index < mi_atomic_load_relaxed(&mi_arena_count)\0" as *const u8
@@ -5503,7 +5509,7 @@ unsafe extern "C" fn mi_arena_try_alloc(
                 .as_ptr(),
         );
     };
-    let max_arena: size_t = ::core::intrinsics::atomic_load_relaxed(&mut mi_arena_count);
+    let max_arena: size_t = ::core::intrinsics::atomic_load_relaxed(&raw mut mi_arena_count);
     if (max_arena == 0 as libc::c_int as size_t) as libc::c_int as libc::c_long != 0 {
         return 0 as *mut libc::c_void;
     }
@@ -5583,7 +5589,7 @@ unsafe extern "C" fn mi_arena_reserve(
     if req_arena_id != _mi_arena_id_none() {
         return 0 as libc::c_int != 0;
     }
-    let arena_count: size_t = ::core::intrinsics::atomic_load_acquire(&mut mi_arena_count);
+    let arena_count: size_t = ::core::intrinsics::atomic_load_acquire(&raw mut mi_arena_count);
     if arena_count > (132 as libc::c_int - 4 as libc::c_int) as size_t {
         return 0 as libc::c_int != 0;
     }
@@ -5787,7 +5793,7 @@ pub unsafe extern "C" fn mi_arena_area(
         return 0 as *mut libc::c_void;
     }
     let mut arena: *mut mi_arena_t = ::core::intrinsics::atomic_load_acquire(
-        &mut *mi_arenas.as_mut_ptr().offset(arena_index as isize) as *mut *mut mi_arena_t,
+        &mut *(*(&raw mut mi_arenas)).as_mut_ptr().offset(arena_index as isize) as *mut *mut mi_arena_t,
     );
     if arena.is_null() {
         return 0 as *mut libc::c_void;
@@ -5860,7 +5866,7 @@ unsafe extern "C" fn mi_arena_purge(
         };
         needs_recommit = _mi_os_purge_ex(p, size, 0 as libc::c_int != 0, stats);
         if needs_recommit {
-            _mi_stat_increase(&mut _mi_stats_main.committed, size);
+            _mi_stat_increase(&raw mut _mi_stats_main.committed, size);
         }
     }
     _mi_bitmap_unclaim_across(
@@ -6056,7 +6062,7 @@ unsafe extern "C" fn mi_arenas_try_purge(
     {
         return;
     }
-    let max_arena: size_t = ::core::intrinsics::atomic_load_acquire(&mut mi_arena_count);
+    let max_arena: size_t = ::core::intrinsics::atomic_load_acquire(&raw mut mi_arena_count);
     if max_arena == 0 as libc::c_int as size_t {
         return;
     }
@@ -6065,7 +6071,7 @@ unsafe extern "C" fn mi_arenas_try_purge(
     let mut _mi_guard_once: bool = 1 as libc::c_int != 0;
     while _mi_guard_once as libc::c_int != 0 && {
         let fresh10 = ::core::intrinsics::atomic_cxchg_acqrel_acquire(
-            &mut purge_guard as *mut mi_atomic_guard_t,
+            &raw mut purge_guard as *mut mi_atomic_guard_t,
             *(&mut _mi_guard_expected as *mut uintptr_t),
             1 as libc::c_int as uintptr_t,
         );
@@ -6081,7 +6087,7 @@ unsafe extern "C" fn mi_arenas_try_purge(
         let mut i: size_t = 0 as libc::c_int as size_t;
         while i < max_arena {
             let mut arena: *mut mi_arena_t = ::core::intrinsics::atomic_load_acquire(
-                &mut *mi_arenas.as_mut_ptr().offset(i as isize) as *mut *mut mi_arena_t,
+                &mut *(*(&raw mut mi_arenas)).as_mut_ptr().offset(i as isize) as *mut *mut mi_arena_t,
             );
             if !arena.is_null() {
                 if mi_arena_try_purge(arena, now, force, stats) {
@@ -6095,7 +6101,7 @@ unsafe extern "C" fn mi_arenas_try_purge(
             i = i.wrapping_add(1);
             i;
         }
-        ::core::intrinsics::atomic_store_release(&mut purge_guard, 0 as libc::c_int as uintptr_t);
+        ::core::intrinsics::atomic_store_release(&raw mut purge_guard, 0 as libc::c_int as uintptr_t);
         _mi_guard_once = 0 as libc::c_int != 0;
     }
 }
@@ -6136,7 +6142,7 @@ pub unsafe extern "C" fn _mi_arena_free(
     let all_committed: bool = committed_size == size;
     if mi_memkind_is_os(memid.memkind) {
         if !all_committed && committed_size > 0 as libc::c_int as size_t {
-            _mi_stat_decrease(&mut _mi_stats_main.committed, committed_size);
+            _mi_stat_decrease(&raw mut _mi_stats_main.committed, committed_size);
         }
         _mi_os_free(p, size, memid, stats);
     } else if memid.memkind as libc::c_uint == MI_MEM_ARENA as libc::c_int as libc::c_uint {
@@ -6154,7 +6160,7 @@ pub unsafe extern "C" fn _mi_arena_free(
             );
         };
         let mut arena: *mut mi_arena_t = ::core::intrinsics::atomic_load_acquire(
-            &mut *mi_arenas.as_mut_ptr().offset(arena_idx as isize) as *mut *mut mi_arena_t,
+            &mut *(*(&raw mut mi_arenas)).as_mut_ptr().offset(arena_idx as isize) as *mut *mut mi_arena_t,
         );
         if !arena.is_null() {
         } else {
@@ -6246,7 +6252,7 @@ pub unsafe extern "C" fn _mi_arena_free(
                     bitmap_idx,
                 );
                 if committed_size > 0 as libc::c_int as size_t {
-                    _mi_stat_decrease(&mut _mi_stats_main.committed, committed_size);
+                    _mi_stat_decrease(&raw mut _mi_stats_main.committed, committed_size);
                 }
             }
             mi_arena_schedule_purge(arena, bitmap_idx, blocks, stats);
@@ -6282,12 +6288,12 @@ pub unsafe extern "C" fn _mi_arena_free(
     mi_arenas_try_purge(0 as libc::c_int != 0, 0 as libc::c_int != 0, stats);
 }
 unsafe extern "C" fn mi_arenas_unsafe_destroy() {
-    let max_arena: size_t = ::core::intrinsics::atomic_load_relaxed(&mut mi_arena_count);
+    let max_arena: size_t = ::core::intrinsics::atomic_load_relaxed(&raw mut mi_arena_count);
     let mut new_max_arena: size_t = 0 as libc::c_int as size_t;
     let mut i: size_t = 0 as libc::c_int as size_t;
     while i < max_arena {
         let mut arena: *mut mi_arena_t = ::core::intrinsics::atomic_load_acquire(
-            &mut *mi_arenas.as_mut_ptr().offset(i as isize) as *mut *mut mi_arena_t,
+            &mut *(*(&raw mut mi_arenas)).as_mut_ptr().offset(i as isize) as *mut *mut mi_arena_t,
         );
         if !arena.is_null() {
             mi_lock_done(&mut (*arena).abandoned_visit_lock);
@@ -6295,14 +6301,14 @@ unsafe extern "C" fn mi_arenas_unsafe_destroy() {
                 && mi_memkind_is_os((*arena).memid.memkind) as libc::c_int != 0
             {
                 ::core::intrinsics::atomic_store_release(
-                    &mut *mi_arenas.as_mut_ptr().offset(i as isize) as *mut *mut mi_arena_t,
+                    &mut *(*(&raw mut mi_arenas)).as_mut_ptr().offset(i as isize) as *mut *mut mi_arena_t,
                     0 as *mut mi_arena_t,
                 );
                 _mi_os_free(
                     (*arena).start as *mut libc::c_void,
                     mi_arena_size(arena),
                     (*arena).memid,
-                    &mut _mi_stats_main,
+                    &raw mut _mi_stats_main,
                 );
             } else {
                 new_max_arena = i;
@@ -6318,7 +6324,7 @@ unsafe extern "C" fn mi_arenas_unsafe_destroy() {
     }
     let mut expected: size_t = max_arena;
     let fresh11 = ::core::intrinsics::atomic_cxchg_acqrel_acquire(
-        &mut mi_arena_count,
+        &raw mut mi_arena_count,
         *&mut expected,
         new_max_arena,
     );
@@ -6336,11 +6342,11 @@ pub unsafe extern "C" fn _mi_arena_unsafe_destroy_all(mut stats: *mut mi_stats_t
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_arena_contains(mut p: *const libc::c_void) -> bool {
-    let max_arena: size_t = ::core::intrinsics::atomic_load_relaxed(&mut mi_arena_count);
+    let max_arena: size_t = ::core::intrinsics::atomic_load_relaxed(&raw mut mi_arena_count);
     let mut i: size_t = 0 as libc::c_int as size_t;
     while i < max_arena {
         let mut arena: *mut mi_arena_t = ::core::intrinsics::atomic_load_relaxed(
-            &mut *mi_arenas.as_mut_ptr().offset(i as isize) as *mut *mut mi_arena_t,
+            &mut *(*(&raw mut mi_arenas)).as_mut_ptr().offset(i as isize) as *mut *mut mi_arena_t,
         );
         if !arena.is_null()
             && (*arena).start <= p as *const uint8_t as *mut uint8_t
@@ -6402,15 +6408,15 @@ unsafe extern "C" fn mi_arena_add(
         *arena_id = -(1 as libc::c_int);
     }
     let mut i: size_t =
-        ::core::intrinsics::atomic_xadd_acqrel(&mut mi_arena_count, 1 as libc::c_int as uintptr_t);
+        ::core::intrinsics::atomic_xadd_acqrel(&raw mut mi_arena_count, 1 as libc::c_int as uintptr_t);
     if i >= 132 as libc::c_int as size_t {
-        ::core::intrinsics::atomic_xsub_acqrel(&mut mi_arena_count, 1 as libc::c_int as uintptr_t);
+        ::core::intrinsics::atomic_xsub_acqrel(&raw mut mi_arena_count, 1 as libc::c_int as uintptr_t);
         return 0 as libc::c_int != 0;
     }
     _mi_stat_counter_increase(&mut (*stats).arena_count, 1 as libc::c_int as size_t);
     (*arena).id = mi_arena_id_create(i);
     ::core::intrinsics::atomic_store_release(
-        &mut *mi_arenas.as_mut_ptr().offset(i as isize) as *mut *mut mi_arena_t,
+        &mut *(*(&raw mut mi_arenas)).as_mut_ptr().offset(i as isize) as *mut *mut mi_arena_t,
         arena,
     );
     if !arena_id.is_null() {
@@ -6558,7 +6564,7 @@ unsafe extern "C" fn mi_manage_os_memory_ex2(
             0 as *mut bool,
         );
     }
-    return mi_arena_add(arena, arena_id, &mut _mi_stats_main);
+    return mi_arena_add(arena, arena_id, &raw mut _mi_stats_main);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_manage_os_memory_ex(
@@ -6614,7 +6620,7 @@ pub unsafe extern "C" fn mi_reserve_os_memory_ex(
         commit,
         allow_large,
         &mut memid,
-        &mut _mi_stats_main,
+        &raw mut _mi_stats_main,
     );
     if start.is_null() {
         return 12 as libc::c_int;
@@ -6629,7 +6635,7 @@ pub unsafe extern "C" fn mi_reserve_os_memory_ex(
         memid,
         arena_id,
     ) {
-        _mi_os_free_ex(start, size, commit, memid, &mut _mi_stats_main);
+        _mi_os_free_ex(start, size, commit, memid, &raw mut _mi_stats_main);
         _mi_verbose_message(
             b"failed to reserve %zu KiB memory\n\0" as *const u8 as *const libc::c_char,
             _mi_divide_up(size, 1024 as libc::c_int as size_t),
@@ -6746,14 +6752,14 @@ pub unsafe extern "C" fn mi_debug_show_arenas(
     mut show_abandoned: bool,
     mut show_purge: bool,
 ) {
-    let mut max_arenas: size_t = ::core::intrinsics::atomic_load_relaxed(&mut mi_arena_count);
+    let mut max_arenas: size_t = ::core::intrinsics::atomic_load_relaxed(&raw mut mi_arena_count);
     let mut inuse_total: size_t = 0 as libc::c_int as size_t;
     let mut abandoned_total: size_t = 0 as libc::c_int as size_t;
     let mut purge_total: size_t = 0 as libc::c_int as size_t;
     let mut i: size_t = 0 as libc::c_int as size_t;
     while i < max_arenas {
         let mut arena: *mut mi_arena_t = ::core::intrinsics::atomic_load_relaxed(
-            &mut *mi_arenas.as_mut_ptr().offset(i as isize) as *mut *mut mi_arena_t,
+            &mut *(*(&raw mut mi_arenas)).as_mut_ptr().offset(i as isize) as *mut *mut mi_arena_t,
         );
         if arena.is_null() {
             break;
@@ -6896,7 +6902,7 @@ pub unsafe extern "C" fn mi_reserve_huge_os_pages_at_ex(
         memid,
         arena_id,
     ) {
-        _mi_os_free(p, hsize, memid, &mut _mi_stats_main);
+        _mi_os_free(p, hsize, memid, &raw mut _mi_stats_main);
         return 12 as libc::c_int;
     }
     return 0 as libc::c_int;
@@ -10256,19 +10262,19 @@ unsafe extern "C" fn mi_heap_main_init() {
     if _mi_heap_main.cookie == 0 as libc::c_int as uintptr_t {
         _mi_heap_main.thread_id = _mi_thread_id();
         _mi_heap_main.cookie = 1 as libc::c_int as uintptr_t;
-        _mi_random_init(&mut _mi_heap_main.random);
-        _mi_heap_main.cookie = _mi_heap_random_next(&mut _mi_heap_main);
-        _mi_heap_main.keys[0 as libc::c_int as usize] = _mi_heap_random_next(&mut _mi_heap_main);
-        _mi_heap_main.keys[1 as libc::c_int as usize] = _mi_heap_random_next(&mut _mi_heap_main);
-        mi_lock_init(&mut mi_subproc_default.abandoned_os_lock);
-        mi_lock_init(&mut mi_subproc_default.abandoned_os_visit_lock);
-        _mi_heap_guarded_init(&mut _mi_heap_main);
+        _mi_random_init(&raw mut _mi_heap_main.random);
+        _mi_heap_main.cookie = _mi_heap_random_next(&raw mut _mi_heap_main);
+        _mi_heap_main.keys[0 as libc::c_int as usize] = _mi_heap_random_next(&raw mut _mi_heap_main);
+        _mi_heap_main.keys[1 as libc::c_int as usize] = _mi_heap_random_next(&raw mut _mi_heap_main);
+        mi_lock_init(&raw mut mi_subproc_default.abandoned_os_lock);
+        mi_lock_init(&raw mut mi_subproc_default.abandoned_os_visit_lock);
+        _mi_heap_guarded_init(&raw mut _mi_heap_main);
     }
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_heap_main_get() -> *mut mi_heap_t {
     mi_heap_main_init();
-    return &mut _mi_heap_main;
+    return &raw mut _mi_heap_main;
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_subproc_main() -> mi_subproc_id_t {
@@ -10293,7 +10299,7 @@ pub unsafe extern "C" fn mi_subproc_new() -> mi_subproc_id_t {
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_subproc_from_id(mut subproc_id: mi_subproc_id_t) -> *mut mi_subproc_t {
     return if subproc_id.is_null() {
-        &mut mi_subproc_default
+        &raw mut mi_subproc_default
     } else {
         subproc_id as *mut mi_subproc_t
     };
@@ -10328,7 +10334,7 @@ pub unsafe extern "C" fn mi_subproc_add_current_thread(mut subproc_id: mi_subpro
     if heap.is_null() {
         return;
     }
-    if (*(*heap).tld).segments.subproc == &mut mi_subproc_default as *mut mi_subproc_t {
+    if (*(*heap).tld).segments.subproc == &raw mut mi_subproc_default as *mut mi_subproc_t {
     } else {
         _mi_assert_fail(
             b"heap->tld->segments.subproc == &mi_subproc_default\0" as *const u8
@@ -10341,7 +10347,7 @@ pub unsafe extern "C" fn mi_subproc_add_current_thread(mut subproc_id: mi_subpro
             .as_ptr(),
         );
     };
-    if (*(*heap).tld).segments.subproc != &mut mi_subproc_default as *mut mi_subproc_t {
+    if (*(*heap).tld).segments.subproc != &raw mut mi_subproc_default as *mut mi_subproc_t {
         return;
     }
     (*(*heap).tld).segments.subproc = _mi_subproc_from_id(subproc_id);
@@ -10354,11 +10360,11 @@ unsafe extern "C" fn mi_thread_data_zalloc() -> *mut mi_thread_data_t {
     let mut i: libc::c_int = 0 as libc::c_int;
     while i < 32 as libc::c_int {
         td = ::core::intrinsics::atomic_load_relaxed(
-            &mut *td_cache.as_mut_ptr().offset(i as isize) as *mut *mut mi_thread_data_t,
+            &mut *(*(&raw mut td_cache)).as_mut_ptr().offset(i as isize) as *mut *mut mi_thread_data_t,
         );
         if !td.is_null() {
             td = ::core::intrinsics::atomic_xchg_acqrel(
-                &mut *td_cache.as_mut_ptr().offset(i as isize) as *mut *mut mi_thread_data_t,
+                &mut *(*(&raw mut td_cache)).as_mut_ptr().offset(i as isize) as *mut *mut mi_thread_data_t,
                 0 as *mut mi_thread_data_t,
             );
             if !td.is_null() {
@@ -10384,13 +10390,13 @@ unsafe extern "C" fn mi_thread_data_zalloc() -> *mut mi_thread_data_t {
         td = _mi_os_alloc(
             ::core::mem::size_of::<mi_thread_data_t>() as libc::c_ulong,
             &mut memid,
-            &mut _mi_stats_main,
+            &raw mut _mi_stats_main,
         ) as *mut mi_thread_data_t;
         if td.is_null() {
             td = _mi_os_alloc(
                 ::core::mem::size_of::<mi_thread_data_t>() as libc::c_ulong,
                 &mut memid,
-                &mut _mi_stats_main,
+                &raw mut _mi_stats_main,
             ) as *mut mi_thread_data_t;
             if td.is_null() {
                 _mi_error_message(
@@ -10415,12 +10421,12 @@ unsafe extern "C" fn mi_thread_data_free(mut tdfree: *mut mi_thread_data_t) {
     let mut i: libc::c_int = 0 as libc::c_int;
     while i < 32 as libc::c_int {
         let mut td: *mut mi_thread_data_t = ::core::intrinsics::atomic_load_relaxed(
-            &mut *td_cache.as_mut_ptr().offset(i as isize) as *mut *mut mi_thread_data_t,
+            &mut *(*(&raw mut td_cache)).as_mut_ptr().offset(i as isize) as *mut *mut mi_thread_data_t,
         );
         if td.is_null() {
             let mut expected: *mut mi_thread_data_t = 0 as *mut mi_thread_data_t;
             let fresh27 = ::core::intrinsics::atomic_cxchgweak_acqrel_acquire(
-                &mut *td_cache.as_mut_ptr().offset(i as isize) as *mut *mut mi_thread_data_t,
+                &mut *(*(&raw mut td_cache)).as_mut_ptr().offset(i as isize) as *mut *mut mi_thread_data_t,
                 *(&mut expected as *mut *mut mi_thread_data_t),
                 tdfree,
             );
@@ -10436,7 +10442,7 @@ unsafe extern "C" fn mi_thread_data_free(mut tdfree: *mut mi_thread_data_t) {
         tdfree as *mut libc::c_void,
         ::core::mem::size_of::<mi_thread_data_t>() as libc::c_ulong,
         (*tdfree).memid,
-        &mut _mi_stats_main,
+        &raw mut _mi_stats_main,
     );
 }
 #[unsafe(no_mangle)]
@@ -10444,11 +10450,11 @@ pub unsafe extern "C" fn _mi_thread_data_collect() {
     let mut i: libc::c_int = 0 as libc::c_int;
     while i < 32 as libc::c_int {
         let mut td: *mut mi_thread_data_t = ::core::intrinsics::atomic_load_relaxed(
-            &mut *td_cache.as_mut_ptr().offset(i as isize) as *mut *mut mi_thread_data_t,
+            &mut *(*(&raw mut td_cache)).as_mut_ptr().offset(i as isize) as *mut *mut mi_thread_data_t,
         );
         if !td.is_null() {
             td = ::core::intrinsics::atomic_xchg_acqrel(
-                &mut *td_cache.as_mut_ptr().offset(i as isize) as *mut *mut mi_thread_data_t,
+                &mut *(*(&raw mut td_cache)).as_mut_ptr().offset(i as isize) as *mut *mut mi_thread_data_t,
                 0 as *mut mi_thread_data_t,
             );
             if !td.is_null() {
@@ -10456,7 +10462,7 @@ pub unsafe extern "C" fn _mi_thread_data_collect() {
                     td as *mut libc::c_void,
                     ::core::mem::size_of::<mi_thread_data_t>() as libc::c_ulong,
                     (*td).memid,
-                    &mut _mi_stats_main,
+                    &raw mut _mi_stats_main,
                 );
             }
         }
@@ -10470,7 +10476,7 @@ unsafe extern "C" fn _mi_thread_heap_init() -> bool {
     }
     if _mi_is_main_thread() {
         mi_heap_main_init();
-        _mi_heap_set_default_direct(&mut _mi_heap_main);
+        _mi_heap_set_default_direct(&raw mut _mi_heap_main);
     } else {
         let mut td: *mut mi_thread_data_t = mi_thread_data_zalloc();
         if td.is_null() {
@@ -10498,7 +10504,7 @@ pub unsafe extern "C" fn _mi_tld_init(mut tld: *mut mi_tld_t, mut bheap: *mut mi
     );
     (*tld).heap_backing = bheap;
     (*tld).heaps = 0 as *mut mi_heap_t;
-    (*tld).segments.subproc = &mut mi_subproc_default;
+    (*tld).segments.subproc = &raw mut mi_subproc_default;
     (*tld).segments.stats = &mut (*tld).stats;
     (*tld).segments.os = &mut (*tld).os;
     (*tld).os.stats = &mut (*tld).stats;
@@ -10508,7 +10514,7 @@ unsafe extern "C" fn _mi_thread_heap_done(mut heap: *mut mi_heap_t) -> bool {
         return 1 as libc::c_int != 0;
     }
     _mi_heap_set_default_direct(if _mi_is_main_thread() as libc::c_int != 0 {
-        &mut _mi_heap_main
+        &raw mut _mi_heap_main
     } else {
         &raw mut _mi_heap_empty
     });
@@ -10556,11 +10562,11 @@ unsafe extern "C" fn _mi_thread_heap_done(mut heap: *mut mi_heap_t) -> bool {
                 .as_ptr(),
         );
     };
-    if heap != &mut _mi_heap_main as *mut mi_heap_t {
+    if heap != &raw mut _mi_heap_main as *mut mi_heap_t {
         _mi_heap_collect_abandon(heap);
     }
     _mi_stats_done(&mut (*(*heap).tld).stats);
-    if heap != &mut _mi_heap_main as *mut mi_heap_t {
+    if heap != &raw mut _mi_heap_main as *mut mi_heap_t {
         if (*(*heap).tld).segments.count == 0 as libc::c_int as size_t
             || (*heap).thread_id != _mi_thread_id()
         {
@@ -10587,7 +10593,7 @@ unsafe extern "C" fn mi_process_setup_auto_thread_done() {
     }
     tls_initialized = 1 as libc::c_int != 0;
     _mi_prim_thread_init_auto_done();
-    _mi_heap_set_default_direct(&mut _mi_heap_main);
+    _mi_heap_set_default_direct(&raw mut _mi_heap_main);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_is_main_thread() -> bool {
@@ -10597,7 +10603,7 @@ pub unsafe extern "C" fn _mi_is_main_thread() -> bool {
 static mut thread_count: size_t = 1 as libc::c_int as libc::c_ulong;
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_current_thread_count() -> size_t {
-    return ::core::intrinsics::atomic_load_relaxed(&mut thread_count);
+    return ::core::intrinsics::atomic_load_relaxed(&raw mut thread_count);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_thread_init() {
@@ -10605,8 +10611,8 @@ pub unsafe extern "C" fn mi_thread_init() {
     if _mi_thread_heap_init() {
         return;
     }
-    _mi_stat_increase(&mut _mi_stats_main.threads, 1 as libc::c_int as size_t);
-    ::core::intrinsics::atomic_xadd_relaxed(&mut thread_count, 1 as libc::c_int as uintptr_t);
+    _mi_stat_increase(&raw mut _mi_stats_main.threads, 1 as libc::c_int as size_t);
+    ::core::intrinsics::atomic_xadd_relaxed(&raw mut thread_count, 1 as libc::c_int as uintptr_t);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_thread_done() {
@@ -10623,8 +10629,8 @@ pub unsafe extern "C" fn _mi_thread_done(mut heap: *mut mi_heap_t) {
     if !mi_heap_is_initialized(heap) {
         return;
     }
-    ::core::intrinsics::atomic_xsub_relaxed(&mut thread_count, 1 as libc::c_int as uintptr_t);
-    _mi_stat_decrease(&mut _mi_stats_main.threads, 1 as libc::c_int as size_t);
+    ::core::intrinsics::atomic_xsub_relaxed(&raw mut thread_count, 1 as libc::c_int as uintptr_t);
+    _mi_stat_decrease(&raw mut _mi_stats_main.threads, 1 as libc::c_int as size_t);
     if (*heap).thread_id != _mi_thread_id() {
         return;
     }
@@ -10683,14 +10689,14 @@ pub unsafe extern "C" fn _mi_process_load() {
     {
         _mi_fputs(None, 0 as *mut libc::c_void, 0 as *const libc::c_char, msg);
     }
-    _mi_random_reinit_if_weak(&mut _mi_heap_main.random);
+    _mi_random_reinit_if_weak(&raw mut _mi_heap_main.random);
 }
 unsafe extern "C" fn mi_detect_cpu_features() {}
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_process_init() {
     static mut process_init: mi_atomic_once_t = 0;
     mi_heap_main_init();
-    if !mi_atomic_once(&mut process_init) {
+    if !mi_atomic_once(&raw mut process_init) {
         return;
     }
     _mi_process_is_initialized = 1 as libc::c_int != 0;
@@ -11534,7 +11540,7 @@ unsafe extern "C" fn mi_out_buf(mut msg: *const libc::c_char, mut arg: *mut libc
     if msg.is_null() {
         return;
     }
-    if ::core::intrinsics::atomic_load_relaxed(&mut out_len as *mut size_t)
+    if ::core::intrinsics::atomic_load_relaxed(&raw mut out_len as *mut size_t)
         >= (16 as libc::c_int * 1024 as libc::c_int) as size_t
     {
         return;
@@ -11543,7 +11549,7 @@ unsafe extern "C" fn mi_out_buf(mut msg: *const libc::c_char, mut arg: *mut libc
     if n == 0 as libc::c_int as size_t {
         return;
     }
-    let mut start: size_t = ::core::intrinsics::atomic_xadd_acqrel(&mut out_len, n);
+    let mut start: size_t = ::core::intrinsics::atomic_xadd_acqrel(&raw mut out_len, n);
     if start >= (16 as libc::c_int * 1024 as libc::c_int) as size_t {
         return;
     }
@@ -11553,7 +11559,7 @@ unsafe extern "C" fn mi_out_buf(mut msg: *const libc::c_char, mut arg: *mut libc
             .wrapping_sub(1 as libc::c_int as size_t);
     }
     _mi_memcpy(
-        &mut *out_buf.as_mut_ptr().offset(start as isize) as *mut libc::c_char as *mut libc::c_void,
+        &mut *(*(&raw mut out_buf)).as_mut_ptr().offset(start as isize) as *mut libc::c_char as *mut libc::c_void,
         msg as *const libc::c_void,
         n,
     );
@@ -11567,7 +11573,7 @@ unsafe extern "C" fn mi_out_buf_flush(
         return;
     }
     let mut count: size_t = ::core::intrinsics::atomic_xadd_acqrel(
-        &mut out_len,
+        &raw mut out_len,
         if no_more_buf as libc::c_int != 0 {
             (16 as libc::c_int * 1024 as libc::c_int) as size_t
         } else {
@@ -11578,7 +11584,7 @@ unsafe extern "C" fn mi_out_buf_flush(
         count = (16 as libc::c_int * 1024 as libc::c_int) as size_t;
     }
     out_buf[count as usize] = 0 as libc::c_int as libc::c_char;
-    out.expect("non-null function pointer")(out_buf.as_mut_ptr(), arg);
+    out.expect("non-null function pointer")((*(&raw mut out_buf)).as_mut_ptr(), arg);
     if !no_more_buf {
         out_buf[count as usize] = '\n' as i32 as libc::c_char;
     }
@@ -11591,7 +11597,7 @@ static mut mi_out_default: Option<mi_output_fun> = None;
 static mut mi_out_arg: *mut libc::c_void = 0 as *const libc::c_void as *mut libc::c_void;
 unsafe extern "C" fn mi_out_get_default(mut parg: *mut *mut libc::c_void) -> Option<mi_output_fun> {
     if !parg.is_null() {
-        *parg = ::core::intrinsics::atomic_load_acquire(&mut mi_out_arg);
+        *parg = ::core::intrinsics::atomic_load_acquire(&raw mut mi_out_arg);
     }
     let mut out: Option<mi_output_fun> = mi_out_default;
     return if out.is_none() {
@@ -11606,7 +11612,7 @@ pub unsafe extern "C" fn mi_register_output(
     mut arg: *mut libc::c_void,
 ) {
     ::core::ptr::write_volatile(
-        &mut mi_out_default as *mut Option<mi_output_fun>,
+        &raw mut mi_out_default as *mut Option<mi_output_fun>,
         if out.is_none() {
             Some(
                 mi_out_stderr as unsafe extern "C" fn(*const libc::c_char, *mut libc::c_void) -> (),
@@ -11615,13 +11621,13 @@ pub unsafe extern "C" fn mi_register_output(
             out
         },
     );
-    ::core::intrinsics::atomic_store_release(&mut mi_out_arg, arg);
+    ::core::intrinsics::atomic_store_release(&raw mut mi_out_arg, arg);
     if out.is_some() {
         mi_out_buf_flush(out, 1 as libc::c_int != 0, arg);
     }
 }
 unsafe extern "C" fn mi_add_stderr_output() {
-    if mi_out_default.is_none() {
+    if (*(&raw mut mi_out_default)).is_none() {
     } else {
         _mi_assert_fail(
             b"mi_out_default == NULL\0" as *const u8 as *const libc::c_char,
@@ -11637,7 +11643,7 @@ unsafe extern "C" fn mi_add_stderr_output() {
         0 as *mut libc::c_void,
     );
     ::core::ptr::write_volatile(
-        &mut mi_out_default as *mut Option<mi_output_fun>,
+        &raw mut mi_out_default as *mut Option<mi_output_fun>,
         Some(
             mi_out_buf_stderr as unsafe extern "C" fn(*const libc::c_char, *mut libc::c_void) -> (),
         ),
@@ -11793,7 +11799,7 @@ unsafe extern "C" fn mi_show_error_message(
         }
         if mi_max_error_count >= 0 as libc::c_int as libc::c_long
             && ::core::intrinsics::atomic_xadd_acqrel(
-                &mut error_count as *mut size_t,
+                &raw mut error_count as *mut size_t,
                 1 as libc::c_int as uintptr_t,
             ) as libc::c_long
                 > mi_max_error_count
@@ -11817,7 +11823,7 @@ pub unsafe extern "C" fn _mi_warning_message(mut fmt: *const libc::c_char, mut a
         }
         if mi_max_warning_count >= 0 as libc::c_int as libc::c_long
             && ::core::intrinsics::atomic_xadd_acqrel(
-                &mut warning_count as *mut size_t,
+                &raw mut warning_count as *mut size_t,
                 1 as libc::c_int as uintptr_t,
             ) as libc::c_long
                 > mi_max_warning_count
@@ -11870,8 +11876,8 @@ pub unsafe extern "C" fn mi_register_error(
     mut fun: Option<mi_error_fun>,
     mut arg: *mut libc::c_void,
 ) {
-    ::core::ptr::write_volatile(&mut mi_error_handler as *mut Option<mi_error_fun>, fun);
-    ::core::intrinsics::atomic_store_release(&mut mi_error_arg, arg);
+    ::core::ptr::write_volatile(&raw mut mi_error_handler as *mut Option<mi_error_fun>, fun);
+    ::core::intrinsics::atomic_store_release(&raw mut mi_error_arg, arg);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_error_message(
@@ -11882,10 +11888,10 @@ pub unsafe extern "C" fn _mi_error_message(
     let mut args_0: ::core::ffi::VaListImpl;
     args_0 = args.clone();
     mi_show_error_message(fmt, args_0.as_va_list());
-    if mi_error_handler.is_some() {
+    if (*(&raw mut mi_error_handler)).is_some() {
         mi_error_handler.expect("non-null function pointer")(
             err,
-            ::core::intrinsics::atomic_load_acquire(&mut mi_error_arg),
+            ::core::intrinsics::atomic_load_acquire(&raw mut mi_error_arg),
         );
     } else {
         mi_error_default(err);
@@ -12149,7 +12155,7 @@ pub unsafe extern "C" fn _mi_os_good_alloc_size(mut size: size_t) -> size_t {
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_os_init() {
-    _mi_prim_mem_init(&mut mi_os_mem_config);
+    _mi_prim_mem_init(&raw mut mi_os_mem_config);
 }
 #[inline]
 unsafe extern "C" fn _mi_align_down(mut sz: uintptr_t, mut alignment: size_t) -> uintptr_t {
@@ -12207,20 +12213,20 @@ pub unsafe extern "C" fn _mi_os_get_aligned_hint(
     {
         return 0 as *mut libc::c_void;
     }
-    let mut hint: uintptr_t = ::core::intrinsics::atomic_xadd_acqrel(&mut aligned_base, size);
+    let mut hint: uintptr_t = ::core::intrinsics::atomic_xadd_acqrel(&raw mut aligned_base, size);
     if hint == 0 as libc::c_int as uintptr_t
         || hint > (30 as libc::c_int as uintptr_t) << 40 as libc::c_int
     {
         let mut init: uintptr_t = (2 as libc::c_int as uintptr_t) << 40 as libc::c_int;
         let mut expected: uintptr_t = hint.wrapping_add(size);
         let fresh33 = ::core::intrinsics::atomic_cxchg_acqrel_acquire(
-            &mut aligned_base,
+            &raw mut aligned_base,
             *&mut expected,
             init,
         );
         *&mut expected = fresh33.0;
         fresh33.1;
-        hint = ::core::intrinsics::atomic_xadd_acqrel(&mut aligned_base, size);
+        hint = ::core::intrinsics::atomic_xadd_acqrel(&raw mut aligned_base, size);
     }
     if hint.wrapping_rem(try_alignment) != 0 as libc::c_int as libc::c_ulong {
         return 0 as *mut libc::c_void;
@@ -12233,7 +12239,7 @@ unsafe extern "C" fn mi_os_prim_free(
     mut still_committed: bool,
     mut tld_stats: *mut mi_stats_t,
 ) {
-    let mut stats: *mut mi_stats_t = &mut _mi_stats_main;
+    let mut stats: *mut mi_stats_t = &raw mut _mi_stats_main;
     if size % _mi_os_page_size() == 0 as libc::c_int as size_t {
     } else {
         _mi_assert_fail(
@@ -12272,7 +12278,7 @@ pub unsafe extern "C" fn _mi_os_free_ex(
     mut stats: *mut mi_stats_t,
 ) {
     if stats.is_null() {
-        stats = &mut _mi_stats_main;
+        stats = &raw mut _mi_stats_main;
     }
     if mi_memkind_is_os(memid.memkind) {
         let mut csize: size_t = _mi_os_good_alloc_size(size);
@@ -12349,7 +12355,7 @@ pub unsafe extern "C" fn _mi_os_free(
     mut stats: *mut mi_stats_t,
 ) {
     if stats.is_null() {
-        stats = &mut _mi_stats_main;
+        stats = &raw mut _mi_stats_main;
     }
     _mi_os_free_ex(p, size, 1 as libc::c_int != 0, memid, stats);
 }
@@ -12428,7 +12434,7 @@ unsafe extern "C" fn mi_os_prim_alloc_at(
             allow_large as libc::c_int,
         );
     }
-    let mut stats: *mut mi_stats_t = &mut _mi_stats_main;
+    let mut stats: *mut mi_stats_t = &raw mut _mi_stats_main;
     _mi_stat_counter_increase(&mut (*stats).mmap_calls, 1 as libc::c_int as size_t);
     if !p.is_null() {
         _mi_stat_increase(&mut (*stats).reserved, size);
@@ -12665,7 +12671,7 @@ pub unsafe extern "C" fn _mi_os_alloc(
         return 0 as *mut libc::c_void;
     }
     if stats.is_null() {
-        stats = &mut _mi_stats_main;
+        stats = &raw mut _mi_stats_main;
     }
     size = _mi_os_good_alloc_size(size);
     let mut os_is_large: bool = 0 as libc::c_int != 0;
@@ -12699,7 +12705,7 @@ pub unsafe extern "C" fn _mi_os_alloc_aligned(
         return 0 as *mut libc::c_void;
     }
     if stats.is_null() {
-        stats = &mut _mi_stats_main;
+        stats = &raw mut _mi_stats_main;
     }
     size = _mi_os_good_alloc_size(size);
     alignment = _mi_align_up(alignment, _mi_os_page_size());
@@ -12774,7 +12780,7 @@ pub unsafe extern "C" fn _mi_os_alloc_aligned_at_offset(
     };
     *memid = _mi_memid_none();
     if stats.is_null() {
-        stats = &mut _mi_stats_main;
+        stats = &raw mut _mi_stats_main;
     }
     if offset as libc::c_ulonglong
         > (1 as libc::c_ulonglong)
@@ -12897,7 +12903,7 @@ pub unsafe extern "C" fn _mi_os_commit(
     mut is_zero: *mut bool,
     mut tld_stats: *mut mi_stats_t,
 ) -> bool {
-    let mut stats: *mut mi_stats_t = &mut _mi_stats_main;
+    let mut stats: *mut mi_stats_t = &raw mut _mi_stats_main;
     if !is_zero.is_null() {
         *is_zero = 0 as libc::c_int != 0;
     }
@@ -12933,7 +12939,7 @@ unsafe extern "C" fn mi_os_decommit_ex(
     mut needs_recommit: *mut bool,
     mut tld_stats: *mut mi_stats_t,
 ) -> bool {
-    let mut stats: *mut mi_stats_t = &mut _mi_stats_main;
+    let mut stats: *mut mi_stats_t = &raw mut _mi_stats_main;
     if !needs_recommit.is_null() {
     } else {
         _mi_assert_fail(
@@ -13092,7 +13098,7 @@ unsafe extern "C" fn mi_os_claim_huge_pages(
     ) as size_t;
     let mut start: uintptr_t = 0 as libc::c_int as uintptr_t;
     let mut end: uintptr_t = 0 as libc::c_int as uintptr_t;
-    let mut huge_start: uintptr_t = ::core::intrinsics::atomic_load_relaxed(&mut mi_huge_start);
+    let mut huge_start: uintptr_t = ::core::intrinsics::atomic_load_relaxed(&raw mut mi_huge_start);
     loop {
         start = huge_start;
         if start == 0 as libc::c_int as uintptr_t {
@@ -13116,7 +13122,7 @@ unsafe extern "C" fn mi_os_claim_huge_pages(
             );
         };
         let fresh34 = ::core::intrinsics::atomic_cxchg_acqrel_acquire(
-            &mut mi_huge_start as *mut uintptr_t,
+            &raw mut mi_huge_start as *mut uintptr_t,
             *(&mut huge_start as *mut uintptr_t),
             end,
         );
@@ -13202,7 +13208,7 @@ pub unsafe extern "C" fn _mi_os_alloc_huge_os_pages(
                         .wrapping_mul(1024 as libc::c_ulonglong)
                         .wrapping_mul(1024 as libc::c_ulonglong) as size_t,
                     1 as libc::c_int != 0,
-                    &mut _mi_stats_main,
+                    &raw mut _mi_stats_main,
                 );
             }
             break;
@@ -13210,13 +13216,13 @@ pub unsafe extern "C" fn _mi_os_alloc_huge_os_pages(
             page = page.wrapping_add(1);
             page;
             _mi_stat_increase(
-                &mut _mi_stats_main.committed,
+                &raw mut _mi_stats_main.committed,
                 (1024 as libc::c_ulonglong)
                     .wrapping_mul(1024 as libc::c_ulonglong)
                     .wrapping_mul(1024 as libc::c_ulonglong) as size_t,
             );
             _mi_stat_increase(
-                &mut _mi_stats_main.reserved,
+                &raw mut _mi_stats_main.reserved,
                 (1024 as libc::c_ulonglong)
                     .wrapping_mul(1024 as libc::c_ulonglong)
                     .wrapping_mul(1024 as libc::c_ulonglong) as size_t,
@@ -13343,7 +13349,7 @@ unsafe extern "C" fn mi_os_free_huge_os_pages(
 pub static mut _mi_numa_node_count: size_t = 0;
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn _mi_os_numa_node_count_get() -> size_t {
-    let mut count: size_t = ::core::intrinsics::atomic_load_acquire(&mut _mi_numa_node_count);
+    let mut count: size_t = ::core::intrinsics::atomic_load_acquire(&raw mut _mi_numa_node_count);
     if count <= 0 as libc::c_int as size_t {
         let mut ncount: libc::c_long = mi_option_get(mi_option_use_numa_nodes);
         if ncount > 0 as libc::c_int as libc::c_long {
@@ -13354,7 +13360,7 @@ pub unsafe extern "C" fn _mi_os_numa_node_count_get() -> size_t {
                 count = 1 as libc::c_int as size_t;
             }
         }
-        ::core::intrinsics::atomic_store_release(&mut _mi_numa_node_count, count);
+        ::core::intrinsics::atomic_store_release(&raw mut _mi_numa_node_count, count);
         _mi_verbose_message(
             b"using %zd numa regions\n\0" as *const u8 as *const libc::c_char,
             count,
@@ -14718,7 +14724,7 @@ pub unsafe extern "C" fn _mi_page_retire(mut page: *mut mi_page_t) {
     if !mi_page_queue_is_special(pq) as libc::c_int as libc::c_long != 0 {
         if (*pq).last == page && (*pq).first == page {
             _mi_stat_counter_increase(
-                &mut _mi_stats_main.page_no_retire,
+                &raw mut _mi_stats_main.page_no_retire,
                 1 as libc::c_int as size_t,
             );
             (*page).set_retire_expire(
@@ -15454,12 +15460,12 @@ static mut deferred_arg: *mut libc::c_void = 0 as *const libc::c_void as *mut li
 pub unsafe extern "C" fn _mi_deferred_free(mut heap: *mut mi_heap_t, mut force: bool) {
     (*(*heap).tld).heartbeat = ((*(*heap).tld).heartbeat).wrapping_add(1);
     (*(*heap).tld).heartbeat;
-    if deferred_free.is_some() && !(*(*heap).tld).recurse {
+    if (*(&raw mut deferred_free)).is_some() && !(*(*heap).tld).recurse {
         (*(*heap).tld).recurse = 1 as libc::c_int != 0;
         deferred_free.expect("non-null function pointer")(
             force,
             (*(*heap).tld).heartbeat,
-            ::core::intrinsics::atomic_load_relaxed(&mut deferred_arg),
+            ::core::intrinsics::atomic_load_relaxed(&raw mut deferred_arg),
         );
         (*(*heap).tld).recurse = 0 as libc::c_int != 0;
     }
@@ -15470,10 +15476,10 @@ pub unsafe extern "C" fn mi_register_deferred_free(
     mut arg: *mut libc::c_void,
 ) {
     ::core::ptr::write_volatile(
-        &mut deferred_free as *mut Option<mi_deferred_free_fun>,
+        &raw mut deferred_free as *mut Option<mi_deferred_free_fun>,
         fn_0,
     );
-    ::core::intrinsics::atomic_store_release(&mut deferred_arg, arg);
+    ::core::intrinsics::atomic_store_release(&raw mut deferred_arg, arg);
 }
 unsafe extern "C" fn mi_huge_page_alloc(
     mut heap: *mut mi_heap_t,
@@ -18701,7 +18707,7 @@ pub unsafe extern "C" fn _mi_segment_huge_page_reset(
             let mut p: *mut uint8_t =
                 (block as *mut uint8_t)
                     .offset(::core::mem::size_of::<mi_block_t>() as libc::c_ulong as isize);
-            _mi_os_reset(p as *mut libc::c_void, usize, &mut _mi_stats_main);
+            _mi_os_reset(p as *mut libc::c_void, usize, &raw mut _mi_stats_main);
         }
     }
 }
@@ -18956,7 +18962,7 @@ unsafe extern "C" fn mi_segment_map_index_of(
         return 0 as *mut mi_segmap_part_t;
     }
     let mut part: *mut mi_segmap_part_t = ::core::intrinsics::atomic_load_relaxed(
-        &mut *mi_segment_map.as_mut_ptr().offset(segindex as isize) as *mut *mut mi_segmap_part_t,
+        &mut *(*(&raw mut mi_segment_map)).as_mut_ptr().offset(segindex as isize) as *mut *mut mi_segmap_part_t,
     );
     if part.is_null() {
         if !create_on_demand {
@@ -18984,7 +18990,7 @@ unsafe extern "C" fn mi_segment_map_index_of(
         }
         let mut expected: *mut mi_segmap_part_t = 0 as *mut mi_segmap_part_t;
         let fresh48 = ::core::intrinsics::atomic_cxchg_release_relaxed(
-            &mut *mi_segment_map.as_mut_ptr().offset(segindex as isize)
+            &mut *(*(&raw mut mi_segment_map)).as_mut_ptr().offset(segindex as isize)
                 as *mut *mut mi_segmap_part_t,
             *(&mut expected as *mut *mut mi_segmap_part_t),
             part,
@@ -19137,9 +19143,9 @@ pub unsafe extern "C" fn mi_is_in_heap_region(mut p: *const libc::c_void) -> boo
     return mi_is_valid_pointer(p);
 }
 unsafe extern "C" fn mi_is_in_main(mut stat: *mut libc::c_void) -> bool {
-    return stat as *mut uint8_t >= &mut _mi_stats_main as *mut mi_stats_t as *mut uint8_t
+    return stat as *mut uint8_t >= &raw mut _mi_stats_main as *mut mi_stats_t as *mut uint8_t
         && (stat as *mut uint8_t)
-            < (&mut _mi_stats_main as *mut mi_stats_t as *mut uint8_t)
+            < (&raw mut _mi_stats_main as *mut mi_stats_t as *mut uint8_t)
                 .offset(::core::mem::size_of::<mi_stats_t>() as libc::c_ulong as isize);
 }
 unsafe extern "C" fn mi_stat_update(mut stat: *mut mi_stat_count_t, mut amount: int64_t) {
@@ -20026,8 +20032,8 @@ unsafe extern "C" fn mi_stats_get_default() -> *mut mi_stats_t {
     return &mut (*(*heap).tld).stats;
 }
 unsafe extern "C" fn mi_stats_merge_from(mut stats: *mut mi_stats_t) {
-    if stats != &mut _mi_stats_main as *mut mi_stats_t {
-        mi_stats_add(&mut _mi_stats_main, stats);
+    if stats != &raw mut _mi_stats_main as *mut mi_stats_t {
+        mi_stats_add(&raw mut _mi_stats_main, stats);
         memset(
             stats as *mut libc::c_void,
             0 as libc::c_int,
@@ -20038,7 +20044,7 @@ unsafe extern "C" fn mi_stats_merge_from(mut stats: *mut mi_stats_t) {
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_stats_reset() {
     let mut stats: *mut mi_stats_t = mi_stats_get_default();
-    if stats != &mut _mi_stats_main as *mut mi_stats_t {
+    if stats != &raw mut _mi_stats_main as *mut mi_stats_t {
         memset(
             stats as *mut libc::c_void,
             0 as libc::c_int,
@@ -20046,7 +20052,7 @@ pub unsafe extern "C" fn mi_stats_reset() {
         );
     }
     memset(
-        &mut _mi_stats_main as *mut mi_stats_t as *mut libc::c_void,
+        &raw mut _mi_stats_main as *mut mi_stats_t as *mut libc::c_void,
         0 as libc::c_int,
         ::core::mem::size_of::<mi_stats_t>() as libc::c_ulong,
     );
@@ -20068,7 +20074,7 @@ pub unsafe extern "C" fn mi_stats_print_out(
     mut arg: *mut libc::c_void,
 ) {
     mi_stats_merge_from(mi_stats_get_default());
-    _mi_stats_print(&mut _mi_stats_main, out, arg);
+    _mi_stats_print(&raw mut _mi_stats_main, out, arg);
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_stats_print(mut out: *mut libc::c_void) {
@@ -20130,10 +20136,10 @@ pub unsafe extern "C" fn mi_process_info(
     );
     pinfo.elapsed = _mi_clock_end(mi_process_start);
     pinfo.current_commit = ::core::intrinsics::atomic_load_relaxed(
-        &mut _mi_stats_main.committed.current as *mut int64_t as *mut int64_t,
+        &raw mut _mi_stats_main.committed.current as *mut int64_t as *mut int64_t,
     ) as size_t;
     pinfo.peak_commit = ::core::intrinsics::atomic_load_relaxed(
-        &mut _mi_stats_main.committed.peak as *mut int64_t as *mut int64_t,
+        &raw mut _mi_stats_main.committed.peak as *mut int64_t as *mut int64_t,
     ) as size_t;
     pinfo.current_rss = pinfo.current_commit;
     pinfo.peak_rss = pinfo.peak_commit;
@@ -20374,10 +20380,10 @@ unsafe extern "C" fn unix_mmap(
         && allow_large as libc::c_int != 0
     {
         static mut large_page_try_ok: size_t = 0;
-        let mut try_ok: size_t = ::core::intrinsics::atomic_load_acquire(&mut large_page_try_ok);
+        let mut try_ok: size_t = ::core::intrinsics::atomic_load_acquire(&raw mut large_page_try_ok);
         if !large_only && try_ok > 0 as libc::c_int as size_t {
             let fresh52 = ::core::intrinsics::atomic_cxchg_acqrel_acquire(
-                &mut large_page_try_ok,
+                &raw mut large_page_try_ok,
                 *&mut try_ok,
                 try_ok.wrapping_sub(1 as libc::c_int as size_t),
             );
@@ -20424,7 +20430,7 @@ unsafe extern "C" fn unix_mmap(
                 }
                 if p.is_null() {
                     ::core::intrinsics::atomic_store_release(
-                        &mut large_page_try_ok,
+                        &raw mut large_page_try_ok,
                         8 as libc::c_int as size_t,
                     );
                 }
@@ -20541,7 +20547,7 @@ pub unsafe extern "C" fn _mi_prim_reset(
 ) -> libc::c_int {
     static mut advice: size_t = 8 as libc::c_int as libc::c_ulong;
     let mut oadvice: libc::c_int =
-        ::core::intrinsics::atomic_load_relaxed(&mut advice) as libc::c_int;
+        ::core::intrinsics::atomic_load_relaxed(&raw mut advice) as libc::c_int;
     let mut err: libc::c_int = 0;
     loop {
         err = unix_madvise(start, size, oadvice);
@@ -20554,7 +20560,7 @@ pub unsafe extern "C" fn _mi_prim_reset(
         && *__errno_location() == 22 as libc::c_int
         && oadvice == 8 as libc::c_int
     {
-        ::core::intrinsics::atomic_store_release(&mut advice, 4 as libc::c_int as size_t);
+        ::core::intrinsics::atomic_store_release(&raw mut advice, 4 as libc::c_int as size_t);
         err = unix_madvise(start, size, 4 as libc::c_int);
     }
     return err;
@@ -20778,7 +20784,7 @@ pub unsafe extern "C" fn _mi_prim_random_buf(
     mut buf_len: size_t,
 ) -> bool {
     static mut no_getrandom: uintptr_t = 0;
-    if ::core::intrinsics::atomic_load_acquire(&mut no_getrandom as *mut uintptr_t)
+    if ::core::intrinsics::atomic_load_acquire(&raw mut no_getrandom as *mut uintptr_t)
         == 0 as libc::c_int as uintptr_t
     {
         let mut ret: ssize_t = syscall(
@@ -20793,7 +20799,7 @@ pub unsafe extern "C" fn _mi_prim_random_buf(
         if *__errno_location() != 38 as libc::c_int {
             return 0 as libc::c_int != 0;
         }
-        ::core::intrinsics::atomic_store_release(&mut no_getrandom, 1 as libc::c_int as uintptr_t);
+        ::core::intrinsics::atomic_store_release(&raw mut no_getrandom, 1 as libc::c_int as uintptr_t);
     }
     let mut flags: libc::c_int = 0 as libc::c_int;
     flags |= 0o2000000 as libc::c_int;
@@ -20842,7 +20848,7 @@ pub unsafe extern "C" fn _mi_prim_thread_init_auto_done() {
         );
     };
     pthread_key_create(
-        &mut _mi_heap_default_key,
+        &raw mut _mi_heap_default_key,
         Some(mi_pthread_done as unsafe extern "C" fn(*mut libc::c_void) -> ()),
     );
 }
@@ -21793,8 +21799,8 @@ unsafe extern "C" fn run_static_initializers() {
         let mut init = mi_tld_s {
             heartbeat: 0 as libc::c_int as libc::c_ulonglong,
             recurse: 0 as libc::c_int != 0,
-            heap_backing: &mut _mi_heap_main,
-            heaps: &mut _mi_heap_main,
+            heap_backing: &raw mut _mi_heap_main,
+            heaps: &raw mut _mi_heap_main,
             segments: {
                 let mut init = mi_segments_tld_s {
                     small_free: {
@@ -21824,16 +21830,16 @@ unsafe extern "C" fn run_static_initializers() {
                     current_size: 0 as libc::c_int as size_t,
                     peak_size: 0 as libc::c_int as size_t,
                     reclaim_count: 0 as libc::c_int as size_t,
-                    subproc: &mut mi_subproc_default,
-                    stats: &mut tld_main.stats,
-                    os: &mut tld_main.os,
+                    subproc: &raw mut mi_subproc_default,
+                    stats: &raw mut tld_main.stats,
+                    os: &raw mut tld_main.os,
                 };
                 init
             },
             os: {
                 let mut init = mi_os_tld_s {
                     region_idx: 0 as libc::c_int as size_t,
-                    stats: &mut tld_main.stats,
+                    stats: &raw mut tld_main.stats,
                 };
                 init
             },
@@ -22618,7 +22624,7 @@ unsafe extern "C" fn run_static_initializers() {
     };
     _mi_heap_main = {
         let mut init = mi_heap_s {
-            tld: &mut tld_main,
+            tld: &raw mut tld_main,
             thread_delayed_free: 0 as *mut mi_block_t,
             thread_id: 0 as libc::c_int as mi_threadid_t,
             arena_id: 0 as libc::c_int,
