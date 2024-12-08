@@ -2,3 +2,7 @@
 	path = c2rust
 	url = git@github.com:Nugine/c2rust.git
 	branch = mimalloc
+[submodule "mimalloc"]
+	path = mimalloc
+	url = git@github.com:Nugine/mimalloc.git
+	branch = c2rust
