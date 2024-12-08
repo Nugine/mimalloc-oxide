@@ -129,7 +129,7 @@ def transform1(lines: Iterable[str]):
 def transform2(content: str):
     content = content.replace(
         '#[inline]\npub unsafe extern "C" fn mi_',
-        'pub unsafe extern "C" fn mi_',
+        '#[unsafe(no_mangle)]\npub unsafe extern "C" fn mi_',
     )
     return content
 

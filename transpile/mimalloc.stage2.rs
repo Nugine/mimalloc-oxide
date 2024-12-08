@@ -1011,12 +1011,14 @@ pub const _SC_CHILD_MAX: C2RustUnnamed_15 = 1;
 pub const _SC_ARG_MAX: C2RustUnnamed_15 = 0;
 pub type __rusage_who = libc::c_int;
 pub const RUSAGE_CHILDREN: __rusage_who = -1;
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_atomic_addi64_relaxed(
     mut p: *mut int64_t,
     mut add: int64_t,
 ) -> int64_t {
     return ::core::intrinsics::atomic_xadd_relaxed(p as *mut int64_t, add);
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_atomic_maxi64_relaxed(mut p: *mut int64_t, mut x: int64_t) {
     let mut current: int64_t = ::core::intrinsics::atomic_load_relaxed(p as *mut int64_t);
     while current < x && {
@@ -1029,6 +1031,7 @@ pub unsafe extern "C" fn mi_atomic_maxi64_relaxed(mut p: *mut int64_t, mut x: in
         !fresh0.1
     } {}
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_atomic_once(mut once: *mut mi_atomic_once_t) -> bool {
     if ::core::intrinsics::atomic_load_relaxed(once) != 0 as libc::c_int as uintptr_t {
         return 0 as libc::c_int != 0;
@@ -1042,24 +1045,31 @@ pub unsafe extern "C" fn mi_atomic_once(mut once: *mut mi_atomic_once_t) -> bool
     *&mut expected = fresh1.0;
     return fresh1.1;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_atomic_yield() {
     _mm_pause();
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_lock_try_acquire(mut lock: *mut pthread_mutex_t) -> bool {
     return pthread_mutex_trylock(lock) == 0 as libc::c_int;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_lock_acquire(mut lock: *mut pthread_mutex_t) -> bool {
     return pthread_mutex_lock(lock) == 0 as libc::c_int;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_lock_release(mut lock: *mut pthread_mutex_t) {
     pthread_mutex_unlock(lock);
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_lock_init(mut lock: *mut pthread_mutex_t) {
     pthread_mutex_init(lock, 0 as *const pthread_mutexattr_t);
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_lock_done(mut lock: *mut pthread_mutex_t) {
     pthread_mutex_destroy(lock);
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_memkind_is_os(mut memkind: mi_memkind_t) -> bool {
     return memkind as libc::c_uint >= MI_MEM_OS as libc::c_int as libc::c_uint
         && memkind as libc::c_uint <= MI_MEM_OS_REMAP as libc::c_int as libc::c_uint;
@@ -1103,6 +1113,7 @@ unsafe extern "C" fn _mi_align_up(mut sz: uintptr_t, mut alignment: size_t) -> u
             .wrapping_mul(alignment);
     };
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_align_up_ptr(
     mut p: *mut libc::c_void,
     mut alignment: size_t,
@@ -1159,6 +1170,7 @@ unsafe extern "C" fn _mi_wsize_from_size(mut size: size_t) -> size_t {
         .wrapping_sub(1 as libc::c_int as libc::c_ulong)
         .wrapping_div(::core::mem::size_of::<uintptr_t>() as libc::c_ulong);
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_mul_overflow(
     mut count: size_t,
     mut size: size_t,
@@ -1168,6 +1180,7 @@ pub unsafe extern "C" fn mi_mul_overflow(
     *(total as *mut libc::c_ulong) = fresh2;
     return fresh3;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_count_size_overflow(
     mut count: size_t,
     mut size: size_t,
@@ -1190,9 +1203,11 @@ pub unsafe extern "C" fn mi_count_size_overflow(
         return 0 as libc::c_int != 0;
     };
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_heap_is_backing(mut heap: *const mi_heap_t) -> bool {
     return (*(*heap).tld).heap_backing == heap as *mut mi_heap_t;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_heap_is_initialized(mut heap: *mut mi_heap_t) -> bool {
     if !heap.is_null() {
     } else {
@@ -1375,6 +1390,7 @@ unsafe extern "C" fn _mi_segment_page_of(
         .as_mut_ptr()
         .offset(idx as isize) as *mut mi_page_t;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_page_start(mut page: *const mi_page_t) -> *mut uint8_t {
     if !((*page).page_start).is_null() {
     } else {
@@ -1401,6 +1417,7 @@ unsafe extern "C" fn _mi_ptr_page(mut p: *mut libc::c_void) -> *mut mi_page_t {
     };
     return _mi_segment_page_of(_mi_ptr_segment(p), p);
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_page_block_size(mut page: *const mi_page_t) -> size_t {
     if (*page).block_size > 0 as libc::c_int as size_t {
     } else {
@@ -1414,6 +1431,7 @@ pub unsafe extern "C" fn mi_page_block_size(mut page: *const mi_page_t) -> size_
     };
     return (*page).block_size;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_page_is_huge(mut page: *const mi_page_t) -> bool {
     if (*page).is_huge() as libc::c_int != 0
         && (*_mi_page_segment(page)).page_kind as libc::c_uint
@@ -1437,22 +1455,27 @@ pub unsafe extern "C" fn mi_page_is_huge(mut page: *const mi_page_t) -> bool {
     };
     return (*page).is_huge() != 0;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_page_usable_block_size(mut page: *const mi_page_t) -> size_t {
     return (mi_page_block_size(page))
         .wrapping_sub(::core::mem::size_of::<mi_padding_t>() as libc::c_ulong);
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_page_thread_free(mut page: *const mi_page_t) -> *mut mi_block_t {
     return (::core::intrinsics::atomic_load_relaxed(&mut (*(page as *mut mi_page_t)).xthread_free)
         & !(3 as libc::c_int) as mi_thread_free_t) as *mut mi_block_t;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_page_thread_free_flag(mut page: *const mi_page_t) -> mi_delayed_t {
     return (::core::intrinsics::atomic_load_relaxed(&mut (*(page as *mut mi_page_t)).xthread_free)
         & 3 as libc::c_int as mi_thread_free_t) as mi_delayed_t;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_page_heap(mut page: *const mi_page_t) -> *mut mi_heap_t {
     return ::core::intrinsics::atomic_load_relaxed(&mut (*(page as *mut mi_page_t)).xheap)
         as *mut mi_heap_t;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_page_set_heap(mut page: *mut mi_page_t, mut heap: *mut mi_heap_t) {
     if mi_page_thread_free_flag(page) as libc::c_uint
         != MI_DELAYED_FREEING as libc::c_int as libc::c_uint
@@ -1472,30 +1495,36 @@ pub unsafe extern "C" fn mi_page_set_heap(mut page: *mut mi_page_t, mut heap: *m
         (*page).heap_tag = (*heap).tag;
     }
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_tf_block(mut tf: mi_thread_free_t) -> *mut mi_block_t {
     return (tf & !(0x3 as libc::c_int) as mi_thread_free_t) as *mut mi_block_t;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_tf_delayed(mut tf: mi_thread_free_t) -> mi_delayed_t {
     return (tf & 0x3 as libc::c_int as mi_thread_free_t) as mi_delayed_t;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_tf_make(
     mut block: *mut mi_block_t,
     mut delayed: mi_delayed_t,
 ) -> mi_thread_free_t {
     return block as uintptr_t | delayed as uintptr_t;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_tf_set_delayed(
     mut tf: mi_thread_free_t,
     mut delayed: mi_delayed_t,
 ) -> mi_thread_free_t {
     return mi_tf_make(mi_tf_block(tf), delayed);
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_tf_set_block(
     mut tf: mi_thread_free_t,
     mut block: *mut mi_block_t,
 ) -> mi_thread_free_t {
     return mi_tf_make(block, mi_tf_delayed(tf));
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_page_all_free(mut page: *const mi_page_t) -> bool {
     if !page.is_null() {
     } else {
@@ -1509,6 +1538,7 @@ pub unsafe extern "C" fn mi_page_all_free(mut page: *const mi_page_t) -> bool {
     };
     return (*page).used as libc::c_int == 0 as libc::c_int;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_page_has_any_available(mut page: *const mi_page_t) -> bool {
     if !page.is_null() && (*page).reserved as libc::c_int > 0 as libc::c_int {
     } else {
@@ -1525,6 +1555,7 @@ pub unsafe extern "C" fn mi_page_has_any_available(mut page: *const mi_page_t) -
     return ((*page).used as libc::c_int) < (*page).reserved as libc::c_int
         || !(mi_page_thread_free(page)).is_null();
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_page_immediate_available(mut page: *const mi_page_t) -> bool {
     if !page.is_null() {
     } else {
@@ -1540,6 +1571,7 @@ pub unsafe extern "C" fn mi_page_immediate_available(mut page: *const mi_page_t)
     };
     return !((*page).free).is_null();
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_page_queue(
     mut heap: *const mi_heap_t,
     mut size: size_t,
@@ -1549,18 +1581,23 @@ pub unsafe extern "C" fn mi_page_queue(
         .offset((_mi_bin as unsafe extern "C" fn(size_t) -> uint8_t)(size) as isize)
         as *mut mi_page_queue_t;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_page_is_in_full(mut page: *const mi_page_t) -> bool {
     return ((*page).flags.x).in_full() != 0;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_page_set_in_full(mut page: *mut mi_page_t, mut in_full: bool) {
     ((*page).flags.x).set_in_full(in_full as uint8_t);
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_page_has_aligned(mut page: *const mi_page_t) -> bool {
     return ((*page).flags.x).has_aligned() != 0;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_page_set_has_aligned(mut page: *mut mi_page_t, mut has_aligned: bool) {
     ((*page).flags.x).set_has_aligned(has_aligned as uint8_t);
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_is_in_same_page(
     mut p: *const libc::c_void,
     mut q: *const libc::c_void,
@@ -1574,6 +1611,7 @@ pub unsafe extern "C" fn mi_is_in_same_page(
     let mut idxq: size_t = _mi_segment_page_idx_of(segmentq, q);
     return idxp == idxq;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_rotl(mut x: uintptr_t, mut shift: uintptr_t) -> uintptr_t {
     shift = shift % (((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int) as uintptr_t;
     return if shift == 0 as libc::c_int as uintptr_t {
@@ -1584,6 +1622,7 @@ pub unsafe extern "C" fn mi_rotl(mut x: uintptr_t, mut shift: uintptr_t) -> uint
                 .wrapping_sub(shift)
     };
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_rotr(mut x: uintptr_t, mut shift: uintptr_t) -> uintptr_t {
     shift = shift % (((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int) as uintptr_t;
     return if shift == 0 as libc::c_int as uintptr_t {
@@ -1594,6 +1633,7 @@ pub unsafe extern "C" fn mi_rotr(mut x: uintptr_t, mut shift: uintptr_t) -> uint
                 .wrapping_sub(shift)
     };
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_ptr_decode(
     mut null: *const libc::c_void,
     x: mi_encoded_t,
@@ -1610,6 +1650,7 @@ pub unsafe extern "C" fn mi_ptr_decode(
         p
     };
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_ptr_encode(
     mut null: *const libc::c_void,
     mut p: *const libc::c_void,
@@ -1622,6 +1663,7 @@ pub unsafe extern "C" fn mi_ptr_encode(
     ))
     .wrapping_add(*keys.offset(0 as libc::c_int as isize));
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_ptr_encode_canary(
     mut null: *const libc::c_void,
     mut p: *const libc::c_void,
@@ -1630,6 +1672,7 @@ pub unsafe extern "C" fn mi_ptr_encode_canary(
     let x: uint32_t = mi_ptr_encode(null, p, keys) as uint32_t;
     return x & 0xffffff00 as libc::c_uint;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_block_nextx(
     mut null: *const libc::c_void,
     mut block: *const mi_block_t,
@@ -1639,6 +1682,7 @@ pub unsafe extern "C" fn mi_block_nextx(
     next = mi_ptr_decode(null, (*block).next, keys) as *mut mi_block_t;
     return next;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_block_set_nextx(
     mut null: *const libc::c_void,
     mut block: *mut mi_block_t,
@@ -1647,6 +1691,7 @@ pub unsafe extern "C" fn mi_block_set_nextx(
 ) {
     (*block).next = mi_ptr_encode(null, next as *const libc::c_void, keys);
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_block_next(
     mut page: *const mi_page_t,
     mut block: *const mi_block_t,
@@ -1670,6 +1715,7 @@ pub unsafe extern "C" fn mi_block_next(
     }
     return next;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_block_set_next(
     mut page: *const mi_page_t,
     mut block: *mut mi_block_t,
@@ -1754,18 +1800,21 @@ unsafe extern "C" fn _mi_os_numa_node_count() -> size_t {
         return _mi_os_numa_node_count_get();
     };
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_clz(mut x: uintptr_t) -> size_t {
     if x == 0 as libc::c_int as uintptr_t {
         return (((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int) as size_t;
     }
     return x.leading_zeros() as i32 as size_t;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_ctz(mut x: uintptr_t) -> size_t {
     if x == 0 as libc::c_int as uintptr_t {
         return (((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int) as size_t;
     }
     return x.trailing_zeros() as i32 as size_t;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_bsr(mut x: uintptr_t) -> size_t {
     return if x == 0 as libc::c_int as uintptr_t {
         (((1 as libc::c_int) << 3 as libc::c_int) * 8 as libc::c_int) as size_t
@@ -1828,9 +1877,11 @@ unsafe extern "C" fn _mi_memzero_aligned(mut dst: *mut libc::c_void, mut n: size
     let mut adst: *mut libc::c_void = dst;
     _mi_memzero(adst, n);
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_prim_get_default_heap() -> *mut mi_heap_t {
     return _mi_heap_default;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_free_block_local(
     mut page: *mut mi_page_t,
     mut block: *mut mi_block_t,
@@ -1891,6 +1942,7 @@ pub unsafe extern "C" fn _mi_page_ptr_unalign(
     }
     return (p as uintptr_t).wrapping_sub(adjust) as *mut mi_block_t;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_block_check_unguard(
     mut page: *mut mi_page_t,
     mut block: *mut mi_block_t,
@@ -1935,6 +1987,7 @@ pub unsafe extern "C" fn _mi_free_generic(
         mi_free_generic_mt(page, segment, p);
     };
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_checked_ptr_segment(
     mut p: *const libc::c_void,
     mut msg: *const libc::c_char,
@@ -2344,6 +2397,7 @@ pub unsafe extern "C" fn mi_check_is_double_freex(
     }
     return 0 as libc::c_int != 0;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_check_is_double_free(
     mut page: *const mi_page_t,
     mut block: *const mi_block_t,
@@ -2752,6 +2806,7 @@ pub unsafe extern "C" fn _mi_page_malloc_zeroed(
 ) -> *mut libc::c_void {
     return _mi_page_malloc_zero(heap, page, size, 1 as libc::c_int != 0);
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_heap_malloc_small_zero(
     mut heap: *mut mi_heap_t,
     mut size: size_t,
@@ -2923,12 +2978,14 @@ unsafe extern "C" fn _mi_heap_malloc_zero(
 ) -> *mut libc::c_void {
     return _mi_heap_malloc_zero_ex(heap, size, zero, 0 as libc::c_int as size_t);
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_heap_malloc(
     mut heap: *mut mi_heap_t,
     mut size: size_t,
 ) -> *mut libc::c_void {
     return _mi_heap_malloc_zero(heap, size, 0 as libc::c_int != 0);
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_malloc(mut size: size_t) -> *mut libc::c_void {
     return mi_heap_malloc(mi_prim_get_default_heap(), size);
 }
@@ -2936,6 +2993,7 @@ pub unsafe extern "C" fn mi_malloc(mut size: size_t) -> *mut libc::c_void {
 pub unsafe extern "C" fn mi_zalloc_small(mut size: size_t) -> *mut libc::c_void {
     return mi_heap_malloc_small_zero(mi_prim_get_default_heap(), size, 1 as libc::c_int != 0);
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_heap_zalloc(
     mut heap: *mut mi_heap_t,
     mut size: size_t,
@@ -2946,6 +3004,7 @@ pub unsafe extern "C" fn mi_heap_zalloc(
 pub unsafe extern "C" fn mi_zalloc(mut size: size_t) -> *mut libc::c_void {
     return mi_heap_zalloc(mi_prim_get_default_heap(), size);
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_heap_calloc(
     mut heap: *mut mi_heap_t,
     mut count: size_t,
@@ -4287,6 +4346,7 @@ pub unsafe extern "C" fn mi_aligned_recalloc(
 ) -> *mut libc::c_void {
     return mi_recalloc_aligned(p, newcount, size, alignment);
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_bitmap_index_create_ex(
     mut idx: size_t,
     mut bitidx: size_t,
@@ -4306,6 +4366,7 @@ pub unsafe extern "C" fn mi_bitmap_index_create_ex(
     return (idx * (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t)
         .wrapping_add(bitidx);
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_bitmap_index_create(
     mut idx: size_t,
     mut bitidx: size_t,
@@ -4324,14 +4385,17 @@ pub unsafe extern "C" fn mi_bitmap_index_create(
     };
     return mi_bitmap_index_create_ex(idx, bitidx);
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_bitmap_index_field(mut bitmap_idx: mi_bitmap_index_t) -> size_t {
     return bitmap_idx
         / (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as mi_bitmap_index_t;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_bitmap_index_bit_in_field(mut bitmap_idx: mi_bitmap_index_t) -> size_t {
     return bitmap_idx
         % (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as mi_bitmap_index_t;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_bitmap_index_bit(mut bitmap_idx: mi_bitmap_index_t) -> size_t {
     return bitmap_idx;
 }
@@ -6927,6 +6991,7 @@ pub unsafe extern "C" fn mi_reserve_huge_os_pages(
     }
     return err;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_bitmap_mask_(mut count: size_t, mut bitidx: size_t) -> size_t {
     if count.wrapping_add(bitidx)
         <= (8 as libc::c_int * ((1 as libc::c_int) << 3 as libc::c_int)) as size_t
@@ -13321,6 +13386,7 @@ pub unsafe extern "C" fn _mi_os_numa_node_get(mut tld: *mut mi_os_tld_t) -> libc
     }
     return numa_node as libc::c_int;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_page_queue_is_huge(mut pq: *const mi_page_queue_t) -> bool {
     return (*pq).block_size as libc::c_ulonglong
         == ((1 as libc::c_ulonglong)
@@ -13330,6 +13396,7 @@ pub unsafe extern "C" fn mi_page_queue_is_huge(mut pq: *const mi_page_queue_t) -
                 ::core::mem::size_of::<uintptr_t>() as libc::c_ulong as libc::c_ulonglong
             );
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_page_queue_is_full(mut pq: *const mi_page_queue_t) -> bool {
     return (*pq).block_size as libc::c_ulonglong
         == ((1 as libc::c_ulonglong)
@@ -13341,12 +13408,14 @@ pub unsafe extern "C" fn mi_page_queue_is_full(mut pq: *const mi_page_queue_t) -
                     as libc::c_ulonglong,
             );
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_page_queue_is_special(mut pq: *const mi_page_queue_t) -> bool {
     return (*pq).block_size as libc::c_ulonglong
         > ((1 as libc::c_ulonglong)
             << 3 as libc::c_int + (3 as libc::c_int + (13 as libc::c_int + 3 as libc::c_int)))
             .wrapping_div(2 as libc::c_int as libc::c_ulonglong);
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_bin(mut size: size_t) -> uint8_t {
     let mut wsize: size_t = _mi_wsize_from_size(size);
     let mut bin: uint8_t = 0;
@@ -13537,6 +13606,7 @@ pub unsafe extern "C" fn mi_page_queue_of(mut page: *const mi_page_t) -> *mut mi
     let mut pq: *mut mi_page_queue_t = mi_heap_page_queue_of(heap, page);
     return pq;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_heap_queue_first_update(
     mut heap: *mut mi_heap_t,
     mut pq: *const mi_page_queue_t,
@@ -14011,6 +14081,7 @@ pub unsafe extern "C" fn _mi_page_queue_append(
     }
     return count;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_page_block_at(
     mut page: *const mi_page_t,
     mut page_start: *mut libc::c_void,
@@ -15373,6 +15444,7 @@ pub unsafe extern "C" fn mi_page_queue_find_free_ex(
     };
     return page;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_find_free_page(
     mut heap: *mut mi_heap_t,
     mut size: size_t,
@@ -20129,6 +20201,7 @@ pub unsafe extern "C" fn mi_process_info(
         *page_faults = pinfo.page_faults;
     }
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_prim_open(
     mut fpath: *const libc::c_char,
     mut open_flags: libc::c_int,
@@ -20140,6 +20213,7 @@ pub unsafe extern "C" fn mi_prim_open(
         0 as libc::c_int,
     ) as libc::c_int;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_prim_read(
     mut fd: libc::c_int,
     mut buf: *mut libc::c_void,
@@ -20147,9 +20221,11 @@ pub unsafe extern "C" fn mi_prim_read(
 ) -> ssize_t {
     return syscall(0 as libc::c_int as libc::c_long, fd, buf, bufsize);
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_prim_close(mut fd: libc::c_int) -> libc::c_int {
     return syscall(3 as libc::c_int as libc::c_long, fd) as libc::c_int;
 }
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mi_prim_access(
     mut fpath: *const libc::c_char,
     mut mode: libc::c_int,
