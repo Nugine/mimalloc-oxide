@@ -1,3 +1,5 @@
 .vscode
 /temp
 /data
+/target
+/build
